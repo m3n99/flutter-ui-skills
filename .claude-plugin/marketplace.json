@@ -1,0 +1,21 @@
+{
+  "name": "flutter-ui-skills",
+  "owner": {
+    "name": "Maen Khdour",
+    "url": "https://github.com/m3n99"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for building modern, beautiful Flutter mobile UI.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "flutter-modern-ui",
+      "source": "./plugins/flutter-modern-ui",
+      "description": "Design directions, tokens, a tuned Material 3 theme, component patterns, loading/empty/error states, motion, and a UI audit skill for Flutter.",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": ["flutter", "ui", "design-system", "mobile"]
+    }
+  ]
+}
