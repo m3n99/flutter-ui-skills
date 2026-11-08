@@ -5,17 +5,17 @@
     "url": "https://github.com/m3n99"
   },
   "metadata": {
-    "description": "Claude Code plugins for building modern, beautiful Flutter mobile UI.",
-    "version": "0.1.0"
+    "description": "Claude Code plugins for building modern, consistent, verified Flutter UI.",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "flutter-modern-ui",
       "source": "./plugins/flutter-modern-ui",
-      "description": "Design directions, tokens, a tuned Material 3 theme, component patterns, loading/empty/error states, motion, and a UI audit skill for Flutter.",
-      "version": "0.1.0",
+      "description": "Five skills and a reviewer agent: build modern Flutter UI on the app's own design system, set up or repair design systems (from code or reference screenshots), add purposeful animation, verify with a layout matrix and screenshots, and audit existing screens.",
+      "version": "1.0.0",
       "category": "development",
-      "tags": ["flutter", "ui", "design-system", "mobile"]
+      "tags": ["flutter", "ui", "design-system", "animation", "rtl", "testing", "mobile", "desktop"]
     }
   ]
 }

@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../context_ext.dart';
 import '../tokens.dart';
 
 /// Animated shimmer over skeleton shapes. No external package.
-/// Static when the platform asks for reduced motion.
+/// Static when the platform asks for reduced motion; the sweep follows the
+/// reading direction.
+///
+/// Tests: the shimmer repeats forever, so use `pump(duration)` instead of
+/// `pumpAndSettle()` while a skeleton is on screen.
 class Shimmer extends StatefulWidget {
   const Shimmer({super.key, required this.child});
 
@@ -27,9 +34,9 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
+    if (context.reduceMotion) return widget.child;
 
-    final colors = Theme.of(context).colorScheme;
+    final colors = context.colors;
     final base = colors.surfaceContainerHighest;
     final highlight = colors.surfaceContainerLow;
     final direction = Directionality.of(context);
@@ -64,7 +71,8 @@ class _SlideGradient extends GradientTransform {
   }
 }
 
-/// A placeholder block. Shape it like the content it replaces.
+/// A placeholder block. Shape it like the content it replaces: same
+/// paddings, row heights and radii, so nothing jumps when data arrives.
 class SkeletonBox extends StatelessWidget {
   const SkeletonBox({
     super.key,
@@ -90,10 +98,54 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: context.colors.surfaceContainerHighest,
         shape: _circle ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: _circle ? null : borderRadius,
       ),
+    );
+  }
+}
+
+/// Reveals [child] only after [delay], so loads that finish quickly never
+/// flash a skeleton. Space is reserved from the start.
+class ShowAfter extends StatefulWidget {
+  const ShowAfter({super.key, required this.child, this.delay = const Duration(milliseconds: 150)});
+
+  final Widget child;
+  final Duration delay;
+
+  @override
+  State<ShowAfter> createState() => _ShowAfterState();
+}
+
+class _ShowAfterState extends State<ShowAfter> {
+  Timer? _timer;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.delay == Duration.zero) {
+      _visible = true;
+    } else {
+      _timer = Timer(widget.delay, () {
+        if (mounted) setState(() => _visible = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _visible ? 1 : 0,
+      duration: context.motion(AppDurations.fast),
+      child: widget.child,
     );
   }
 }

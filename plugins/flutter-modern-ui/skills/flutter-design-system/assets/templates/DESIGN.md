@@ -1,0 +1,153 @@
+# {App name} — design system
+
+The contract for every screen. Read it before changing UI; update it in the same change when you add a token, a pattern or a decision. Every rule here can be checked against a screen or the source.
+
+Code: `{lib/core/design_system/}` (import `design_system.dart`). Widgets never use raw numbers or colors: every value below is a token.
+
+## Direction and decisions
+
+- **Direction:** {Soft Minimal / Enterprise Dense / …}{, eye comfort}. {One sentence on the feel.}
+- **Platforms:** {Android (touch), Windows (mouse, desktop density), …}
+- **Languages / direction:** {Arabic only, RTL} · digits: {Western 0-9 / Arabic-Indic}
+- **Emoji:** {none / KPI tiles only / …}
+- **Motion:** {cards entrance, lists insert/remove, charts, buttons, sheets, skeletons}
+- **Derived from references:** {apps / screenshots, what was kept, what was left out} (optional)
+
+### Deliberate deviations from the plugin defaults
+- {e.g. warm hand-picked palette instead of fromSeed surfaces, checked ≥ 4.5:1}
+- {e.g. 40 px controls on Windows}
+
+## 1. Tokens
+
+### Spacing — `{AppSpace}` (4-pt grid)
+
+| Token | px | Use for |
+|---|---|---|
+| xxs | 4 | {title ↔ subtitle; icon ↔ label in pills} |
+| xs | 8 | {chips both ways; buttons in a bar; group-card inset} |
+| sm | 12 | {list cards; form grid gaps; row padding} |
+| md | 16 | {card padding; form sections} |
+| lg | 24 | {sections; sheet side padding} |
+| xl | 32 | {empty-state side padding} |
+| xxl | 48 | {empty-state vertical padding} |
+| screen | {16/20/24} | horizontal page padding |
+
+Rule: every padding, gap and `spacing:` is one of these.
+
+### Radius — `{AppRadius}`
+
+| Token | px | Use for |
+|---|---|---|
+| xs | 4 | {chart bar tops; rows inside group cards and menus} |
+| sm | 8 | {inputs, buttons, menus, tooltips} |
+| md | 12 | {cards} |
+| xl | 24 | {sheet top corners, dialogs} |
+| pill | 999 | {pills, chips, progress bars} |
+
+### Elevation
+
+| Token | Value | Use for |
+|---|---|---|
+| flat | 0 | cards, app bar, nav, rail (cards: 1 px `outlineVariant` border) |
+| raised | 1 | FAB at rest |
+| overlay | 3 | menus, autocomplete |
+
+Raised tiles (`AppCard(raised: true)`, {dashboard KPIs only}): `palette.softShadow` {values}; light mode drops the border, dark keeps it.
+
+### Typography — `context.textStyles`
+
+| Role | Size / weight | Use for |
+|---|---|---|
+| headlineSmall | 20 / 600 | {sheet and dialog titles, KPI values} |
+| titleLarge | 18 / 600 | {section headers, app bar} |
+| titleMedium | 16 / 600 | {card titles, form section titles} |
+| titleSmall | 14 / 600 | {row titles, field labels, amounts in rows} |
+| bodyMedium | 14 / 400 | {body, inputs} |
+| bodySmall | 12 / 400 | {dates, phones, helper text} |
+| labelLarge | 14 / 600 | {buttons, chips, sheet section labels} |
+| labelMedium | 12 / 600 | {pills, KPI labels, legends} |
+| labelSmall | 11 / 600 | {chart axes} |
+
+Font: {family} ({weights}). {Arabic: letter-spacing 0, body line height 1.6.} Amounts and dates: tabular, inside `Ltr`.
+
+### Color roles
+
+`ColorScheme` for surfaces / text / primary / error; `context.palette` for {success, warning, info, overdue, paid, …} (each: color, onColor, container, onContainer). Both modes defined; every text/background pair ≥ 4.5:1 (`contrast_test.dart`). No `Color(0x…)` / `Colors.*` in widgets.
+
+### Sizes and density
+
+- Touch target {48 × 48 on Android}; desktop controls {40 px}.
+- Icons: 14 pill · 16 inline · 20 dense · 24 regular · 32 feature · 48 hero.
+- Dialog widths: confirm 420 · sheet-as-dialog 560 · {large form 1000}. Content caps: forms 640 · pages {880 / 1440}.
+
+## 2. Nested shapes and card types
+
+1. Concentric corners while the gap < outer radius (`AppRadius.concentric`); otherwise the child keeps its own radius; a child filling its parent is clipped.
+2. No card in a card; no double borders; no stacked shadows.
+
+| Card type | Padding | Radius |
+|---|---|---|
+| {Content card} | 16 | {12} |
+| {Group card} | 8, rows 12 × 8 | {12, rows 4} |
+| {Row card} | 0, row 12 × 8 | {12, row 0 (clipped)} |
+| {KPI tile (raised)} | 16 | {12, emoji badge 8} |
+
+## 3. Sheets and dialogs
+
+`showAppSheet` + `SheetScaffold`: bottom sheet < 600 px, 560 px dialog wider. Header (title + ✕) · scrolling body of `SheetSection`s 24 apart · sticky footer (hairline, safe area, 24 × 12). Footer: secondary at the start (label width), primary fills the rest; one filled button.
+
+| Sheet | Secondary | Primary |
+|---|---|---|
+| {Filters} | {Clear all} | {Apply / Apply (n)} |
+| {Payment} | {Cancel} | {Save (spinner)} |
+
+Chips 8 / 8; selected = fill + check; equal heights.
+
+## 4. Lists, status, KPIs
+
+- Lists of cards are `AnimatedItems` keyed by {id}; gaps {12 records / 8 dense lists}.
+- Status mapping (one place: `{status_ui.dart}`):
+
+| Status | Label | Icon | Tone |
+|---|---|---|---|
+| {overdue} | {…} | {…} | {overdue} |
+
+- KPI tiles: {emoji/icon per tile}, value headlineSmall tabular, shrinks to fit; 2 per row, 4 from {840/1200} px.
+
+## 5. Motion
+
+| What | Duration | Curve |
+|---|---|---|
+| Press / small state change | 150 ms | standard |
+| Card entrance, insert, remove | 250 ms | enter / exit |
+| Charts, progress, counters | 350 ms | standard |
+| Stagger | 40 ms, first 8 | — |
+
+Reduced motion: every duration 0 (`context.motion`); no entrance, no shimmer.
+
+## 6. Messages
+
+One component: `{AppMessenger / CustomToastMessage}`. Icon + text; success on inverse surface, errors on error container; 4 s plain, 6 s with an action (`persist: false`).
+
+| Event | Message |
+|---|---|
+| {Add record} | {Added record {no} for {name}} |
+| {Delete} | confirm → {Deleted record {no}} · action: Undo |
+| {Error} | what failed + what to do |
+
+Delete with Undo: hide at once → commit on close without Undo → release the key after reload; commit by explicit id.
+
+## 7. Layout
+
+- Breakpoints: compact < 600 (bottom nav, sheets, 1 column) · medium 600–{839/1199} (rail, dialogs, 2 columns) · {expanded/large} (extended rail, table + detail).
+- Works from 360 px and text scale 1.3 with no overflow.
+- RTL: directional APIs only; numbers in `Ltr`.
+
+## 8. Checking a change
+
+```bash
+flutter analyze
+flutter test
+flutter test test/ui                                                        # layout matrix, sheets, contrast
+flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true   # screenshots → test/ui/screenshots/
+```

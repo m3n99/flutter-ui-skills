@@ -1,67 +1,97 @@
 # Layout, spacing and hierarchy
 
 ## Screen anatomy
-Most modern mobile screens follow the same skeleton. Start from it, then remove what you don't need.
+
+Most modern screens share one skeleton. Start from it and remove what you don't need.
 
 ```
 Scaffold (bg: surface)
-└─ CustomScrollView
-   ├─ SliverAppBar.large / .medium   ← big title that collapses on scroll
-   ├─ SliverPadding(horizontal: 20)
-   │   └─ SliverList / SliverToBoxAdapter
-   │       ├─ Hero block (summary card, balance, greeting)      gap 24
-   │       ├─ Quick actions / filter chips                      gap 24
-   │       ├─ SectionHeader("Recent")                           gap 12
-   │       └─ Cards or grouped list                             gap 12 between items
-   └─ SliverToBoxAdapter(height: bottom inset + 24)
-bottomNavigationBar: NavigationBar        (or)   bottom CTA bar inside SafeArea
+└─ SafeArea(bottom: false)
+   └─ CustomScrollView
+      ├─ SliverAppBar.large / .medium      ← title that collapses on scroll (or a greeting header)
+      ├─ Search / filter chips             ← SliverToBoxAdapter, screen padding
+      ├─ SliverPadding(horizontal: screen or ContentWidth.horizontalPadding(width))
+      │   └─ SliverList / AnimatedItems / SliverGrid
+      │       ├─ Hero / summary            gap 24
+      │       ├─ SectionHeader             gap 12
+      │       └─ Cards or a grouped card   gap 12 between items
+      └─ SliverToBoxAdapter(height: bottom inset + 24, or + FAB clearance)
+bottomNavigationBar / NavigationRail: from the app shell (AdaptiveShell)
 ```
 
-- Prefer `CustomScrollView` + slivers for anything longer than one viewport. It gives collapsing headers, sticky headers and efficient lists in one scroll.
-- Short static screens (settings detail, forms) can use `ListView(padding: ...)`.
-- Never put a `ListView` inside a `Column` without `Expanded`, and never use `shrinkWrap: true` on long lists. Use slivers.
+- Prefer `CustomScrollView` + slivers for anything longer than one viewport: collapsing headers, sticky headers and lazy lists in one scroll.
+- Never a `ListView` inside a `Column` without `Expanded`; never `shrinkWrap: true` on long lists.
+- Pull to refresh (`RefreshIndicator.adaptive`) on every remotely loaded list.
 
 ## Spacing rhythm
-- Horizontal screen padding: `AppSpace.screen` (20). Full-bleed elements (carousels, images) break out deliberately and their inner content re-aligns to 20.
+
+- Horizontal page padding `AppSpace.screen`. Full-bleed elements (carousels, images) break out deliberately; their content re-aligns to the screen padding.
 - Section gap 24, item gap 12, text-group gap 4–8.
-- Inside a card: padding 16; title → subtitle 4; text block → actions 16.
-- Align everything to the same left edge (start edge in RTL). Misaligned icons and text by 2–4 px read as "cheap" immediately.
-- Bottom of scrollable content: add `MediaQuery.paddingOf(context).bottom + AppSpace.lg` so the last item clears the home indicator / nav bar.
+- Inside a card: padding 16; title → subtitle 4; text → actions 16.
+- Everything aligns to the same start edge. Icons and text off by 2–4 px read as cheap immediately.
+- The last item clears the home indicator and any FAB: `MediaQuery.paddingOf(context).bottom + AppSpace.lg` (more under a FAB).
 
 ## Hierarchy
-Each screen answers "what's the one thing here?" in this order:
-1. **Primary info** — largest text (headline/display), highest contrast.
-2. **Primary action** — one `FilledButton` or FAB.
-3. **Secondary info** — titleMedium/bodyMedium, `onSurfaceVariant`.
-4. **Tertiary** — bodySmall/labelSmall, timestamps, metadata.
 
-Tools for hierarchy (use several together): size, weight, color role, position (top-start wins), whitespace around the element, container color. Avoid using *only* bold or *only* size.
+Each screen answers "what's the one thing here?":
 
-Group related items in one card or a grouped list (iOS-style inset section) instead of many tiny cards. Fewer, larger containers look calmer.
+1. **Primary information**: largest type (headline/display), highest contrast, top-start.
+2. **Primary action**: one `FilledButton` or FAB.
+3. **Secondary information**: title/body roles, `onSurfaceVariant`.
+4. **Tertiary**: bodySmall/labelSmall, timestamps, metadata.
 
-## Grids and lists
-- Two-column grids: `SliverGrid` with `SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: ...)`. Choose aspect ratio from the content, then verify at text scale 1.3; prefer `mainAxisExtent` for fixed-height tiles.
-- Horizontal carousels: `SizedBox(height: X)` + `ListView.separated(scrollDirection: Axis.horizontal, padding: EdgeInsets.symmetric(horizontal: 20), separatorBuilder: 12)`. Show a partial next item (~15%) so users know it scrolls.
-- Lists of homogeneous rows: grouped inside one `AppCard` with `Divider(indent: 56)` between rows (indent aligns with text, not icon), or separated cards with 12 gaps. Pick one style per app.
+Use several tools together: size, weight, color role, position, whitespace, container color. Group related items in one card or a grouped list instead of many small cards.
 
-## Responsive and adaptive
-- Breakpoints (by width): compact < 600, medium 600–839, expanded ≥ 840. Read with `MediaQuery.sizeOf(context).width` (not `MediaQuery.of`, to avoid extra rebuilds).
-- Tablets/foldables: cap content width (`ConstrainedBox(maxWidth: 640)` centered) for forms and reading; use 2–3 column grids for collections; switch `NavigationBar` → `NavigationRail` at ≥ 600.
-- Landscape phones: avoid fixed heights for hero blocks; use `AspectRatio` or `LayoutBuilder`.
-- Platform adaptivity where it matters: `Switch.adaptive`, `CircularProgressIndicator.adaptive`, Cupertino-style back swipe (default on iOS), `showAdaptiveDialog`. Keep the brand look otherwise identical.
+## Nested shapes
+
+The rules in `tokens.md` › Nested shapes, summarized:
+
+- Concentric radius while the gap is smaller than the outer radius (`AppRadius.concentric`); otherwise the child keeps its own radius; a child filling its parent is clipped (radius 0).
+- No card inside a card; no double borders; no stacked shadows.
+- Same card type, same padding / radius / border everywhere. Keep a table in DESIGN.md:
+
+| Card type | Padding | Radius |
+|---|---|---|
+| Content card (record, chart, form section) | 16 | card |
+| Group card (rows inside) | 8, rows pad 12 × 8 | card, rows `concentric(card, 8)` |
+| Row card (ink fills the card) | 0, row pads 12 × 8 | card, row 0 (clipped) |
+| KPI tile (raised) | 16 | card, emoji badge 8 |
+
+## Window sizes
+
+| Class | Width | Navigation | Content | Sheets |
+|---|---|---|---|---|
+| compact | < 600 | NavigationBar | 1 column, cards | bottom sheets |
+| medium | 600–839 | NavigationRail (labels below) | 2-column grids | dialogs (560) |
+| expanded | 840–1199 | NavigationRail | list-detail, 4 KPI tiles | dialogs |
+| large | 1200–1599 | extended rail (labels beside) | table + detail pane | dialogs |
+| extra-large | ≥ 1600 | extended rail | capped at 1440, centered | dialogs |
+
+- `AdaptiveShell` switches the navigation; `context.windowSize` reads the class from the window width. Inside panes, decide from the available width (`LayoutBuilder`).
+- Read sizes with `MediaQuery.sizeOf(context)` (not `MediaQuery.of`, which rebuilds on every metric change).
+- Cap widths: forms 640, reading 720, dashboards and tables 1440 (`ContentWidth`, or `ContentWidth.horizontalPadding(width)` for slivers).
+
+### List-detail
+
+From expanded width: list on the start side (flex 5), hairline divider, detail pane (flex 4). Selecting a row shows it in the pane (cross-fade the pane with `StateSwitcher` keyed by id) and highlights the row (`secondaryContainer` fill + `Semantics(selected: true)`). On compact, the same tap pushes a detail page. The pane shows an empty state ("Select an invoice") when nothing is selected. Reference: `assets/examples/records_screen.dart`.
+
+## Grids and carousels
+
+- Two-column grids: `SliverGrid` with `SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, mainAxisExtent: …)`. Fixed extents must survive text scale 1.3; prefer rows of `IntrinsicHeight` for small sets (`KpiGrid`).
+- Horizontal carousels: `ListView.separated(scrollDirection: Axis.horizontal, padding: screen padding)` in a `SizedBox(height:)`; show ~15 % of the next item so it reads as scrollable.
+- Homogeneous rows: one grouped card with dividers indented to the text (`Divider(indent: 72)`), or separated cards 8–12 apart. One style per app.
 
 ## Text resilience
-- Every dynamic `Text` in a row: wrap in `Expanded`/`Flexible`, set `maxLines` and `overflow: TextOverflow.ellipsis`.
-- Test at `MediaQuery.textScalerOf` 1.0 and 1.3. Never clamp text scaling globally below 1.3; if a layout breaks, fix the layout (wrap, allow growth), don't block scaling.
-- Avoid fixed heights on containers holding text. Use padding and min constraints.
 
-## RTL and localization
-- Use `EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `BorderRadiusDirectional`, `TextAlign.start/end`.
-- Directional icons (arrows, chevrons, back, send) must mirror: use icons that auto-mirror (`Icons.arrow_back` does via `matchTextDirection`) or wrap with `Directionality`-aware logic. Non-directional icons (search, settings) must not mirror.
-- Numbers, phone numbers and code stay LTR inside RTL text: wrap with `Directionality(textDirection: TextDirection.ltr, ...)` or Unicode isolates.
-- German/Arabic strings run 30–40% longer than English: leave room, never truncate primary labels.
+- Every dynamic `Text` in a row: `Expanded`/`Flexible` + `maxLines` + `TextOverflow.ellipsis`.
+- Big values in small tiles: `FittedBox(fit: BoxFit.scaleDown)` instead of overflowing.
+- Test at text scale 1.0 and 1.3 (the layout test does). Don't clamp text scaling below 1.3; fix the layout instead.
+- No fixed heights on containers that hold text; use padding and min constraints.
+- Labels in other languages run 30–40 % longer than English (Arabic, German); leave room, never truncate primary labels.
 
 ## Keyboard and safe areas
-- Forms: `Scaffold(resizeToAvoidBottomInset: true)` + scrollable body; pin the primary CTA above the keyboard with `Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom))` in the bottom bar.
-- Dismiss keyboard on tap outside (`GestureDetector(onTap: () => FocusScope.of(context).unfocus())`) and on scroll (`keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`).
-- Wrap screen content (not the background) in `SafeArea`; full-bleed headers extend under the status bar and pad their content by `MediaQuery.paddingOf(context).top`.
+
+- Long forms: the save bar is the **last child of the body `Column`** with an `Expanded` scroll view above it. In `Scaffold.bottomNavigationBar` it sits under the soft keyboard. Details in `forms.md`.
+- An `Align` inside an unbounded-height bar expands to the full screen: give it `heightFactor: 1`.
+- Dismiss the keyboard on scroll (`keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`) and on tap outside.
+- `SafeArea` wraps content, not backgrounds; full-bleed headers pad their content by `MediaQuery.paddingOf(context).top`.

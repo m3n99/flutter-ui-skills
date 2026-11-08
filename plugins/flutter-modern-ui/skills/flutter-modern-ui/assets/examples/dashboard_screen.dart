@@ -1,70 +1,172 @@
-// Reference composition for the "Soft Minimal" direction.
-// Shows: greeting header, hero summary card, quick actions, filter chips,
-// grouped list with status pills, skeleton + empty + error states,
-// bottom-inset handling, RTL-safe paddings, tabular figures.
+// Reference composition, Soft Minimal direction. Shows:
+// - loading (skeleton shaped like the content), error (what failed + retry)
+//   and content, switched with StateSwitcher;
+// - greeting header, KPI tiles (emoji badges, raised tiles, equal heights,
+//   values that shrink instead of overflowing, counters that tween);
+// - a chart card (value axis on the reading-start side, bars that move from
+//   their previous values, held while the tab is hidden);
+// - a grouped list whose rows use the concentric radius (card 16, inset 8 → 8);
+// - pull to refresh, content width cap, bottom inset.
 //
-// Presentation only: plug in the project's own state management where the
-// `_DashboardState` placeholder is used.
+// Presentation only: swap the local state for the project's state management.
 
 import 'package:flutter/material.dart';
 
 import '../design_system/design_system.dart';
+import 'sample_data.dart';
 
-enum DashboardStatus { loading, error, ready }
+enum _Load { loading, error, ready }
 
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key, this.status = DashboardStatus.ready});
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key, required this.repository});
 
-  // Replace with the project's state (Bloc state, controller value, etc.).
-  final DashboardStatus status;
+  final InvoiceRepository repository;
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  _Load _status = _Load.loading;
+  List<Invoice> _invoices = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load({bool showSkeleton = true}) async {
+    if (showSkeleton && _status != _Load.loading) setState(() => _status = _Load.loading);
+    try {
+      final invoices = await widget.repository.load();
+      if (!mounted) return;
+      setState(() {
+        _invoices = invoices;
+        _status = _Load.ready;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _status = _Load.error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: AnimatedSwitcher(
-          duration: AppDurations.medium,
-          switchInCurve: AppCurves.standard,
-          child: switch (status) {
-            DashboardStatus.loading => const _DashboardSkeleton(key: ValueKey('loading')),
-            DashboardStatus.error => EmptyState.error(key: const ValueKey('error'), onRetry: () {}),
-            DashboardStatus.ready => CustomScrollView(
+        child: StateSwitcher(
+          child: switch (_status) {
+            _Load.loading => const _DashboardSkeleton(key: ValueKey('loading')),
+            _Load.error => EmptyState.error(
+                key: const ValueKey('error'),
+                title: "Couldn't load your dashboard",
+                message: 'Check your connection and try again.',
+                onRetry: _load,
+              ),
+            _Load.ready => _DashboardContent(
                 key: const ValueKey('ready'),
-                slivers: [
-                  const SliverToBoxAdapter(child: _GreetingHeader()),
-                  SliverPadding(
-                    padding: AppSpace.screenH,
-                    sliver: SliverList.list(
-                      children: [
-                        const SizedBox(height: AppSpace.md),
-                        const _BalanceCard(),
-                        const SizedBox(height: AppSpace.lg),
-                        const _QuickActions(),
-                        const SizedBox(height: AppSpace.lg),
-                        SectionHeader(title: 'Upcoming bills', actionLabel: 'See all', onAction: () {}),
-                        const SizedBox(height: AppSpace.sm),
-                        const _BillsGroup(),
-                        SizedBox(height: bottomInset + AppSpace.lg),
-                      ],
-                    ),
-                  ),
-                ],
+                invoices: _invoices,
+                onRefresh: () => _load(showSkeleton: false),
               ),
           },
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (_) {},
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.pie_chart_outline_rounded), selectedIcon: Icon(Icons.pie_chart_rounded), label: 'Insights'),
-          NavigationDestination(icon: Icon(Icons.credit_card_outlined), selectedIcon: Icon(Icons.credit_card_rounded), label: 'Cards'),
-          NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'Profile'),
-        ],
+    );
+  }
+}
+
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({super.key, required this.invoices, required this.onRefresh});
+
+  final List<Invoice> invoices;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final open = invoices.where((i) => i.isOpen).toList();
+    final overdue = invoices.where((i) => i.status == InvoiceStatus.overdue).toList();
+    final dueSoon = invoices.where((i) => i.status == InvoiceStatus.dueSoon).toList();
+    final outstanding = open.fold<int>(0, (sum, i) => sum + i.amountCents);
+    final overdueAmount = overdue.fold<int>(0, (sum, i) => sum + i.amountCents);
+    final collected = InvoiceRepository.collectedByMonth.last;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    return RefreshIndicator.adaptive(
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final side = ContentWidth.horizontalPadding(box.maxWidth);
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.md, side, 0),
+                sliver: const SliverToBoxAdapter(child: _GreetingHeader()),
+              ),
+              SliverPadding(
+                padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.lg, side, bottomInset + AppSpace.lg),
+                sliver: SliverList.list(
+                  children: [
+                    KpiGrid(
+                      children: [
+                        KpiTile(
+                          emoji: '💰',
+                          tone: StatusTone.info,
+                          label: 'Outstanding',
+                          value: AnimatedNumber(value: outstanding / 100, format: (v) => formatMoney((v * 100).round())),
+                          caption: '${open.length} open invoices',
+                          onTap: () {},
+                        ),
+                        KpiTile(
+                          emoji: overdue.isEmpty ? '👌' : '🚨',
+                          tone: overdue.isEmpty ? StatusTone.neutral : StatusTone.danger,
+                          colorValue: overdue.isNotEmpty,
+                          label: 'Overdue',
+                          value: AnimatedNumber(value: overdueAmount / 100, format: (v) => formatMoney((v * 100).round())),
+                          caption: '${overdue.length} invoices past due',
+                          onTap: () {},
+                        ),
+                        KpiTile(
+                          emoji: '✅',
+                          tone: StatusTone.success,
+                          colorValue: true,
+                          label: 'Collected in November',
+                          value: AnimatedNumber(value: collected / 100, format: (v) => formatMoney((v * 100).round())),
+                          caption: '+20% vs October',
+                        ),
+                        KpiTile(
+                          emoji: '📅',
+                          tone: StatusTone.warning,
+                          label: 'Due this week',
+                          value: Text('${dueSoon.length}'),
+                          caption: dueSoon.isEmpty ? null : 'Next: ${formatShortDate(dueSoon.last.due)}',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpace.lg),
+                    const SectionHeader(title: 'Collected per month', subtitle: 'Last 6 months'),
+                    const SizedBox(height: AppSpace.sm),
+                    AppCard(
+                      child: MiniBarChart(
+                        values: [for (final c in InvoiceRepository.collectedByMonth) c / 100],
+                        labels: InvoiceRepository.monthLabels,
+                        shortLabels: InvoiceRepository.monthNumbers,
+                        color: context.palette.success.color,
+                        formatTick: (v) => v >= 1000 ? '${(v / 1000).round()}k' : v.round().toString(),
+                        semanticLabel: 'Collected per month, June to November, highest in November.',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.lg),
+                    SectionHeader(title: 'Due soon', actionLabel: 'See all', onAction: () {}),
+                    const SizedBox(height: AppSpace.sm),
+                    _DueSoonGroup(invoices: [...dueSoon, ...overdue]),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -78,185 +180,98 @@ class _GreetingHeader extends StatelessWidget {
     final colors = context.colors;
     final text = context.textStyles;
 
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(AppSpace.screen, AppSpace.md, AppSpace.xs, 0),
-      child: Row(
-        spacing: AppSpace.sm,
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: colors.primaryContainer,
-            child: Text('MK', style: text.titleSmall?.copyWith(color: colors.onPrimaryContainer)),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Good morning', style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
-                Text('Maya Haddad', style: text.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Notifications',
-            onPressed: () {},
-            icon: const Badge(smallSize: 8, child: Icon(Icons.notifications_none_rounded)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BalanceCard extends StatelessWidget {
-  const _BalanceCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final text = context.textStyles;
-    final on = colors.onPrimaryContainer;
-
-    return AppCard(
-      color: colors.primaryContainer,
-      showBorder: false,
-      borderRadius: AppRadius.xlAll,
-      padding: const EdgeInsets.all(AppSpace.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Row(
+      spacing: AppSpace.sm,
+      children: [
+        CircleAvatar(
+          radius: AppSize.avatar / 2,
+          backgroundColor: colors.primaryContainer,
+          child: Text('MH', style: text.titleSmall?.copyWith(color: colors.onPrimaryContainer)),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text('Total balance', style: text.labelLarge?.copyWith(color: on.withValues(alpha: 0.8))),
-              ),
-              const StatusPill(label: '+4.2%', tone: StatusTone.success, icon: Icons.trending_up_rounded),
+              Text('Good morning', style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+              Text('Maya Haddad', style: text.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ),
-          const SizedBox(height: AppSpace.xs),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 12480.50),
-            duration: context.reduceMotion ? Duration.zero : AppDurations.slow * 2,
-            curve: AppCurves.standard,
-            builder: (context, value, _) => Text(
-              '\$${value.toStringAsFixed(2)}',
-              style: text.displayMedium?.copyWith(
-                color: on,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpace.md),
-          Text(
-            'Spent \$1,240 of \$2,000 this month',
-            style: text.bodyMedium?.copyWith(color: on.withValues(alpha: 0.8)),
-          ),
-          const SizedBox(height: AppSpace.xs),
-          ClipRRect(
-            borderRadius: AppRadius.pillAll,
-            child: LinearProgressIndicator(
-              value: 0.62,
-              minHeight: 8,
-              color: colors.primary,
-              backgroundColor: on.withValues(alpha: 0.12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context) {
-    const actions = [
-      (Icons.arrow_upward_rounded, 'Send'),
-      (Icons.arrow_downward_rounded, 'Request'),
-      (Icons.add_rounded, 'Top up'),
-      (Icons.more_horiz_rounded, 'More'),
-    ];
-
-    return Row(
-      children: [
-        for (final (icon, label) in actions)
-          Expanded(
-            child: Pressable(
-              onTap: () {},
-              semanticLabel: label,
-              child: Column(
-                spacing: AppSpace.xs,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: context.colors.surfaceContainerHigh,
-                      borderRadius: AppRadius.lgAll,
-                    ),
-                    child: Icon(icon, color: context.colors.onSurface),
-                  ),
-                  Text(label, style: context.textStyles.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-          ),
+        ),
+        IconButton(
+          tooltip: 'Notifications',
+          onPressed: () {},
+          icon: const Badge(smallSize: 8, child: Icon(Icons.notifications_none_rounded)),
+        ),
       ],
     );
   }
 }
 
-class _BillsGroup extends StatelessWidget {
-  const _BillsGroup();
+/// Rows sit 8 px inside a 16 px card, so their ink radius is 16 − 8 = 8.
+class _DueSoonGroup extends StatelessWidget {
+  const _DueSoonGroup({required this.invoices});
+
+  final List<Invoice> invoices;
 
   @override
   Widget build(BuildContext context) {
-    final bills = [
-      (Icons.bolt_rounded, 'Electricity', 'Due in 3 days', '\$84.20', StatusTone.warning, 'Due soon'),
-      (Icons.wifi_rounded, 'Fiber internet', 'Auto-pay on Nov 12', '\$39.00', StatusTone.info, 'Scheduled'),
-      (Icons.home_work_rounded, 'Rent', 'Paid Nov 1', '\$950.00', StatusTone.success, 'Paid'),
-    ];
-
-    if (bills.isEmpty) {
-      return EmptyState(
-        icon: Icons.receipt_long_rounded,
-        title: 'No upcoming bills',
-        message: 'Bills you add will appear here with their due dates.',
-        actionLabel: 'Add a bill',
-        onAction: () {},
+    if (invoices.isEmpty) {
+      return const AppCard(
+        child: EmptyState(
+          icon: Icons.event_available_rounded,
+          title: 'Nothing due this week',
+          message: 'Invoices due in the next 7 days show up here.',
+        ),
       );
     }
 
+    const inset = AppSpace.xs;
+    final rowRadius = BorderRadius.circular(AppRadius.concentric(AppRadius.card, inset));
+    final text = context.textStyles;
+    final colors = context.colors;
+
     return AppCard(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(inset),
       child: Column(
+        spacing: AppSpace.xxs,
         children: [
-          for (final (i, b) in bills.indexed) ...[
-            if (i > 0) const Divider(indent: 72),
-            ListTile(
+          for (final invoice in invoices)
+            InkWell(
+              borderRadius: rowRadius,
               onTap: () {},
-              leading: IconBadge(icon: b.$1),
-              title: Text(b.$2, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: AppSpace.xxs),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
                 child: Row(
-                  spacing: AppSpace.xs,
+                  spacing: AppSpace.sm,
                   children: [
-                    StatusPill(label: b.$6, tone: b.$5),
-                    Flexible(child: Text(b.$3, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    IconBadge(icon: invoice.status.icon, color: invoice.status.tone.strongOf(context)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: AppSpace.xxs,
+                        children: [
+                          Text(invoice.customer, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            '${invoice.number} · due ${formatShortDate(invoice.due)}',
+                            style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      spacing: AppSpace.xxs,
+                      children: [
+                        Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
+                        invoice.status.pill,
+                      ],
+                    ),
                   ],
                 ),
               ),
-              trailing: Text(
-                b.$4,
-                style: context.textStyles.titleMedium?.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
             ),
-          ],
         ],
       ),
     );
@@ -268,29 +283,52 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Shimmer(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpace.screen),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: AppSpace.lg,
-          children: [
-            Row(
-              spacing: AppSpace.sm,
-              children: [
-                SkeletonBox.circle(size: 44),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: AppSpace.xs,
-                  children: [SkeletonBox(width: 90, height: 12), SkeletonBox(width: 140, height: 18)],
-                ),
-              ],
-            ),
-            SkeletonBox(height: 180, borderRadius: AppRadius.xlAll),
-            SkeletonBox(height: 84, borderRadius: AppRadius.lgAll),
-            SkeletonBox(width: 160, height: 18),
-            SkeletonBox(height: 220, borderRadius: AppRadius.lgAll),
-          ],
+    return ShowAfter(
+      child: Shimmer(
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final side = ContentWidth.horizontalPadding(box.maxWidth);
+            final columns = box.maxWidth - 2 * side >= AppBreakpoints.expanded ? 4 : 2;
+            return SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.md, side, AppSpace.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    spacing: AppSpace.sm,
+                    children: [
+                      SkeletonBox.circle(size: AppSize.avatar),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: AppSpace.xs,
+                        children: [SkeletonBox(width: 90, height: 12), SkeletonBox(width: 140, height: 18)],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.lg),
+                  for (var row = 0; row < 4 ~/ columns; row++) ...[
+                    Row(
+                      spacing: AppSpace.sm,
+                      children: [
+                        for (var i = 0; i < columns; i++)
+                          const Expanded(child: SkeletonBox(height: 112, borderRadius: AppRadius.cardAll)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpace.sm),
+                  ],
+                  const SizedBox(height: AppSpace.sm),
+                  const SkeletonBox(width: 180, height: 18),
+                  const SizedBox(height: AppSpace.sm),
+                  const SkeletonBox(height: 212, borderRadius: AppRadius.cardAll),
+                  const SizedBox(height: AppSpace.lg),
+                  const SkeletonBox(width: 120, height: 18),
+                  const SizedBox(height: AppSpace.sm),
+                  const SkeletonBox(height: 180, borderRadius: AppRadius.cardAll),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

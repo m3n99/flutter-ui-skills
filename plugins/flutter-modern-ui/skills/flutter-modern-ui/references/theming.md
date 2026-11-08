@@ -1,74 +1,137 @@
 # Theming
 
-Goal: screens get a modern look *for free* because every Material component is themed once, centrally. Template: `assets/design_system/app_theme.dart`.
+Goal: screens look right by default because every component is themed once, centrally, and the theme matches the chosen direction. Template: `assets/design_system/app_theme.dart` (with `AppThemeConfig`).
 
-## 1. Color scheme from a seed
+## 1. Configure, don't fork
+
+All direction choices live in one `AppThemeConfig`:
+
 ```dart
-final scheme = ColorScheme.fromSeed(
-  seedColor: AppTheme.seed,
-  brightness: brightness,
-  dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot, // see directions.md
+static const AppThemeConfig config = AppThemeConfig(
+  seed: Color(0xFF2D6A64),
+  variant: DynamicSchemeVariant.fidelity,     // keep the brand hue exact
+  fontFamily: 'IBM Plex Sans Arabic',
+  script: AppScript.arabic,                   // zero tracking, taller lines
+  surfaces: SurfaceStyle.eyeComfort,          // long sessions
+  inputStyle: InputStyle.outlined,            // dense data entry
 );
 ```
-- `tonalSpot`: balanced default. `fidelity`: keeps the brand hue exact. `vibrant` / `expressive`: more color. `neutral` / `monochrome`: editorial, grayscale-leaning. `content`: derived from imagery.
-- Never hand-pick 20 colors. Override at most `primary` (exact brand) via `.copyWith(primary: brand)`, and only if `fidelity` isn't close enough.
-- Optional: `dynamic_color` package for Android 12+ wallpaper colors. Use only if the brand allows it.
-
-## 2. Custom semantic colors → ThemeExtension
-Material has no success/warning/info roles. Add them with `AppPalette` (a `ThemeExtension`) instead of global constants, so they switch with dark mode and animate with theme changes.
 
 ```dart
-final palette = Theme.of(context).extension<AppPalette>()!; // or context.palette
-Container(color: palette.successContainer, child: Text('Paid', style: TextStyle(color: palette.onSuccessContainer)));
+MaterialApp(
+  theme: AppTheme.light(),
+  darkTheme: AppTheme.dark(),
+  themeMode: ThemeMode.system,
+  scaffoldMessengerKey: AppMessenger.key,
+)
 ```
-The template generates these from fixed seed hues per brightness, so they harmonize with the scheme.
 
-## 3. Typography
-- Bundle fonts in `assets/fonts/` and declare in `pubspec.yaml` (production). `google_fonts` is fine for prototypes; if used, call `GoogleFonts.config.allowRuntimeFetching = false` and bundle the files for release.
-- Set the family once: `ThemeData(fontFamily: ...)` plus the tuned `TextTheme` from `AppTypography`.
-- Arabic/RTL apps: choose a family with real Arabic glyphs (IBM Plex Sans Arabic, Cairo, Tajawal, Noto Kufi Arabic, Readex Pro). If the Latin and Arabic fonts differ, set `fontFamilyFallback: ['<arabic family>']` on the theme's text styles. Arabic often needs slightly larger line height (1.5–1.7) for body text.
+`AppTheme.build(brightness, platform: …)` picks `AppDensity.touch` or `AppDensity.desktop` from the platform; tests pass the platform explicitly to render both.
 
-## 4. Component themes to always set
-Defaults that look dated and the fix applied in the template:
+Bilingual apps rebuild the theme when the locale changes: `AppTheme.light(config: AppTheme.config.copyWith(script: isArabic ? AppScript.arabic : AppScript.latin))`.
 
-| Component | Default problem | Template fix |
+## 2. Color scheme
+
+```dart
+ColorScheme.fromSeed(seedColor: seed, brightness: brightness, dynamicSchemeVariant: variant)
+```
+
+- `tonalSpot`: balanced default. `fidelity`: keeps the seed hue (brands). `vibrant` / `expressive` / `rainbow`: more color. `neutral` / `monochrome`: editorial, grayscale-leaning. `content`: from imagery.
+- Don't hand-pick twenty colors. For a brand-supplied palette, override the few roles that must match in `schemeOverride: (s) => s.copyWith(primary: brand, onPrimary: …)`, then run `contrast_test.dart`.
+- Android 12+ wallpaper colors (`dynamic_color` package) only if the brand allows it.
+
+### Eye comfort (`SurfaceStyle.eyeComfort`)
+
+For apps used for hours. Replaces the neutral roles with dimmed warm values:
+
+| Role | Light | Dark |
 |---|---|---|
-| `AppBarTheme` | tinted on scroll, centered title on Android only, shadow | `surface` bg, `scrolledUnderElevation: 0`, transparent tint, `centerTitle: false`, titleLarge |
-| `CardThemeData` | elevation 1 + tint, 12px, margins | elevation 0, tonal color, 16 radius, hairline border, zero margin |
-| `FilledButtonThemeData` | 40px tall | 52px min height, 12 radius, labelLarge |
-| `OutlinedButtonThemeData` | heavy outline | `outlineVariant` side, same metrics as filled |
-| `TextButtonThemeData` | — | 12 radius, labelLarge |
-| `InputDecorationTheme` | underline / heavy outline | filled `surfaceContainerHigh`, no border at rest, 1.5px primary on focus, 16px padding |
-| `ChipThemeData` | squared | stadium shape, `outlineVariant` side |
-| `NavigationBarThemeData` | 80px, tinted | 68px, `surfaceContainer`, `secondaryContainer` indicator, label colors by state |
-| `BottomSheetThemeData` | sharp, no handle | 24 top radius, drag handle, `surfaceContainerLow` |
-| `DialogThemeData` | tinted | `surfaceContainerHigh`, 24 radius, headlineSmall title |
-| `SnackBarThemeData` | fixed to bottom | floating, 12 radius, inverse surface |
-| `ListTileThemeData` | tight | 16 horizontal padding, 12 min vertical padding, 12 ink radius |
-| `DividerThemeData` | dark | `outlineVariant` at 50%, 1px |
+| surface (scaffold) | `#F6F3EC` | `#181715` |
+| surfaceContainerLowest (cards) | `#FCFAF6` | `#121110` |
+| surfaceContainerLow (sheets) | `#F1EDE5` | `#1C1B19` |
+| surfaceContainer | `#EBE7DE` | `#22201D` |
+| surfaceContainerHigh (dialogs, fills) | `#E5E0D6` | `#2C2A26` |
+| surfaceContainerHighest | `#DED8CC` | `#37342F` |
+| onSurface | `#2A2824` | `#E7E2D9` |
+| onSurfaceVariant | `#55504A` | `#BDB6AA` |
+| outline | `#7A746A` | `#8F887D` |
+| outlineVariant | `#D3CDC2` | `#47423B` |
 
-Set `surfaceTintColor: Colors.transparent` on app bars, cards, sheets, dialogs and nav bars: the M3 tint over everything is a giveaway of untuned defaults. Tonal containers already give hierarchy.
+Checked: onSurface ≥ 10:1, onSurfaceVariant ≥ 5.5:1, outline ≥ 3.2:1 on every level, both modes. Primary / secondary / tertiary still come from the seed. To retune, keep the M3 order (lowest is the lightest surface in light mode, the darkest in dark mode) and re-run the contrast test.
 
-## 5. Dark mode
-- Always provide `darkTheme` and `themeMode` (default `ThemeMode.system`).
-- Dark surfaces come from the same seed (`brightness: Brightness.dark`). Do not invert colors manually or use pure black, except for an explicit OLED/"true black" option.
-- Borders and shadows: borders at lower alpha (≈0.4); shadows nearly invisible, so separation comes from `surfaceContainer` levels.
-- Images and illustrations: check they don't glow; dim with a 0.9 opacity overlay if needed.
-- Status bar: wrap screens with full-bleed headers in `AnnotatedRegion<SystemUiOverlayStyle>` and pick light/dark icons from the background luminance. Enable edge-to-edge on Android (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`), then respect `SafeArea`.
+## 3. Semantic and domain colors → `AppPalette`
 
-## 6. Accessing the theme in widgets
-Use the helpers in `context_ext.dart`:
+Material has no success / warning / info roles. `AppPalette` (a `ThemeExtension`) adds them as `ToneColors` (color, onColor, container, onContainer), generated from fixed hues per brightness so they switch with dark mode and animate with theme changes.
+
+- Business states get their own tones (`overdue`, `dueSoon`, `paid`, `pending`…). Add fields to `AppPalette` next to `success` / `warning` / `info`; don't reuse `colorScheme.error`, which means "something failed".
+- Map each domain status to one label + one icon + one tone in a single enum extension (see `assets/examples/sample_data.dart`). Widgets build pills from that, never from raw colors.
+- `softShadow` / `hoverShadow` live here too, so they adapt to brightness.
+
+## 4. Typography
+
+- **Bundle fonts** in `assets/fonts/` and declare them in `pubspec.yaml`. `google_fonts` is fine for prototypes; for release, bundle the files and set `GoogleFonts.config.allowRuntimeFetching = false`.
+- Set the family once (`AppThemeConfig.fontFamily`); `fontFamilyFallback` when the main font lacks a script.
+- **Arabic**: a font with real Arabic glyphs (IBM Plex Sans Arabic, Noto Sans Arabic, Cairo, Tajawal, Readex Pro); `AppScript.arabic` (letter-spacing 0, body line height 1.6). Check the weights you use exist (many Arabic families ship 400/500/600/700 only).
+- Check `tnum` support before relying on tabular figures (`tokens.md`).
+
+## 5. Component themes (all set in the template)
+
+| Component | Default problem | Template |
+|---|---|---|
+| AppBar (`AppBarThemeData`) | tint on scroll, shadow | surface color, `scrolledUnderElevation: 0`, transparent tint, start-aligned titleLarge |
+| Card (`CardThemeData`) | elevation + tint, margins | flat, tonal color, card radius, hairline border, zero margin, clipped |
+| Filled / Outlined / Text buttons | 40 px, mixed shapes | control height from density, control radius, labelLarge |
+| Inputs (`InputDecorationThemeData`) | underline or heavy outline | `filled`: tinted fill, no rest border · `outlined`: card fill + `outline` border; 1.5 px primary on focus; dense on desktop |
+| Chips | selection by color only | stadium, check mark + `primaryContainer` fill when selected, hairline border otherwise |
+| NavigationBar / NavigationRail | tinted, 80 px | 68 px, `surfaceContainer`, `secondaryContainer` indicator, label colors by state |
+| BottomSheet | sharp, no handle | 24 px top radius, drag handle, `surfaceContainerLow` |
+| Dialog (`DialogThemeData`) | tinted | `surfaceContainerHigh`, 24 px radius, headlineSmall title |
+| SnackBar | fixed full width | floating, 420 px on desktop, control radius, inverse surface |
+| ListTile | tight | 16 px horizontal padding, density-aware vertical padding |
+| ExpansionTile | draws its own borders | `shape` / `collapsedShape: Border()` |
+| TabBar (`TabBarThemeData`) | divider line | label-size indicator, no divider |
+| Scrollbar | hidden on desktop | always visible on pointer platforms |
+| Tooltip | instant | 500 ms wait on desktop, inverse surface |
+| DataTable | default heights | heading `surfaceContainerHigh`, row height from density, hairline dividers |
+| Page transitions | — | predictive back (Android), Cupertino (Apple), fade-forwards (Windows, Linux) |
+
+`surfaceTintColor: Colors.transparent` everywhere: the M3 tint over every surface is a giveaway of untuned defaults.
+
+## 6. Density by platform
+
+`AppDensity` is a ThemeExtension chosen from the platform: touch (48 px controls, padded tap targets) or desktop (40 px controls, compact visual density, shrink-wrapped targets). Button heights, input padding, list and table rows read from it, so one codebase gets the right metrics on Android and Windows. If a desktop build may run on touch screens, raise `desktopDensity.control` to 48.
+
+## 7. Dark mode
+
+- Always provide `darkTheme`; default `ThemeMode.system`.
+- Dark surfaces come from the same seed (or the eye-comfort dark values). Never invert colors or use pure black (except an explicit OLED option).
+- Borders carry separation in dark mode; shadows barely read (raised tiles keep their border in dark).
+- Images and illustrations: check they don't glow; dim with an overlay if needed.
+- Status bar: full-bleed headers set `SystemUiOverlayStyle` by background luminance; edge-to-edge on Android (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`) with `SafeArea` on content.
+
+## 8. Reading the theme in widgets
+
 ```dart
-final colors = context.colors;      // ColorScheme
-final text = context.textStyles;    // TextTheme
-final palette = context.palette;    // AppPalette
+final colors = context.colors;       // ColorScheme
+final text = context.textStyles;     // TextTheme
+final palette = context.palette;     // AppPalette
+final density = context.density;     // AppDensity
 Text('Balance', style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant));
+Text(amount, style: text.titleMedium.tabular);
 ```
-Allowed per-widget adjustments: `color`, `fontWeight`, `fontFeatures`, `height` for a specific reading surface. Anything else means the theme or a token is missing — add it there.
 
-## 7. Adapting an existing theme
-When the project already has a theme:
+Allowed per-widget adjustments: `color`, `fontWeight`, `fontFeatures`, `height` for a reading surface. Anything else means a token or theme entry is missing; add it there.
+
+## 9. Adapting an existing theme
+
 1. Keep its names, file layout and brand colors.
 2. Add missing component themes from the table above.
-3. Replace hard-coded colors in widgets with scheme roles in small, reviewable steps.
-4. Add `AppPalette`-style extension only if the project has no semantic colors yet.
+3. Fix contradictions with its own direction (density, radius, card color) in the theme, not per screen.
+4. Replace hard-coded colors in widgets with roles in small, reviewable steps.
+5. Add an `AppPalette`-style extension only if the project has no semantic colors yet.
+
+## 10. API notes
+
+- Flutter 3.35 changed `ThemeData.appBarTheme`, `bottomAppBarTheme` and `inputDecorationTheme` to `AppBarThemeData`, `BottomAppBarThemeData` and `InputDecorationThemeData` (`CardThemeData`, `DialogThemeData`, `TabBarThemeData` came earlier).
+- Flutter 3.38: SnackBars with an action no longer auto-dismiss (`persist` defaults to keeping them); the Android default route transition became `PredictiveBackPageTransitionsBuilder` (falls back to `FadeForwardsPageTransitionsBuilder`) and route transitions take 450 ms.
+- `Color.withValues(alpha:)` replaced `withOpacity`; `WidgetState*` replaced `MaterialState*`.

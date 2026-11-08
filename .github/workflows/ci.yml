@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  plugin:
+    name: Plugin manifests and skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JSON manifests are valid
+        run: |
+          jq empty .claude-plugin/marketplace.json
+          jq empty plugins/flutter-modern-ui/.claude-plugin/plugin.json
+
+      - name: Skills and agents have name and description
+        run: |
+          status=0
+          for f in plugins/flutter-modern-ui/skills/*/SKILL.md plugins/flutter-modern-ui/agents/*.md; do
+            head -1 "$f" | grep -qx -- '---' || { echo "::error file=$f::missing frontmatter"; status=1; }
+            grep -q '^name: ' "$f" || { echo "::error file=$f::missing name"; status=1; }
+            grep -q '^description: ' "$f" || { echo "::error file=$f::missing description"; status=1; }
+          done
+          exit $status
+
+      - name: Files referenced from skills exist
+        run: |
+          status=0
+          for skill in plugins/flutter-modern-ui/skills/*; do
+            for md in "$skill"/SKILL.md "$skill"/references/*.md; do
+              [ -f "$md" ] || continue
+              dir=$(dirname "$md")
+              grep -oE '`((\.\./)+[a-z_-]+/|references/|assets/|scripts/)[A-Za-z0-9_./-]+\.(md|dart|sh)`' "$md" | tr -d '`' | sort -u | while read -r ref; do
+                [ -e "$dir/$ref" ] || [ -e "$skill/$ref" ] || { echo "::error file=$md::missing reference $ref"; echo x >> /tmp/missing; }
+              done
+            done
+          done
+          [ ! -f /tmp/missing ] || status=1
+          exit $status
+
+  templates:
+    name: Templates compile, UI tests, screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+
+      - name: Build the sandbox app from the templates
+        run: bash scripts/sandbox.sh build/sandbox
+
+      - name: Analyze
+        working-directory: build/sandbox
+        run: flutter analyze --no-fatal-infos
+
+      - name: UI tests (layout matrix, sheets, contrast, shared widgets)
+        working-directory: build/sandbox
+        run: flutter test test/ui
+
+      - name: Screenshots
+        working-directory: build/sandbox
+        run: flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: build/sandbox/test/ui/screenshots/
+          if-no-files-found: ignore

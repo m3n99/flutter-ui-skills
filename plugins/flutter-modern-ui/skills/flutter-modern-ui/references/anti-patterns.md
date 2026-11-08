@@ -1,36 +1,90 @@
 # Anti-patterns → fixes
 
-Things that make Flutter UI look default, dated or machine-generated. Scan every diff for these.
+Things that make Flutter UI look default, dated, inconsistent or machine-generated. Scan every diff for these.
 
-| # | Anti-pattern | Why it looks bad | Fix |
+## System
+
+| # | Anti-pattern | Why it hurts | Fix |
 |---|---|---|---|
-| 1 | `Colors.blue`, `Colors.grey[200]`, `Color(0xFF...)` in widgets | off-brand, breaks dark mode | `ColorScheme` roles / `AppPalette` |
-| 2 | `fontSize: 15`, `fontSize: 22` scattered | no type system, inconsistent hierarchy | `textTheme` roles |
-| 3 | `SizedBox(height: 10)`, `padding: EdgeInsets.all(15)` | off-grid, uneven rhythm | `AppSpace` tokens, `Column(spacing:)` |
-| 4 | Same spacing between everything | no grouping, flat page | small gaps inside groups, large between |
-| 5 | `Card(elevation: 4)` / heavy `BoxShadow(blurRadius: 4, color: Colors.black26)` | 2015 Material look, muddy in dark | elevation 0 + tonal fill + hairline border; soft shadow only for floating UI |
-| 6 | Purple M3 default seed / unchanged `ThemeData()` | instantly recognizable as "unstyled" | seed from brand + chosen direction |
-| 7 | M3 surface tint on app bar/cards/sheets | grayish-purple wash | `surfaceTintColor: Colors.transparent` |
-| 8 | Centered `CircularProgressIndicator` for content loads | blank, jumpy | skeletons shaped like content |
-| 9 | Missing empty and error states | broken-looking when data is absent | `EmptyState` / error with retry |
-| 10 | Raw `ElevatedButton` everywhere, several primary buttons | no action hierarchy | one `FilledButton`, others tonal/outlined/text |
-| 11 | Buttons 36–40 px tall, tiny tap areas | feels cramped, hard to tap | 48–52 min height, 48×48 targets |
-| 12 | Floating labels + underline inputs | dated | filled inputs, label above, focus border |
-| 13 | Mixed icon styles (filled + outlined + sharp) | visual noise | one family; filled only for selected |
-| 14 | Text overflow stripes / unbounded `Row` text | broken at runtime | `Expanded` + `maxLines` + ellipsis |
-| 15 | `EdgeInsets.only(left:)`, `Alignment.centerLeft` | breaks RTL | directional variants |
-| 16 | Dividers between every element | cluttered | whitespace and grouping; dividers only inside grouped lists |
-| 17 | Gradients on everything, random accent colors | noisy, cheap | one accent; gradients only on a single hero element |
-| 18 | Pure black/white backgrounds | harsh | `surface` roles from the seed |
-| 19 | `AppBar` with centered title + elevation + colored background by default | old Android look | surface-colored, start-aligned, large collapsing title where appropriate |
-| 20 | Every item in its own card with shadow | busy, heavy | group into one card or a plain list |
-| 21 | Long animations, bouncy curves, no reduced-motion support | sluggish | 150–400 ms, ease-out, respect `disableAnimations` |
-| 22 | Placeholder lorem/"Item 1" data in examples | can't judge the design | realistic content lengths and values |
-| 23 | Emoji as icons in production UI | inconsistent rendering | icon family |
-| 24 | `shrinkWrap: true` long lists inside `Column`/`SingleChildScrollView` | jank, no laziness | slivers |
-| 25 | `MediaQuery.of(context).size` everywhere | unnecessary rebuilds | `MediaQuery.sizeOf(context)` |
-| 26 | Hard-coded strings and hard-coded `TextDirection.ltr` | breaks i18n | project's l10n system |
-| 27 | New colors/styles invented per screen | drift | add to the theme/tokens once, reuse |
+| 1 | A second design system or `theme/` folder next to the project's own | two sources of truth, drift | extend the existing system (discovery.md) |
+| 2 | `Colors.blue`, `Colors.grey[200]`, `Color(0xFF…)` in widgets | off-brand, breaks dark mode | scheme roles / palette tones |
+| 3 | `fontSize: 15`, `fontSize: 22` scattered | no type system | text theme roles |
+| 4 | `SizedBox(height: 10)`, `EdgeInsets.all(15)` | off-grid rhythm | `AppSpace` tokens, `Column(spacing:)` |
+| 5 | New colors or styles invented per screen | drift | add once to theme/tokens, reuse, record in DESIGN.md |
+| 6 | Unchanged `ThemeData()` / default purple seed | instantly reads as unstyled | seed + direction in `AppThemeConfig` |
+| 7 | M3 surface tint on app bars, cards, sheets | grey-purple wash | `surfaceTintColor: Colors.transparent` |
+| 8 | Theme contradicting its own direction (Enterprise Dense with 52 px buttons and 16 px cards) | screens fight the theme | direction values in tokens/config, not per widget |
+
+## Visual hierarchy and shapes
+
+| # | Anti-pattern | Why it hurts | Fix |
+|---|---|---|---|
+| 9 | Same spacing between everything | no grouping, flat page | small gaps inside groups, large between |
+| 10 | `Card(elevation: 4)`, `BoxShadow(blurRadius: 4, color: Colors.black26)` | 2015 look, muddy in dark | flat card + hairline border; soft shadow only for floating UI and raised KPI tiles |
+| 11 | Every item its own shadowed card | busy, heavy | one grouped card or a plain list |
+| 12 | Card inside a card, double borders, stacked shadows | cluttered, amateur | one container level; ExpansionTile without its own borders |
+| 13 | Same radius on nested shapes (12 px row inside a 12 px card with 8 px padding) | corners don't nest | `AppRadius.concentric(outer, gap)` |
+| 14 | Concentric rule applied blindly (an input 16 px inside a 12 px card gets radius 0) | sharp controls | concentric only while gap < outer radius |
+| 15 | Several filled buttons side by side | no action hierarchy | one primary; others tonal / outlined / text |
+| 16 | Gradients everywhere, random accent colors | noisy | one accent; a gradient on one hero element at most |
+| 17 | Pure `#FFFFFF` page background or `#000000` text; pure white surfaces in long-session apps | harsh, tiring | `surface` roles; eye-comfort surfaces for ledgers/admin/reading |
+| 18 | Mixed icon styles (filled + outlined + sharp) | visual noise | one family; filled only for the selected state |
+
+## Components
+
+| # | Anti-pattern | Why it hurts | Fix |
+|---|---|---|---|
+| 19 | Status shown by color alone (red text for overdue) | inaccessible, ambiguous | `StatusPill` with icon + label from one status mapping |
+| 20 | Selected chips only tinted | invisible to color-blind users | check mark + fill (theme) |
+| 21 | `colorScheme.error` for business states (overdue, unpaid) | errors and states blur | domain tones in `AppPalette` |
+| 22 | Floating labels + underline inputs | dated | label above, filled or outlined fields |
+| 23 | Filled inputs on low-contrast warm surfaces | field edges vanish | `InputStyle.outlined` with `outline` at rest |
+| 24 | Each sheet with its own layout, buttons in random order | inconsistent | `SheetScaffold`: header, scroll body, sticky footer; secondary start, primary end |
+| 25 | Footer buttons split 1 : 2 or 1 : 1 | long labels truncate (esp. Arabic) | secondary as wide as its label, primary fills |
+| 26 | KPI value at headline size overflowing a 160 px tile | broken tiles | `FittedBox(scaleDown)`, label `maxLines` |
+| 27 | Emoji as the only carrier of meaning, scaling with text | inconsistent, inaccessible | emoji as a fixed-size icon next to a label |
+
+## States and messages
+
+| # | Anti-pattern | Why it hurts | Fix |
+|---|---|---|---|
+| 28 | Centered spinner for content loads (or on just one screen) | blank, jumpy, unfinished | skeletons shaped like the content, on every data screen |
+| 29 | Missing empty and error states | looks broken without data | `EmptyState` / `EmptyState.error` with what failed and Retry |
+| 30 | Generic "Something went wrong" / raw exception text | useless to the user | what failed + what to do; validation passes through |
+| 31 | "Success" messages | says nothing | name the thing ("Created INV-1043 for …") |
+| 32 | SnackBar with an action that never closes (Flutter ≥ 3.38) | stuck messages | `persist: false` in the message component |
+| 33 | `fluttertoast` on desktop | no Windows support | SnackBar via a global `ScaffoldMessengerKey` |
+| 34 | Delete without confirmation or Undo | data loss | confirm → hide → Undo message → commit on close |
+| 35 | Undo that releases the key before reload / keeps keys forever / deletes "the open record" | flashing rows, hidden new rows, wrong deletes | release after reload, always release, commit by explicit id |
+| 36 | Save button that can be pressed twice | duplicate records | `SubmitButton` (busy, ignores presses) |
+
+## Layout, platforms, RTL
+
+| # | Anti-pattern | Why it hurts | Fix |
+|---|---|---|---|
+| 37 | Text overflow stripes / unbounded `Row` text | broken at runtime | `Expanded` + `maxLines` + ellipsis; layout test at 360 × 1.3 |
+| 38 | Save bar in `Scaffold.bottomNavigationBar` on a form | hidden under the keyboard | last child of the body `Column` |
+| 39 | `Align` without `heightFactor` inside a bar | bar fills the screen | `heightFactor: 1` |
+| 40 | Touch metrics on desktop / desktop metrics on touch | cramped or oversized | `AppDensity` by platform |
+| 41 | No hover, cursor, visible scrollbar or tooltips on desktop | feels like a stretched phone app | `adaptive.md` pointer affordances |
+| 42 | Breakpoints that stop at tablet; stretched forms on 1920 px | wasted space or unreadable lines | list-detail, rails, content caps (640 / 720 / 1440) |
+| 43 | `EdgeInsets.only(left:)`, `Alignment.centerLeft`, `TextAlign.left` | breaks RTL | directional APIs |
+| 44 | Letter-spacing on Arabic | broken joins | `AppScript.arabic` (tracking 0) |
+| 45 | Numbers/phones without LTR isolation in RTL | `123456-0599` | `Ltr` / `ltr()`; separate `pw.Text` runs in PDFs |
+| 46 | Charts left-to-right in an RTL app | time reads backwards | mirror x index, value axis on the reading start |
+| 47 | Autocomplete overlay spanning the screen / querying on programmatic fills | ugly, slow | start-aligned, max width, guard with `focusNode.hasFocus` |
+
+## Motion and performance
+
+| # | Anti-pattern | Why it hurts | Fix |
+|---|---|---|---|
+| 48 | `AnimatedList` losing item state when rows shift | expanded tiles jump to other rows | `AnimatedItems` (keyed by id, `findChildIndexCallback`) |
+| 49 | Charts and progress animating from 0 on every update, or while hidden | noisy, the change is missed | animate from previous values; hold while `TickerMode` is off |
+| 50 | Long, bouncy, decorative animations; no reduced-motion support | sluggish, inaccessible | tokens (150–350 ms), `context.motion`, `AppCurves.pop` only for celebrations |
+| 51 | `shrinkWrap: true` long lists inside `Column` / `SingleChildScrollView` | jank, no laziness | slivers |
+| 52 | `MediaQuery.of(context).size` everywhere | extra rebuilds | `MediaQuery.sizeOf(context)` |
+| 53 | Placeholder data ("Item 1", lorem) in screens and screenshots | can't judge the design | realistic names, lengths and amounts |
 
 ## Smell test
-If a screenshot of the screen could be any app, it's not done. Look for at least one **signature element** from the chosen direction: a large expressive header, a hero card, a distinctive radius/shape language, tinted icon badges, or confident typography.
+
+If a screenshot could be any app, it's not done. Look for at least one **signature element** of the chosen direction: an expressive header, a hero or KPI row, a distinctive shape language, tinted icon badges, confident typography.
