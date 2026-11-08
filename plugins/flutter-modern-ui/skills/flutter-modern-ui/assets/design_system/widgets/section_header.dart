@@ -36,7 +36,7 @@ class SectionHeader extends StatelessWidget {
     return Row(
       spacing: AppSpace.sm,
       children: [
-        if (leading != null) leading!,
+        ?leading,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +53,7 @@ class SectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
         if (label != null && action != null) TextButton(onPressed: action, child: Text(label)),
       ],
     );

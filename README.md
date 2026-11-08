@@ -72,7 +72,7 @@ A layout failure reads:
 
 ## Requirements
 
-- Flutter **3.38 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`). The skills tell Claude how to adapt to older SDKs.
+- Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on the current stable release. The skills tell Claude how to adapt to older SDKs.
 - The skills themselves work with any Flutter project: in an app with its own design system, Claude maps these patterns onto your names instead of copying the templates.
 
 ## Install

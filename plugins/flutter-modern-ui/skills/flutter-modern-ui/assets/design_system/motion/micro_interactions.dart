@@ -110,7 +110,7 @@ class StateSwitcher extends StatelessWidget {
       switchOutCurve: AppCurves.exit,
       layoutBuilder: (current, previous) => Stack(
         alignment: alignment,
-        children: [...previous, if (current != null) current],
+        children: [...previous, ?current],
       ),
       transitionBuilder: (child, animation) => FadeTransition(
         opacity: animation,

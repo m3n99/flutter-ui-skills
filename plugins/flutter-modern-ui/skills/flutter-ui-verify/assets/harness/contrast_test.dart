@@ -48,7 +48,7 @@ void main() {
       check('onInverseSurface on inverseSurface', s.onInverseSurface, s.inverseSurface, 4.5);
       check('inversePrimary (message actions) on inverseSurface', s.inversePrimary, s.inverseSurface, 4.5);
 
-      for (final (name, foreground, background, minimum) in uiConfig.extraContrastPairs?.call(theme) ?? const []) {
+      for (final (name, foreground, background, minimum) in uiConfig.extraContrastPairs?.call(theme) ?? const <(String, Color, Color, double)>[]) {
         check(name, foreground, background, minimum);
       }
 

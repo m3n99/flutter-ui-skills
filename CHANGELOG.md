@@ -25,7 +25,7 @@ A rebuild driven by feedback from using 0.1.0 on a real Arabic, Windows-first + 
 - New widgets: `AppMessenger` (+ `PendingDeletes`, Undo), `showAppSheet` / `SheetScaffold` / `SheetSection`, `AppChoiceChips`, `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`, `EmojiBadge`, `Ltr` / `ltr()`, `ShowAfter`, `PressScale` (replaces `Pressable`).
 - Motion widgets: `Entrance`, `AnimatedItems`, `StateSwitcher`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`, `ShakeOnChange`, `PopOnChange`, `MiniBarChart`, `NiceScale`.
 - Examples: app shell, dashboard, records list-detail with filter sheet and Undo, long form.
-- Requires Flutter 3.38+.
+- Requires Flutter 3.41+ (verified by CI on stable 3.47).
 
 ### Repo
 - CI: manifest and skill checks, sandbox app built from the templates, `flutter analyze`, UI tests, screenshots as an artifact.

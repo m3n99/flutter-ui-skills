@@ -89,6 +89,20 @@ class _FilterSheetState extends State<_FilterSheet> {
 
     return SheetScaffold(
       title: 'Filter invoices',
+      // Clears the choices in the sheet; Apply makes it stick.
+      secondaryAction: OutlinedButton(
+        onPressed: count == 0
+            ? null
+            : () => setState(() {
+                  _statuses = {};
+                  _sort = InvoiceSort.dueDate;
+                }),
+        child: const Text('Clear all'),
+      ),
+      primaryAction: FilledButton(
+        onPressed: () => Navigator.of(context).pop(_draft),
+        child: Text(count == 0 ? 'Apply' : 'Apply ($count)'),
+      ),
       children: [
         SheetSection(
           label: 'Status',
@@ -112,20 +126,6 @@ class _FilterSheetState extends State<_FilterSheet> {
           ),
         ),
       ],
-      // Clears the choices in the sheet; Apply makes it stick.
-      secondaryAction: OutlinedButton(
-        onPressed: count == 0
-            ? null
-            : () => setState(() {
-                  _statuses = {};
-                  _sort = InvoiceSort.dueDate;
-                }),
-        child: const Text('Clear all'),
-      ),
-      primaryAction: FilledButton(
-        onPressed: () => Navigator.of(context).pop(_draft),
-        child: Text(count == 0 ? 'Apply' : 'Apply ($count)'),
-      ),
     );
   }
 }

@@ -190,7 +190,7 @@ class _AnimatedItemsState<T> extends State<AnimatedItems<T>> {
       final t = animation.drive(CurveTween(curve: AppCurves.emphasized));
       transition = SizeTransition(
         sizeFactor: t,
-        axisAlignment: -1,
+        alignment: AlignmentDirectional.topStart,
         child: FadeTransition(opacity: t, child: child),
       );
     }

@@ -138,7 +138,7 @@ class SheetScaffold extends StatelessWidget {
                 child: Row(
                   spacing: AppSpace.xs,
                   children: [
-                    if (secondary != null) secondary,
+                    ?secondary,
                     Expanded(child: KeyedSubtree(key: primaryActionKey, child: primaryAction)),
                   ],
                 ),

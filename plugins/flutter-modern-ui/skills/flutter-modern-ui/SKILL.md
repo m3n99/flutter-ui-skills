@@ -30,7 +30,7 @@ Ask the questions in `references/intake.md` in one short round (use the question
 - **Project has none** → set one up with the `flutter-design-system` skill: pick a direction (`references/directions.md`), copy `assets/design_system/` into the project's conventional location (default `lib/core/design_system/`), set `AppTheme.config`, retune the `DIRECTION` lines, and write `DESIGN.md`.
 - **User shared reference apps or screenshots** → derive the direction from them with the `flutter-design-system` skill.
 
-Templates require Flutter ≥ 3.38 (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`). On older SDKs: drop `persist`, use `AppBarTheme` / `InputDecorationTheme`.
+Templates require Flutter ≥ 3.41 (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `SizeTransition.alignment`). On older SDKs: drop `persist`, use `AppBarTheme` / `InputDecorationTheme` and `SizeTransition.axisAlignment`; `CupertinoPageTransitionsBuilder` comes from `package:flutter/cupertino.dart`.
 
 ## Step 3 — Plan the screen
 
