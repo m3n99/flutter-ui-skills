@@ -1,7 +1,7 @@
 {
   "name": "flutter-modern-ui",
-  "description": "Skills that make Claude build modern, polished Flutter mobile UI: design directions, tokens, a tuned Material 3 theme, component patterns, states, motion, and a UI audit workflow.",
-  "version": "0.1.0",
+  "description": "Flutter UI engineering skills for Claude: study the existing app and its design system, build consistent modern screens for phone, tablet and desktop (RTL included), add purposeful animation, and verify the result by rendering screenshots and reviewing them.",
+  "version": "1.0.0",
   "author": {
     "name": "Maen Khdour",
     "url": "https://github.com/m3n99"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/m3n99/flutter-ui-skills",
   "repository": "https://github.com/m3n99/flutter-ui-skills",
   "license": "MIT",
-  "keywords": ["flutter", "dart", "ui", "design-system", "material-3", "mobile"]
+  "keywords": ["flutter", "dart", "ui", "design-system", "material-3", "animation", "rtl", "accessibility", "testing", "mobile", "desktop"]
 }

@@ -1,28 +1,25 @@
 # Component patterns
 
-Ready widgets live in `assets/design_system/widgets/`. The snippets below assume `context_ext.dart` (`context.colors`, `context.textStyles`, `context.palette`) and `tokens.dart` are imported.
+Ready widgets: `assets/design_system/widgets/`. Snippets assume `context.colors`, `context.textStyles`, `context.palette` and the tokens. In a project with its own components, apply the same patterns to those.
 
 ## App bars
-- Top-level tabs: large collapsing title.
-```dart
-SliverAppBar.large(
-  title: const Text('Wallet'),
-  actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded))],
-)
-```
-- Detail screens: `SliverAppBar.medium` or a plain `AppBar` with `titleLarge`.
-- Custom greeting header instead of an app bar is fine on home screens: avatar (40) + two-line text (bodyMedium muted "Good morning", titleLarge name) + trailing icon button, padded 20.
-- Max 2 action icons. Overflow goes into a `MenuAnchor`.
+
+- Top-level screens: `SliverAppBar.large` or `.medium` (title collapses on scroll), or a greeting header (avatar 40 + "Good morning" in muted bodySmall + name in titleLarge + one icon button).
+- Detail screens: `SliverAppBar.medium` or a plain `AppBar` with titleLarge.
+- At most 2 action icons, each with a tooltip; the rest in a `MenuAnchor` overflow.
+- Filter actions show the active count: `Badge(isLabelVisible: count > 0, label: Text('$count'), child: Icon(Icons.tune_rounded))`.
 
 ## Cards
-Use `AppCard` (elevation 0, tonal fill, hairline border, 16 radius, press-scale when tappable).
+
+`AppCard`: flat, tonal fill, hairline border, card radius, clips children. Tappable cards get ink (ripple, hover, focus, click cursor), a darker border on hover, and press scale.
+
 ```dart
 AppCard(
-  onTap: () {},
+  onTap: () => open(invoice),
   child: Row(
     spacing: AppSpace.sm,
     children: [
-      IconBadge(icon: Icons.bolt_rounded),           // 44px tinted circle
+      IconBadge(icon: Icons.bolt_rounded),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,126 +30,97 @@ AppCard(
           ],
         ),
       ),
-      Text('\$84.20', style: context.textStyles.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+      Ltr(child: Text(formatMoney(8420), style: context.textStyles.titleMedium.tabular)),
     ],
   ),
 )
 ```
-Hero/summary card: `primaryContainer` fill (or primary→tertiary gradient for Bold), `onPrimaryContainer` text, display-size number, 24 radius, 20–24 padding.
 
-## Icon badge (tinted circle)
-The quickest way to make list rows look designed.
-```dart
-class IconBadge extends StatelessWidget {
-  const IconBadge({super.key, required this.icon, this.color, this.size = 44});
-  final IconData icon;
-  final Color? color;
-  final double size;
+- **Group card**: rows inside one card with 8 px padding; each row's ink radius is `AppRadius.concentric(AppRadius.card, 8)`.
+- **ExpansionTile inside a card**: the theme sets `shape` / `collapsedShape` to `Border()` so it doesn't draw borders over the card's; keep `dividerColor` transparent if it shows lines.
+- **Hero / summary card**: `primaryContainer` fill (or one primary → tertiary gradient in Bold Contrast), display-size number, sheet radius, 20–24 padding.
+- **Raised tiles** (`AppCard(raised: true)`) only for dashboard KPIs.
 
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? context.colors.primary;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: c.withValues(alpha: 0.12), shape: BoxShape.circle),
-      child: Icon(icon, size: size * 0.5, color: c),
-    );
-  }
-}
-```
-(Included in `widgets/status_pill.dart`.)
+## Badges
+
+- `IconBadge`: icon in a 12 % tinted circle; the fastest way to make rows look designed.
+- `EmojiBadge`: emoji on a tinted rounded square (36 px, 20 px emoji, `TextScaler.noScaling`). Only when the user asked for emoji (intake). Keep the text label; exclude the emoji from semantics.
 
 ## Lists
-- Grouped list: one `AppCard(padding: EdgeInsets.zero)` containing `ListTile`s separated by `Divider(height: 1, indent: 72)`.
-- `ListTile` with `leading: IconBadge`, `title` titleMedium, `subtitle` muted bodySmall, `trailing` chevron (`Icons.chevron_right_rounded`, `onSurfaceVariant`) or value text.
-- Swipe actions: `Dismissible` with a rounded `errorContainer` background and an icon, confirm destructive actions.
-- Section headers: `SectionHeader(title: 'Recent', actionLabel: 'See all', onAction: ...)`.
+
+- Grouped list: one `AppCard(padding: EdgeInsets.zero)` with `ListTile`s separated by `Divider(height: 1, indent: 72)` (indent aligns with the text, not the icon), or a group card with inset rows.
+- `ListTile`: leading `IconBadge`, title titleMedium, subtitle muted bodySmall, trailing chevron (`Icons.chevron_right_rounded`, mirrors in RTL) or a value.
+- Animated lists: `AnimatedItems` (insert/remove animate, state kept by id). `flutter-motion` skill.
+- Swipe actions: `Dismissible` with a rounded `errorContainer` background and an icon; destructive swipes go through the Undo flow (`messages.md`). Don't combine `Dismissible` with `AnimatedItems` removal for the same row (double animation): use a delete button or menu there.
+- Section headers: `SectionHeader(title:, subtitle:, leading:, trailing:, actionLabel: 'See all', onAction:)`.
 
 ## Buttons
+
 | Role | Widget | Notes |
 |---|---|---|
-| Primary (one per screen) | `FilledButton` | full width in forms/sheets: `SizedBox(width: double.infinity, child: FilledButton(...))` |
-| Secondary | `FilledButton.tonal` or `OutlinedButton` | |
+| Primary (one per screen / sheet) | `FilledButton`, or `SubmitButton` for saves | full width in forms and sheets |
+| Secondary | `FilledButton.tonal` or `OutlinedButton` | as wide as its label next to a primary |
 | Tertiary / inline | `TextButton` | |
-| Destructive | `FilledButton` with `style: FilledButton.styleFrom(backgroundColor: colors.error, foregroundColor: colors.onError)` | confirm first |
+| Destructive | `FilledButton` with `backgroundColor: colors.error`, `foregroundColor: colors.onError` | after a confirm dialog |
 | Icon-only | `IconButton` / `IconButton.filledTonal` | tooltip required |
 
-- Buttons with icons: `FilledButton.icon(icon: Icon(...), label: Text(...))`.
-- Loading state: keep size stable, swap label for an 20px `CircularProgressIndicator(strokeWidth: 2)` and disable.
-- Avoid `ElevatedButton` (shadowed, dated look) unless the project already standardized on it.
+- With icons: `FilledButton.icon(icon:, label:)`.
+- Saving: `SubmitButton` keeps its width, shows a spinner, ignores a second press.
+- Avoid `ElevatedButton` (shadowed, dated) unless the project standardized on it.
+- Never two filled buttons side by side with equal weight.
 
-## Sticky bottom CTA
-```dart
-bottomNavigationBar: SafeArea(
-  minimum: const EdgeInsets.fromLTRB(AppSpace.screen, AppSpace.sm, AppSpace.screen, AppSpace.md),
-  child: FilledButton(onPressed: _submit, child: const Text('Continue')),
-),
-```
-Add a top hairline `Border(top: BorderSide(color: colors.outlineVariant))` or `softShadow` only when content scrolls under it.
+## Chips
 
-## Inputs and forms
-- Label above the field (titleSmall), field below, helper/error text under it. Floating labels look dated in most modern designs.
-```dart
-Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  spacing: AppSpace.xs,
-  children: [
-    Text('Email', style: context.textStyles.titleSmall),
-    TextFormField(
-      keyboardType: TextInputType.emailAddress,
-      textInputAction: TextInputAction.next,
-      autofillHints: const [AutofillHints.email],
-      decoration: const InputDecoration(hintText: 'you@example.com', prefixIcon: Icon(Icons.mail_outline_rounded)),
-    ),
-  ],
-)
-```
-- Form field gap 16; group gap 24. Primary CTA pinned at the bottom.
-- Always set `keyboardType`, `textInputAction`, `autofillHints`, and `obscureText` + visibility toggle for passwords.
-- Validation: inline, after first submit or on blur, not on every keystroke from the first character.
-- Choices: `SegmentedButton` for 2–4 exclusive options, `ChoiceChip`/`FilterChip` wrap for more, `Switch` for on/off settings, `showModalBottomSheet` picker for long lists. Avoid `DropdownButton` for primary flows; `DropdownMenu` is acceptable.
+- Filters: `AppChoiceChips(multiple: true)` in a wrapping block (8 / 8 spacing) or one scrolling row under the header (`scrollable: true`, screen padding).
+- Single choice: `AppChoiceChips` (ChoiceChip) or `SegmentedButton` for 2–4 options.
+- **Selected = check + `primaryContainer` fill** (theme). Never selection by color alone.
+- All chips in a group share one height: same label style and theme padding; no per-chip padding.
 
-## Bottom sheets
+## Status
+
 ```dart
-showModalBottomSheet(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (context) => Padding(
-    padding: EdgeInsets.fromLTRB(AppSpace.screen, 0, AppSpace.screen, MediaQuery.viewInsetsOf(context).bottom + AppSpace.lg),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: AppSpace.md,
-      children: [
-        Text('Add expense', style: context.textStyles.headlineSmall),
-        // fields...
-        SizedBox(width: double.infinity, child: FilledButton(onPressed: () {}, child: const Text('Save'))),
-      ],
-    ),
-  ),
-);
+enum InvoiceStatus { draft, sent, dueSoon, overdue, paid }
+
+extension InvoiceStatusUi on InvoiceStatus {
+  String get label => switch (this) { /* … */ };
+  IconData get icon => switch (this) { /* … */ };
+  StatusTone get tone => switch (this) { /* … */ };
+  StatusPill get pill => StatusPill(label: label, icon: icon, tone: tone);
+}
 ```
-Prefer sheets over dialogs for anything with input or more than two actions. Dialogs are for short confirmations.
+
+- `StatusPill` requires an icon: status is never shown by color alone.
+- One mapping per domain status, in one place; screens use `status.pill`.
+- Business states use palette tones (add `overdue`, `paid`… to `AppPalette` if the domain needs distinct ones); `danger` / `error` is for failures.
 
 ## Navigation
-- `NavigationBar` with 3–5 destinations, outlined icon + filled `selectedIcon`, short one-word labels.
-- Preserve tab state with `IndexedStack` or the router's shell (`StatefulShellRoute` in go_router) — whichever the project uses.
-- Tabs inside a screen: `TabBar` with `TabBarThemeData(indicatorSize: TabBarIndicatorSize.label, dividerColor: Colors.transparent)`, or a `SegmentedButton` for 2–3 views.
 
-## Chips, badges, status
-- Status → `StatusPill(label: 'Paid', tone: StatusTone.success)` using `AppPalette` containers. Never raw red/green.
-- Filters → horizontal `ListView` of `FilterChip`s under the header, padded 20, gap 8.
-- Counters on icons → `Badge(label: Text('3'), child: Icon(...))`.
+- `AdaptiveShell`: NavigationBar < 600, rail 600–1199, extended rail ≥ 1200.
+- 3–5 destinations, outlined icon + filled `selectedIcon`, one-word labels.
+- Tabs inside a screen: `TabBar` (label-size indicator, no divider) or `SegmentedButton` for 2–3 views.
 
 ## Avatars and images
-- `CircleAvatar` with `backgroundColor: colors.primaryContainer` + initials in `onPrimaryContainer` as fallback.
-- Network images: fixed aspect (`AspectRatio`), rounded with `ClipRRect`, placeholder = `SkeletonBox`, fade in (`FadeInImage` or `frameBuilder` + `AnimatedOpacity`), error = icon on `surfaceContainerHigh`. Use `cached_network_image` if the project has it.
 
-## Stats / KPI tiles
-Label (labelMedium, muted) on top, value (headlineMedium or displaySmall, tabular figures) below, delta as `StatusPill` or small colored text with an arrow icon. Two per row on phones, four on tablets.
+- `CircleAvatar(backgroundColor: colors.primaryContainer)` + initials in `onPrimaryContainer` as fallback.
+- Network images: fixed aspect (`AspectRatio`), rounded with `ClipRRect`, `SkeletonBox` placeholder, fade in, an icon on `surfaceContainerHigh` on error. Use `cached_network_image` if the project has it.
 
-## Dialogs and feedback
-- Confirmation dialog: `AlertDialog.adaptive`, title states the action ("Delete invoice?"), body explains the consequence in one sentence, actions `TextButton('Cancel')` + destructive `FilledButton`.
-- Snackbars: floating, short, with an undo action for destructive operations. If the project has its own toast helper, use that instead.
+## Search
+
+- A filled `TextField` with a search prefix icon and a clear suffix button (tooltip "Clear search") at the top of the list, or `SearchAnchor` / `SearchBar` for suggestion-heavy search.
+- Filter as the user types (debounce 250–300 ms when it hits a database); results animate with `AnimatedItems`.
+- No-results state names the query and offers "Clear filters".
+
+## Menus
+
+- `MenuAnchor` + `MenuItemButton` (leading icon, shortcut on desktop). Destructive items last, in `error` color.
+- Rows inside a menu sit 4 px in from its edge: radius `concentric(menuRadius, 4)`.
+
+## Dialogs and confirmations
+
+See `sheets-dialogs.md`. Short version: the title states the action ("Delete INV-1042?"), the body states the consequence in one sentence, actions are `TextButton('Cancel')` + a destructive `FilledButton`.
+
+## Emoji (only when the user asked for them)
+
+- Treat an emoji as an icon: fixed size, tinted badge, one emoji per meaning used consistently, never the only carrier of meaning, excluded from semantics.
+- Good places: KPI tiles, section headers, empty states, success messages (as chosen in intake).
+- Screenshots in `flutter_test` show emoji as boxes; devices render them in color.

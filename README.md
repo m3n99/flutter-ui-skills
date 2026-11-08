@@ -1,95 +1,139 @@
 # flutter-ui-skills
 
-Claude Code skills that make Claude build **modern, polished Flutter mobile UI** instead of default-looking Material screens.
+[![CI](https://github.com/m3n99/flutter-ui-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/m3n99/flutter-ui-skills/actions/workflows/ci.yml)
 
-Out of the box, AI-generated Flutter UI tends to look the same: the stock purple seed, `Card(elevation: 4)`, `fontSize: 15` sprinkled everywhere, random `SizedBox(height: 10)` gaps, a centered spinner for loading, and no empty or error states. This plugin gives Claude a design system, a set of composition rules, and a review loop so the output looks intentional from the first build.
+**Flutter UI engineering skills for Claude Code.** They don't just make screens look modern. They make Claude work like a UI engineer joining your team:
+
+1. **Study** the app first: its design system, its names, its state flow, its decisions.
+2. **Agree on the system**: extend the one you have, or set one up (from a direction or from screenshots of apps you like), written down in a `DESIGN.md` contract.
+3. **Build** consistent screens for phone, tablet and desktop, RTL included.
+4. **Animate** with purpose: entrances, list insert/remove, charts, buttons, transitions.
+5. **Verify by looking**: render every screen across sizes, text scales, themes, platforms and directions, catch overflows with the source line, then open the screenshots and review them like a designer.
+6. **Record** the decisions so the next session stays consistent.
 
 ## What's inside
 
-| Skill | What it does |
-|---|---|
-| `flutter-modern-ui` | Builds or restyles screens. Picks a design direction, sets up tokens + a tuned Material 3 theme (light & dark), composes screens with modern patterns, adds skeleton/empty/error states and motion, then self-reviews against a checklist. |
-| `flutter-ui-audit` | Reviews existing screens, reports findings by severity with `file:line`, then applies presentation-only fixes (theme first, then tokens, then screens). |
+One plugin, five skills and a reviewer agent:
+
+| | What it does | Use it when |
+|---|---|---|
+| `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, asks once about platforms / RTL / emoji / motion, then builds on the existing system with 17 focused references | any Flutter UI work |
+| `flutter-design-system` | Creates, extends, repairs or documents the design system: tokens, theme, density, shared components, `DESIGN.md`. Studies existing code (inventory script) or reference screenshots | new apps, inconsistent apps, "make it look like these" |
+| `flutter-motion` | Purposeful animation through a few shared pieces: entrances, `AnimatedItems`, state switches, counters, progress, charts, buttons, transitions, micro-interactions | "add animations", "make it feel alive", janky motion |
+| `flutter-ui-verify` | A `flutter_test` harness: layout matrix, sheet / keyboard / tap-target checks, contrast test, screenshots Claude opens and reviews | after any UI change, before saying "done" |
+| `flutter-ui-audit` | Reviews existing screens, reports findings with evidence, fixes them presentation-only, proves it with before/after screenshots | "review / polish / modernize this screen" |
+| `flutter-ui-reviewer` (agent) | Independent visual QA on the screenshots against DESIGN.md | larger passes, so the work isn't grading itself |
 
 ```
-plugins/flutter-modern-ui/skills/
-├── flutter-modern-ui/
-│   ├── SKILL.md
-│   ├── references/
-│   │   ├── directions.md       # 6 design directions with concrete token values
-│   │   ├── tokens.md           # spacing, radius, type scale, color roles, motion
-│   │   ├── theming.md          # ColorScheme.fromSeed, ThemeExtension, component themes, dark mode, Arabic fonts
-│   │   ├── layout.md           # screen anatomy, rhythm, hierarchy, responsive, RTL, keyboard
-│   │   ├── components.md       # app bars, cards, lists, buttons, inputs, sheets, nav, stats
-│   │   ├── motion.md           # durations, curves, switchers, hero, stagger, haptics, reduced motion
-│   │   ├── states.md           # skeletons, empty, error, refresh, optimistic updates
-│   │   ├── anti-patterns.md    # 27 "looks generic" patterns and their fixes
-│   │   └── review-checklist.md
-│   └── assets/
-│       ├── design_system/      # drop-in Dart: tokens, AppPalette, typography, AppTheme, widgets
-│       └── examples/dashboard_screen.dart
-└── flutter-ui-audit/
-    └── SKILL.md
+plugins/flutter-modern-ui/
+├── agents/flutter-ui-reviewer.md
+└── skills/
+    ├── flutter-modern-ui/
+    │   ├── SKILL.md
+    │   ├── references/      discovery · intake · directions · tokens · theming · layout · adaptive ·
+    │   │                    components · forms · sheets-dialogs · data-display · states · messages ·
+    │   │                    rtl-arabic · accessibility · anti-patterns (53) · review-checklist
+    │   └── assets/
+    │       ├── design_system/   drop-in Dart: tokens, density, palette, typography, theme, widgets, motion
+    │       └── examples/        dashboard · records list-detail · long form · app shell
+    ├── flutter-design-system/   SKILL.md · study-existing-app · study-reference-apps ·
+    │                            scripts/ui_inventory.sh · templates/DESIGN.md · templates/UI_PASS.md
+    ├── flutter-motion/          SKILL.md · principles · recipes (17 surfaces) · testing · packages
+    ├── flutter-ui-verify/       SKILL.md · harness · visual-review · golden-pitfalls · assets/harness/*.dart
+    └── flutter-ui-audit/        SKILL.md
 ```
 
 ### Drop-in design system (`assets/design_system/`)
-- `tokens.dart` — `AppSpace`, `AppRadius`, `AppIconSize`, `AppDurations`, `AppCurves`
-- `app_palette.dart` — `ThemeExtension` with success / warning / info (+ containers) and a soft shadow, generated per brightness
-- `app_typography.dart` — tuned type scale (tracking, line heights, weights)
-- `app_theme.dart` — `AppTheme.light()` / `AppTheme.dark()` with app bar, cards, buttons, inputs, chips, nav bar, sheets, dialogs, snackbars, list tiles, tabs and FAB themed
-- `context_ext.dart` — `context.colors`, `context.textStyles`, `context.palette`, `context.reduceMotion`
-- `widgets/` — `AppCard`, `Pressable`, `Shimmer` + `SkeletonBox`, `EmptyState`, `SectionHeader`, `StatusPill`, `IconBadge`
 
-No third-party packages required. Targets **Flutter ≥ 3.32 / Dart ≥ 3.8** (`Color.withValues`, `WidgetState`, `CardThemeData`, `Row/Column(spacing:)`); the skill tells Claude how to adapt for older SDKs.
+No third-party packages.
+
+- **Tokens**: spacing, radius roles with a concentric-corner helper, elevation, strokes, opacity, sizes, breakpoints and window size classes, motion durations and M3 curves.
+- **`AppThemeConfig`**: seed and scheme variant, font and fallback, **Arabic script** (zero letter-spacing, taller lines), **eye-comfort surfaces** (warm, dimmed, contrast-checked), **filled or outlined inputs**, touch and desktop density.
+- **`AppTheme`**: light and dark, every common component themed, desktop scrollbars and tooltips, checkmarked chips, data tables, predictive-back page transitions.
+- **`AppDensity`**: 48 px touch vs 40 px desktop controls, chosen by platform.
+- **`AppPalette`**: success / warning / info tones (add your domain tones), soft and hover shadows.
+- **Widgets**: `AppCard` (ink, hover, press scale, raised tiles), `StatusPill` (icon required), `IconBadge`, `EmojiBadge`, `SectionHeader`, `EmptyState`, `Shimmer` / `SkeletonBox` / `ShowAfter`, `Ltr`, `showAppSheet` + `SheetScaffold`, `AppChoiceChips`, `AppMessenger` (one message component, `persist: false`, failure helper, **delete with Undo**), `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`.
+- **Motion**: `Entrance`, `AnimatedItems` (diffing sliver list/grid that keeps item state), `StateSwitcher`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`, `ShakeOnChange`, `PopOnChange`, `MiniBarChart` + `NiceScale`.
+
+### Verification harness (`flutter-ui-verify/assets/harness/`)
+
+Copy into `test/ui/`, edit only `ui_cases.dart`, then:
+
+```bash
+flutter test test/ui                                                              # layout matrix, sheets, contrast
+flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true  # screenshots → test/ui/screenshots/
+```
+
+A layout failure reads:
+
+```
+[360_light_android_rtl_x1.3] A RenderFlex overflowed by 13 pixels on the right.  ← lib/features/bills/bill_tile.dart:42
+```
+
+## Requirements
+
+- Flutter **3.38 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`). The skills tell Claude how to adapt to older SDKs.
+- The skills themselves work with any Flutter project: in an app with its own design system, Claude maps these patterns onto your names instead of copying the templates.
 
 ## Install
 
 ### As a plugin (recommended)
+
 In Claude Code:
+
 ```
 /plugin marketplace add m3n99/flutter-ui-skills
 /plugin install flutter-modern-ui@flutter-ui-skills
 ```
-Restart Claude Code if the skills don't show up immediately. Update later with `/plugin marketplace update flutter-ui-skills`.
 
-### As plain skills (no plugin system)
-Copy the skill folders into your user or project skills directory:
+Update later with `/plugin marketplace update flutter-ui-skills`.
+
+### As plain skills
+
 ```bash
 git clone https://github.com/m3n99/flutter-ui-skills.git
-# for all projects
+# all projects
 cp -r flutter-ui-skills/plugins/flutter-modern-ui/skills/* ~/.claude/skills/
-# or for one project (commit it so your team gets it too)
+# or one project (commit it so the team gets it too)
 mkdir -p .claude/skills && cp -r flutter-ui-skills/plugins/flutter-modern-ui/skills/* .claude/skills/
+# optional: the reviewer agent
+mkdir -p .claude/agents && cp flutter-ui-skills/plugins/flutter-modern-ui/agents/*.md .claude/agents/
 ```
-Keep both folders side by side: the audit skill reads references from `flutter-modern-ui`.
+
+Keep the five skill folders side by side: they reference each other.
 
 ## Usage
 
-Skills trigger automatically on Flutter UI work. You can also call them directly.
+The skills trigger on Flutter UI work; you can also call them by name.
 
 ```
-Build a transactions screen for our wallet app: list grouped by day, filter chips, search.
+Build the invoices screen: list grouped by status, filter sheet, delete with undo, list + detail on desktop.
 
-/flutter-modern-ui Redesign lib/features/profile/profile_screen.dart in the Bold Contrast direction.
+Set up a design system for this app. Here are screenshots of three apps I like.
 
-Set up the design system in this project with seed #0F766E and the Inter font, Arabic fallback IBM Plex Sans Arabic.
+This app is Arabic-only and ships on Windows and Android. Make the dashboard consistent with the records screens.
 
-/flutter-ui-audit lib/features/orders/ — report first, then fix the high and medium findings.
+/flutter-modern-ui:flutter-motion Add animations to the records list and the dashboard charts.
+
+/flutter-modern-ui:flutter-ui-verify Check every screen and sheet at 360 px and text scale 1.3, then show me the screenshots.
+
+/flutter-modern-ui:flutter-ui-audit lib/features/orders/ — report first, then fix the high and medium findings.
 ```
 
 Tips:
-- Name a direction (*Soft Minimal*, *Bold Contrast*, *Editorial*, *Glass & Depth*, *Playful*, *Enterprise Dense*) or give a brand color; otherwise Claude picks one and tells you.
-- If your project already has a theme or design-system package, the skill extends it instead of adding a second one.
+
+- Answer the intake questions (platforms, RTL, emoji, motion) once; they land in `DESIGN.md` and later sessions read them.
+- Commit `DESIGN.md`. It's how the tenth screen ends up looking like the first.
 - The skills change presentation only. Your state management, routing and DI stay as they are.
 
 ## Contributing
-Issues and PRs welcome, especially new design directions, component patterns, and before/after screenshots. Keep rules concrete (values, widget names) rather than adjectives.
 
-To test locally before pushing:
+Issues and PRs welcome, especially real-project feedback: use [`docs/feedback-template.md`](docs/feedback-template.md). Rules for changes are in [CONTRIBUTING.md](CONTRIBUTING.md); CI builds a sandbox app from the templates and runs `flutter analyze`, the UI tests and the screenshot pass on every PR.
+
 ```bash
-claude plugin validate .
-claude --plugin-dir ./plugins/flutter-modern-ui
+bash scripts/sandbox.sh && cd build/sandbox && flutter analyze && flutter test test/ui
 ```
 
 ## License
+
 MIT © Maen Khdour

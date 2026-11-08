@@ -1,46 +1,74 @@
 # UI review checklist
 
-Run before reporting a UI task as done. Each item is pass/fail; fix fails before finishing.
+Run before reporting UI work as done, against the code **and the screenshots** (flutter-ui-verify). Each item is pass / fail; fix fails first.
 
 ## System
-- [ ] No hard-coded colors, font sizes, radii or off-scale spacing in changed widgets.
-- [ ] New repeated styles were added to the theme/tokens, not copy-pasted.
-- [ ] Uses the project's existing design system names if one exists.
+- [ ] Built on the project's existing design system and names; no second system.
+- [ ] No hard-coded colors, font sizes, radii, durations or off-scale spacing in changed widgets.
+- [ ] New repeated styles went into the theme / tokens and DESIGN.md.
+- [ ] Deliberate deviations recorded in DESIGN.md were respected.
 
-## Visual hierarchy
+## Hierarchy
 - [ ] The most important element is obvious within one second (size + weight + position).
-- [ ] Exactly one primary action per screen.
+- [ ] One primary action per screen and per sheet.
 - [ ] Secondary text uses `onSurfaceVariant`; primary text `onSurface`.
-- [ ] Spacing inside groups is smaller than spacing between groups.
+- [ ] Spacing inside groups is smaller than between groups.
 - [ ] Edges align: icons, text and cards share the same start line.
-- [ ] One radius family; nested radii are reduced.
-- [ ] At least one signature element from the chosen direction.
+- [ ] At least one signature element of the direction.
+
+## Shapes
+- [ ] One radius family per screen; nested shapes concentric while the gap < outer radius.
+- [ ] No card in a card; no double borders; no stacked shadows.
+- [ ] Same card type → same padding, radius and border.
+- [ ] Shadows only on floating elements and raised KPI tiles.
+
+## Status and selection
+- [ ] Every status has an icon + label (never color alone); business states use palette tones, not `error`.
+- [ ] Selected chips show a check; selected rows have fill + selected semantics.
 
 ## States
-- [ ] Loading uses skeletons shaped like content (or a stable inline spinner for actions).
-- [ ] Empty state with icon, message and action where applicable.
-- [ ] Error state with human message and retry.
-- [ ] Refresh keeps existing content visible.
+- [ ] Loading uses skeletons shaped like the content (all data screens).
+- [ ] Empty (first use / no results / nothing to do) and error (what failed + Retry) states exist.
+- [ ] Refresh keeps content visible.
 
-## Interaction
-- [ ] Every tappable element has feedback and a ≥ 48×48 target.
-- [ ] Icon-only buttons have `tooltip` / semantics labels.
-- [ ] Destructive actions confirm or offer undo.
-- [ ] Forms: correct keyboard types, input actions, autofill hints, keyboard doesn't cover the CTA.
+## Messages
+- [ ] One message component; messages name the thing; errors say what failed and what to do.
+- [ ] Messages with actions close by themselves (`persist: false`).
+- [ ] Destructive actions confirm and/or offer Undo (hide → Undo → commit on close).
+- [ ] Saves can't be submitted twice.
 
-## Robustness
-- [ ] Light **and** dark themes look intentional.
-- [ ] Text scale 1.3 doesn't overflow or clip.
-- [ ] RTL works (directional insets/alignments, mirrored directional icons).
-- [ ] Long strings truncate gracefully; numbers use tabular figures where they change.
-- [ ] Safe areas respected; last list item clears the bottom inset/nav bar.
-- [ ] Tablet width (≥ 600) doesn't stretch forms or text edge to edge.
+## Sheets and forms
+- [ ] Sheets use the shared anatomy: header + ✕, scrolling body, sticky footer; secondary start (label width), primary end.
+- [ ] Filter sheets: "Clear all" in place, "Apply (n)".
+- [ ] Form save bar stays above the keyboard; labels above fields; keyboard types, input actions, autofill set.
+- [ ] Validation after first submit; warnings don't block.
 
-## Motion and performance
-- [ ] Animations use tokens (150–400 ms) and respect reduced motion.
-- [ ] No `shrinkWrap` long lists, controllers are disposed, blur/shadows used sparingly.
-- [ ] `const` constructors wherever possible.
+## Platforms
+- [ ] Touch: targets ≥ 48 px (sheet test passes `androidTapTargetGuideline`).
+- [ ] Desktop: hover, click cursor, focus, visible scrollbars, tooltips, 40 px density, shortcuts for the main actions.
+- [ ] Layout adapts at 600 / 840 / 1200; content capped (forms 640, dashboards 1440).
 
-## Scope
-- [ ] State management, routing and DI untouched (presentation-only change unless asked).
-- [ ] `flutter analyze` is clean for changed files (run it if the environment has Flutter).
+## RTL (if applicable)
+- [ ] Directional APIs only; pointing icons mirror.
+- [ ] Numbers, dates, phones and amounts stay LTR.
+- [ ] Arabic text has zero letter-spacing and readable line height.
+- [ ] Charts mirrored with the value axis on the reading start.
+
+## Accessibility
+- [ ] Light and dark pass `contrast_test.dart`.
+- [ ] Text scale 1.3 doesn't overflow or clip (layout test).
+- [ ] Icon-only buttons have tooltips; rows merge semantics; decorative emoji/icons excluded.
+
+## Motion
+- [ ] Only the surfaces chosen in intake animate; durations from tokens; reduced motion respected.
+- [ ] Lists keep item state on insert/remove; charts and numbers animate from previous values.
+- [ ] No infinite animations besides loading indicators; controllers disposed.
+
+## Verification
+- [ ] `flutter analyze` clean for changed files; existing tests still pass.
+- [ ] Layout matrix and sheet tests pass.
+- [ ] Screenshots rendered and **looked at** (light, dark, 1.3 text scale, RTL if applicable, desktop if applicable).
+
+## Scope and records
+- [ ] State management, routing, DI untouched (presentation-only) unless asked.
+- [ ] DESIGN.md updated; UI_PASS.md ticked with decisions and open questions.
