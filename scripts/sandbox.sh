@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Builds a throwaway Flutter app from the plugin's templates, the way a
 # project would use them: design system in lib/design_system, examples in
-# lib/examples, the verify harness in test/ui, and a bundled font.
+# lib/examples, the verify harness in test/ui, the printed-document harness
+# in test/pdf, and a bundled font. The repo's own tests (ci/) go to test/ci.
 # CI uses it to analyze, test and screenshot the templates; contributors can
 # run it locally before opening a PR.
 #
 #   bash scripts/sandbox.sh [output-dir]       default: build/sandbox
-#   cd build/sandbox && flutter analyze && flutter test test/ui
+#   cd build/sandbox && flutter analyze && flutter test test/ui test/pdf test/ci
 
 set -euo pipefail
 
@@ -17,11 +18,13 @@ SKILLS="$ROOT/plugins/flutter-modern-ui/skills"
 rm -rf "$OUT"
 flutter create --project-name app --org dev.flutteruiskills --platforms android,windows --no-pub "$OUT" >/dev/null
 rm -rf "$OUT/lib" "$OUT/test"
-mkdir -p "$OUT/lib" "$OUT/test/ui" "$OUT/assets/fonts"
+mkdir -p "$OUT/lib" "$OUT/test/ui" "$OUT/test/pdf" "$OUT/test/ci" "$OUT/assets/fonts"
 
 cp -R "$SKILLS/flutter-modern-ui/assets/design_system" "$OUT/lib/design_system"
 cp -R "$SKILLS/flutter-modern-ui/assets/examples" "$OUT/lib/examples"
 cp "$SKILLS/flutter-ui-verify/assets/harness/"*.dart "$OUT/test/ui/"
+cp "$SKILLS/flutter-ui-verify/assets/pdf/"*.dart "$OUT/test/pdf/"
+cp "$ROOT/ci/"*.dart "$OUT/test/ci/"
 
 cat > "$OUT/lib/main.dart" <<'DART'
 import 'package:flutter/material.dart';
@@ -55,5 +58,7 @@ sed -i.bak "s/static const AppThemeConfig config = AppThemeConfig();/static cons
 rm -f "$THEME.bak"
 grep -q "AppThemeConfig(fontFamily: 'IBM Plex Sans Arabic')" "$THEME" || { echo "Could not set the font in $THEME" >&2; exit 1; }
 
-(cd "$OUT" && flutter pub get >/dev/null)
+# The printed-document example (lib/examples/invoice_pdf.dart) and its
+# harness use the pdf package; `pub add` also runs `pub get`.
+(cd "$OUT" && flutter pub add pdf >/dev/null)
 echo "Sandbox ready: $OUT"

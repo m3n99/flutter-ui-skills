@@ -25,6 +25,8 @@ Open each PNG with the Read tool. Review it like a product designer would, again
 - Compare phone vs desktop: did the layout adapt, or just stretch?
 - Compare with screenshots from before the change: everything that moved should have been intended.
 
+Printed pages (rasterized PDFs) have their own order, bottom of the page first: `references/printed-documents.md` › Rasterize and look.
+
 ## Severity
 
 - **High**: broken or inaccessible: overflow, clipped or unreadable text, contrast failures, broken dark mode or RTL, tiny targets, missing empty/error states, a primary action off screen or under the keyboard.

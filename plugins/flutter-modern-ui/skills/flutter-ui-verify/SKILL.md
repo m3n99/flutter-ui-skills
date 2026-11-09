@@ -1,6 +1,6 @@
 ---
 name: flutter-ui-verify
-description: Verify Flutter UI by actually rendering it — a layout matrix (phone/tablet/desktop × text scale 1.0/1.3 × light/dark × touch/desktop × LTR/RTL) that reports overflows with the source line, sheet checks (keyboard, tap targets), a contrast test, and screenshots Claude opens and reviews like a designer. Use after building or changing UI, before saying UI work is done, or when asked to test, check, screenshot or QA Flutter screens.
+description: Verify Flutter UI by actually rendering it — a layout matrix (phone/tablet/desktop × text scale 1.0/1.3 × light/dark × touch/desktop × LTR/RTL) that reports overflows with the source line, sheet checks (keyboard, tap targets), a contrast test, screenshots Claude opens and reviews like a designer, and printed documents (sample PDFs checked for dropped or overlapping blocks, rasterized and reviewed). Use after building or changing UI or a PDF layout, before saying UI work is done, or when asked to test, check, screenshot or QA Flutter screens or printouts.
 ---
 
 # Flutter UI Verify
@@ -40,6 +40,16 @@ The harness lives in `assets/harness/` and runs on plain `flutter_test`: no devi
 10. **Report** briefly: what ran (cases × variants, number of screenshots viewed), what was fixed, what remains. Send the key screenshots to the user when the environment can deliver files.
 
 For motion, render filmstrips (several frames of one animation): `../flutter-motion/references/testing.md`.
+
+## Printed documents (PDF)
+
+A fixed `pw.Page` drops what doesn't fit without an error (the test stays green), and a stamp placed at a fraction of the page lands on text once the content above it grows. Printed documents get the same loop as screens. Details: `references/printed-documents.md`.
+
+1. **Make the document testable**: a plain-Dart builder that takes data, print theme, labels and a `mark` callback (production passes nothing); mark the blocks that must survive on paper (signatures, totals, stamp, date line).
+2. **Sample cases**: copy `assets/pdf/` into `test/pdf/` and edit `pdf_cases.dart`: the typical document, one with every optional field empty, and the longest content the forms allow, in each printed direction. Each case says what must be painted, what must not overlap, and the page count.
+3. **Render and check**: `flutter test test/pdf` writes `test/pdf/out/<case>.pdf` and fails when a marked block is missing, outside the margins or overlapping.
+4. **Rasterize**: `python3 scripts/rasterize_pdf.py test/pdf/out --text` (this skill's folder; PyMuPDF or poppler's `pdftoppm`, since `Printing.raster` needs pdfium, which `flutter test` doesn't load). `--text` flags `null` and similar leftovers.
+5. **Look**: open every PNG, bottom of the page first (signatures, footer), then overlays, the longest case, empty fields and RTL runs. Fix, re-render, compare.
 
 ## Other ways to see the app
 

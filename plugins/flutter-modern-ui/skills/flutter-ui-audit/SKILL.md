@@ -24,7 +24,7 @@ Standards (read before auditing):
 
 ### 2. Capture the "before"
 
-If the harness can run, set it up (`../flutter-ui-verify/SKILL.md`), run the layout matrix and sheet test, and render screenshots. View them. Screenshots the user shared are evidence too.
+If the harness can run, set it up (`../flutter-ui-verify/SKILL.md`), run the layout matrix and sheet test, and render screenshots. View them. Screenshots the user shared are evidence too. If the screens print documents, render the sample PDFs and rasterize them too (`../flutter-ui-verify/references/printed-documents.md`).
 
 ### 3. Audit
 

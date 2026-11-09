@@ -50,6 +50,11 @@ They stay left-to-right inside RTL text.
 - `pdf` 3.x shapes Arabic correctly (joining, lam-alef, bold) when you embed a TTF with Arabic glyphs (`pw.Font.ttf(await rootBundle.load(...))`) and set `pw.TextDirection.rtl` on the page or `pw.Directionality`.
 - **Unicode isolates do not work in `pdf`**: U+2066/U+2069 render as boxes and nothing is reordered, so phones come out reversed. Put each LTR run (phone, date, amount, ID) in its own `pw.Text` inside `pw.Directionality(textDirection: pw.TextDirection.ltr)`, and lay the parts out with a `pw.Row`.
 - Use the same font family in the PDF as in the app; a paper-colored background token if the app has one.
+- **A fixed `pw.Page` clips overflow without an error.** A `pw.Column` that runs past the page stops there: the blocks after that point are never painted, and the test that builds the PDF stays green. Three entries in a payment box were enough to drop a bill's signature row. Give every block that grows a **line budget** the form enforces (rows: show the newest n − 1 and one summary row; text: `maxLength`), or use `pw.MultiPage` when the document may legitimately run long (headers and footers repeat, signatures end the last page). Sample data must include the **longest case** the forms allow, and the review must confirm the bottom of the page (signatures, footer) is still there.
+- **Overlays placed at a fractional `Alignment`** (a stamp at `pw.Alignment(0.6, 0.7)` in a page-level `pw.Stack`) stay put while the content moves: a taller header landed the stamp on «تحريراً في». Anchor an overlay inside the block it belongs to (a `pw.Stack` in the signature slot, `pw.PositionedDirectional`), and re-check overlays after any header change.
+- `maxLines` in `pdf` truncates without an ellipsis: cap the input to what the printed box holds.
+- Empty optional fields leave out the whole row: no bare label, no `null`.
+- Check and look at every document: `../flutter-ui-verify/references/printed-documents.md` (sample PDFs, block checks, rasterize, review). Reference document: `assets/examples/invoice_pdf.dart`.
 
 ## Testing
 

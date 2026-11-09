@@ -35,7 +35,7 @@ jobs:
             for md in "$skill"/SKILL.md "$skill"/references/*.md; do
               [ -f "$md" ] || continue
               dir=$(dirname "$md")
-              grep -oE '`((\.\./)+[a-z_-]+/|references/|assets/|scripts/)[A-Za-z0-9_./-]+\.(md|dart|sh)`' "$md" | tr -d '`' | sort -u | while read -r ref; do
+              grep -oE '`((\.\./)+[a-z_-]+/|references/|assets/|scripts/)[A-Za-z0-9_./-]+\.(md|dart|sh|py)`' "$md" | tr -d '`' | sort -u | while read -r ref; do
                 [ -e "$dir/$ref" ] || [ -e "$skill/$ref" ] || { echo "::error file=$md::missing reference $ref"; echo x >> /tmp/missing; }
               done
             done
@@ -44,7 +44,7 @@ jobs:
           exit $status
 
   templates:
-    name: Templates compile, UI tests, screenshots
+    name: Templates compile, UI and PDF tests, screenshots
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,17 +57,44 @@ jobs:
       - run: flutter --version
 
       - name: Build the sandbox app from the templates
+        id: sandbox
         run: bash scripts/sandbox.sh build/sandbox
+
+      # Each check below runs even when an earlier one failed, so one run
+      # shows every failure (and still uploads the screenshots and pages).
 
       - name: Analyze
         working-directory: build/sandbox
         run: flutter analyze --no-fatal-infos
 
       - name: UI tests (layout matrix, sheets, contrast, shared widgets)
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
         working-directory: build/sandbox
         run: flutter test test/ui
 
+      - name: Repo tests (example behaviour, PDF checks catch what they should)
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        working-directory: build/sandbox
+        run: flutter test test/ci
+
+      - name: Printed documents (sample PDFs, block checks)
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        working-directory: build/sandbox
+        run: flutter test test/pdf
+
+      - uses: actions/setup-python@v5
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        with:
+          python-version: '3.12'
+
+      - name: Rasterize the printed pages and check their text
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        run: |
+          python -m pip install --quiet pymupdf
+          python plugins/flutter-modern-ui/skills/flutter-ui-verify/scripts/rasterize_pdf.py build/sandbox/test/pdf/out --text
+
       - name: Screenshots
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
         working-directory: build/sandbox
         run: flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true
 
@@ -75,5 +102,7 @@ jobs:
         if: always()
         with:
           name: screenshots
-          path: build/sandbox/test/ui/screenshots/
+          path: |
+            build/sandbox/test/ui/screenshots/
+            build/sandbox/test/pdf/out/
           if-no-files-found: ignore

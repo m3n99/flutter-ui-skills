@@ -7,10 +7,13 @@
 // - delete: confirm dialog → row hides at once → message with Undo →
 //   committed only when the message closes without Undo;
 // - list-detail from 840 px (selected row + detail pane that cross-fades),
-//   push to a detail page on phones;
+//   push to a detail page on phones; the pane always has a way back to the
+//   empty state: a ✕ in its header, clicking the open row again, and Esc as
+//   a shortcut only (it needs focus and nobody discovers it);
 // - loading skeleton, error with retry, first-use and no-results empty states.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design_system/design_system.dart';
 import 'record_form_screen.dart';
@@ -133,9 +136,13 @@ class _FilterSheetState extends State<_FilterSheet> {
 enum _Load { loading, error, ready }
 
 class RecordsScreen extends StatefulWidget {
-  const RecordsScreen({super.key, required this.repository});
+  const RecordsScreen({super.key, required this.repository, this.initialSelectedId});
 
   final InvoiceRepository repository;
+
+  /// Opens with this record in the detail pane (wide windows): deep links,
+  /// and the screenshot of the pane.
+  final int? initialSelectedId;
 
   @override
   State<RecordsScreen> createState() => _RecordsScreenState();
@@ -144,10 +151,11 @@ class RecordsScreen extends StatefulWidget {
 class _RecordsScreenState extends State<RecordsScreen> {
   final PendingDeletes<int> _pending = PendingDeletes<int>();
   final TextEditingController _search = TextEditingController();
+  final FocusNode _listDetailFocus = FocusNode(debugLabel: 'invoices list-detail');
   _Load _status = _Load.loading;
   List<Invoice> _all = const [];
   InvoiceFilters _filters = const InvoiceFilters();
-  int? _selectedId;
+  late int? _selectedId = widget.initialSelectedId;
 
   @override
   void initState() {
@@ -160,6 +168,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void dispose() {
     _pending.dispose();
     _search.dispose();
+    _listDetailFocus.dispose();
     super.dispose();
   }
 
@@ -198,7 +207,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
 
   void _open(Invoice invoice, {required bool wide}) {
     if (wide) {
-      setState(() => _selectedId = invoice.id);
+      // Clicking the open row again closes the pane. Selecting also moves
+      // focus to the list-detail area, so Esc works right away.
+      setState(() => _selectedId = _selectedId == invoice.id ? null : invoice.id);
+      _listDetailFocus.requestFocus();
       return;
     }
     Navigator.of(context).push(
@@ -210,6 +222,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
       ),
     );
   }
+
+  void _closeDetail() => setState(() => _selectedId = null);
 
   Future<void> _delete(Invoice invoice, {bool popRoute = false}) async {
     final colors = context.colors;
@@ -264,28 +278,38 @@ class _RecordsScreenState extends State<RecordsScreen> {
               if (invoice.id == _selectedId && !_pending.contains(invoice.id)) match = invoice;
             }
             final selected = match;
-            return Row(
-              children: [
-                Expanded(flex: 5, child: list),
-                const VerticalDivider(width: AppStroke.hairline),
-                Expanded(
-                  flex: 4,
-                  child: StateSwitcher(
-                    child: selected == null
-                        ? const EmptyState(
-                            key: ValueKey('none'),
-                            icon: Icons.receipt_long_rounded,
-                            title: 'Select an invoice',
-                            message: 'Its details show up here.',
-                          )
-                        : _DetailPane(
-                            key: ValueKey(selected.id),
-                            invoice: selected,
-                            onDelete: () => _delete(selected),
-                          ),
-                  ),
+            // Esc closes the pane too, as a shortcut next to the visible ✕.
+            return CallbackShortcuts(
+              bindings: {
+                if (selected != null) const SingleActivator(LogicalKeyboardKey.escape): _closeDetail,
+              },
+              child: Focus(
+                focusNode: _listDetailFocus,
+                child: Row(
+                  children: [
+                    Expanded(flex: 5, child: list),
+                    const VerticalDivider(width: AppStroke.hairline),
+                    Expanded(
+                      flex: 4,
+                      child: StateSwitcher(
+                        child: selected == null
+                            ? const EmptyState(
+                                key: ValueKey('none'),
+                                icon: Icons.receipt_long_rounded,
+                                title: 'Select an invoice',
+                                message: 'Its details show up here.',
+                              )
+                            : _DetailPane(
+                                key: ValueKey(selected.id),
+                                invoice: selected,
+                                onDelete: () => _delete(selected),
+                                onClose: _closeDetail,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         ),
@@ -460,10 +484,14 @@ class _InvoiceCard extends StatelessWidget {
 }
 
 class _DetailPane extends StatelessWidget {
-  const _DetailPane({super.key, required this.invoice, required this.onDelete});
+  const _DetailPane({super.key, required this.invoice, required this.onDelete, this.onClose});
 
   final Invoice invoice;
   final VoidCallback onDelete;
+
+  /// The embedded pane's ✕. A pushed detail page has the app bar's back
+  /// button instead, so it passes nothing.
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -480,48 +508,84 @@ class _DetailPane extends StatelessWidget {
           ),
         );
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpace.lg),
-      children: [
-        Text(invoice.customer, style: text.headlineSmall),
-        const SizedBox(height: AppSpace.xxs),
-        Text(invoice.number, style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
-        const SizedBox(height: AppSpace.lg),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Ltr(child: Text(formatMoney(invoice.amountCents), style: text.displaySmall.tabular)),
-        ),
-        const SizedBox(height: AppSpace.xs),
-        Align(alignment: AlignmentDirectional.centerStart, child: invoice.status.pill),
-        const SizedBox(height: AppSpace.lg),
-        AppCard(
-          child: Column(
-            children: [
-              row('Due date', Ltr(child: Text(formatShortDate(invoice.due), style: text.titleSmall.tabular))),
-              const Divider(),
-              row('Status', Text(invoice.status.label, style: text.titleSmall)),
-              const Divider(),
-              row('Number', Ltr(child: Text(invoice.number, style: text.titleSmall.tabular))),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpace.lg),
-        Row(
-          spacing: AppSpace.xs,
-          children: [
-            OutlinedButton.icon(
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline_rounded),
-              label: const Text('Delete'),
-            ),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: invoice.status == InvoiceStatus.paid ? null : () {},
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('Mark as paid'),
+    // The header stays put while the details scroll, so the ✕ is always in
+    // reach.
+    final header = Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        AppSpace.lg,
+        onClose == null ? AppSpace.lg : AppSpace.sm,
+        onClose == null ? AppSpace.lg : AppSpace.xs,
+        AppSpace.xs,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: AppSpace.xs,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: onClose == null ? 0 : AppSpace.xs),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: AppSpace.xxs,
+                children: [
+                  Text(invoice.customer, style: text.headlineSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(invoice.number, style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
+                ],
               ),
             ),
-          ],
+          ),
+          if (onClose != null)
+            IconButton(tooltip: 'Close details', onPressed: onClose, icon: const Icon(Icons.close_rounded)),
+        ],
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.sm, AppSpace.lg, AppSpace.lg),
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Ltr(child: Text(formatMoney(invoice.amountCents), style: text.displaySmall.tabular)),
+              ),
+              const SizedBox(height: AppSpace.xs),
+              Align(alignment: AlignmentDirectional.centerStart, child: invoice.status.pill),
+              const SizedBox(height: AppSpace.lg),
+              AppCard(
+                child: Column(
+                  children: [
+                    row('Due date', Ltr(child: Text(formatShortDate(invoice.due), style: text.titleSmall.tabular))),
+                    const Divider(),
+                    row('Status', Text(invoice.status.label, style: text.titleSmall)),
+                    const Divider(),
+                    row('Number', Ltr(child: Text(invoice.number, style: text.titleSmall.tabular))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpace.lg),
+              Row(
+                spacing: AppSpace.xs,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Delete'),
+                  ),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: invoice.status == InvoiceStatus.paid ? null : () {},
+                      icon: const Icon(Icons.check_rounded),
+                      label: const Text('Mark as paid'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );

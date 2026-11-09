@@ -142,12 +142,26 @@ Delete with Undo: hide at once → commit on close without Undo → release the 
 - Breakpoints: compact < 600 (bottom nav, sheets, 1 column) · medium 600–{839/1199} (rail, dialogs, 2 columns) · {expanded/large} (extended rail, table + detail).
 - Works from 360 px and text scale 1.3 with no overflow.
 - RTL: directional APIs only; numbers in `Ltr`.
+- List-detail: the pane closes with a ✕ in its header, a second click on the open row, or Esc.
+- A few single-choice options: wrapping chips with an inline label, never a scrolling row.
 
-## 8. Checking a change
+## 8. Printed documents (delete if the app doesn't print)
+
+| Document | Page | Budgets (form caps) | Marked blocks |
+|---|---|---|---|
+| {Invoice} | {A5, 12.7 mm margins, one page} | {payments 4 rows (3 + summary) · notes 160 chars · names 2 lines} | {signatures, totals, stamp, issuedAt} |
+
+- Font: {the app's family} via `pw.ThemeData.withFont`; text ≥ 8 pt, rules ≥ 0.5 pt, near-black ink.
+- LTR runs (numbers, dates, phones, amounts) are separate `pw.Text`s in an LTR `pw.Directionality`.
+- Stamps and seals sit inside their block, never at a fraction of the page.
+
+## 9. Checking a change
 
 ```bash
 flutter analyze
 flutter test
 flutter test test/ui                                                        # layout matrix, sheets, contrast
 flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true   # screenshots → test/ui/screenshots/
+flutter test test/pdf                                                       # sample PDFs + block checks → test/pdf/out/
+python3 <flutter-ui-verify>/scripts/rasterize_pdf.py test/pdf/out --text    # then open every page
 ```
