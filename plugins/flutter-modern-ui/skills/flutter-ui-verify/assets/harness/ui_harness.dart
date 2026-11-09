@@ -228,10 +228,16 @@ Future<void> pumpUi(
       ),
     ),
   );
-  // Two pumps: animations started from a Timer or post-frame callback are
-  // still at frame 0 after the first one.
+  // Advance the clock in frames, not in one jump. A plain pump() doesn't
+  // move time, so fake loads (Future.delayed) and delayed skeletons fire
+  // inside the settle time; in a single jump, whatever they start (row
+  // entrances, cross-fades) would still be at its first frame in the
+  // screenshot, showing the loading or empty state instead of the content.
   await tester.pump();
-  await tester.pump(settle);
+  const frame = Duration(milliseconds: 100);
+  for (var elapsed = Duration.zero; elapsed < settle; elapsed += frame) {
+    await tester.pump(frame);
+  }
 }
 
 /// Collects every error reported while [body] runs (overflows, build and

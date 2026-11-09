@@ -71,10 +71,12 @@ AppCard(
 
 ## Chips
 
-- Filters: `AppChoiceChips(multiple: true)` in a wrapping block (8 / 8 spacing) or one scrolling row under the header (`scrollable: true`, screen padding).
-- Single choice: `AppChoiceChips` (ChoiceChip) or `SegmentedButton` for 2–4 options.
+- **A few single-choice options (up to 4)**: `AppChoiceChips` wrapping, **never scrolling**, so every option stays visible on a 360 px phone. A scrolling row cut the second of two paper sizes off at 360 px. `SegmentedButton` works too when every label fits one row at text scale 1.3.
+- **Inline label** ("Paper  [A4] [A5]"): `AppChoiceChips(label: 'Paper', …)` renders the label as the first child of the same `Wrap` (`WrapCrossAlignment.center`), so it stays with the first chip and later chips wrap under it. A label above the group is a section label instead (`SheetSection`, a field label).
+- **Filters**: `AppChoiceChips(multiple: true)` in a wrapping block (8 / 8 spacing). Only a long filter list (5 or more) under a header may be one scrolling row (`scrollable: true`, screen padding), and the row must show part of the next chip so it reads as scrollable.
 - **Selected = check + `primaryContainer` fill** (theme). Never selection by color alone.
 - All chips in a group share one height: same label style and theme padding; no per-chip padding.
+- Reference: payment terms in `assets/examples/record_form_screen.dart`; the filter sheet and the status filter row in `assets/examples/records_screen.dart`.
 
 ## Status
 

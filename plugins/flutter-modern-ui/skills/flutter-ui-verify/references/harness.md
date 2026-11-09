@@ -5,11 +5,13 @@
 ```bash
 mkdir -p test/ui
 cp <skill-dir>/assets/harness/{ui_harness,ui_cases,layout_smoke_test,sheets_test,contrast_test,visual_test}.dart test/ui/
-# only if the project uses AnimatedItems / AppMessenger / SubmitButton:
+# only if the project uses AnimatedItems / AppMessenger / SubmitButton / AppChoiceChips:
 cp <skill-dir>/assets/harness/design_system_test.dart test/ui/
+# only if the app prints documents with the pdf package (references/printed-documents.md):
+mkdir -p test/pdf && cp <skill-dir>/assets/pdf/*.dart test/pdf/
 ```
 
-Add `test/ui/screenshots/` to `.gitignore` unless the team wants golden baselines.
+Add `test/ui/screenshots/` and `test/pdf/out/` to `.gitignore` unless the team wants golden baselines.
 
 ## `ui_cases.dart`
 
@@ -118,8 +120,16 @@ The default matrix is 3 sizes × 2 text scales × 2 themes × platforms × direc
 ```yaml
 - run: flutter test test/ui
 - run: flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true
+- run: flutter test test/pdf            # if the app prints
+- run: |
+    python -m pip install pymupdf
+    python tool/rasterize_pdf.py test/pdf/out --text   # a copy of scripts/rasterize_pdf.py
 - uses: actions/upload-artifact@v4
-  with: { name: ui-screenshots, path: test/ui/screenshots/ }
+  with:
+    name: ui-screenshots
+    path: |
+      test/ui/screenshots/
+      test/pdf/out/
 ```
 
-Reviewers then open the screenshots from the CI run.
+Reviewers then open the screenshots and printed pages from the CI run.

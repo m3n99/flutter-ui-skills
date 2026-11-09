@@ -25,6 +25,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 ## Status and selection
 - [ ] Every status has an icon + label (never color alone); business states use palette tones, not `error`.
 - [ ] Selected chips show a check; selected rows have fill + selected semantics.
+- [ ] A few single-choice chips wrap (never scroll) and every option is on screen at 360 px × 1.3; an inline label sits in the same wrap.
 
 ## States
 - [ ] Loading uses skeletons shaped like the content (all data screens).
@@ -47,12 +48,19 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Touch: targets ≥ 48 px (sheet test passes `androidTapTargetGuideline`).
 - [ ] Desktop: hover, click cursor, focus, visible scrollbars, tooltips, 40 px density, shortcuts for the main actions.
 - [ ] Layout adapts at 600 / 840 / 1200; content capped (forms 640, dashboards 1440).
+- [ ] List-detail: the pane has a visible ✕ with a tooltip, a second click on the open row deselects, Esc closes it.
 
 ## RTL (if applicable)
 - [ ] Directional APIs only; pointing icons mirror.
 - [ ] Numbers, dates, phones and amounts stay LTR.
 - [ ] Arabic text has zero letter-spacing and readable line height.
 - [ ] Charts mirrored with the value axis on the reading start.
+
+## Printed documents (if the app prints)
+- [ ] Sample PDFs for the typical case, every optional field empty and the longest content the forms allow, in each printed direction; block checks pass (inside the margins, stamp clear of text, page count).
+- [ ] Every page rasterized and opened: signatures and footer present at the bottom; nothing cut at the margins; no bare labels or `null`.
+- [ ] Growing blocks have line budgets the forms enforce; overlays are anchored to their block, not to a fraction of the page.
+- [ ] LTR runs (numbers, dates, phones, amounts) are separate `pw.Text`s; Arabic joins correctly.
 
 ## Accessibility
 - [ ] Light and dark pass `contrast_test.dart`.

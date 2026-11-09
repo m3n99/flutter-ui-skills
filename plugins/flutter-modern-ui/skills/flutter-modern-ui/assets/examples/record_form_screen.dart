@@ -6,6 +6,11 @@
 // - money input stored in minor units, accepting Arabic-Indic and Persian
 //   digits and `.`, `,` or `٫` as the decimal separator; LTR inside RTL;
 // - a warning-level hint (non-blocking) next to blocking validation;
+// - a few single-choice options (payment terms) as a wrapping chip row with
+//   an inline label, never a scrolling one, so all of them stay visible on a
+//   phone; the choice is derived from the due date it sets;
+// - a text cap shared with the printed document (InvoicePdfBudget), so the
+//   form never accepts more than the page can hold;
 // - validation after the first submit, a shake on a failed submit, and a
 //   SubmitButton that shows progress and can't be pressed twice;
 // - the success message names the thing that was created.
@@ -14,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design_system/design_system.dart';
+import 'invoice_pdf.dart' show InvoicePdfBudget;
 import 'sample_data.dart';
 
 /// Normalizes Arabic-Indic (٠-٩) and Persian (۰-۹) digits to 0-9, accepts one
@@ -65,6 +71,18 @@ int? parseCents(String text) {
   return cents == null ? null : whole * 100 + cents;
 }
 
+/// Payment terms: three single-choice options.
+enum _Terms {
+  onReceipt(0, 'Due on receipt'),
+  net14(14, 'Net 14'),
+  net30(30, 'Net 30');
+
+  const _Terms(this.days, this.label);
+
+  final int days;
+  final String label;
+}
+
 class RecordFormScreen extends StatefulWidget {
   const RecordFormScreen({super.key, required this.repository});
 
@@ -105,9 +123,13 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
       lastDate: sampleToday.add(const Duration(days: 365)),
     );
     if (picked == null || !mounted) return;
+    _setDue(picked);
+  }
+
+  void _setDue(DateTime due) {
     setState(() {
-      _due = picked;
-      _dueText.text = formatShortDate(picked);
+      _due = due;
+      _dueText.text = formatShortDate(due);
     });
   }
 
@@ -231,6 +253,20 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                       _FormSection(
                         title: 'Dates',
                         children: [
+                          // Three options: wrap with the label inline, so every
+                          // choice stays on screen at 360 px and text scale 1.3.
+                          AppChoiceChips<_Terms>(
+                            label: 'Terms',
+                            options: _Terms.values,
+                            // Derived from the due date: a date picked by hand
+                            // clears the choice.
+                            selected: {
+                              for (final terms in _Terms.values)
+                                if (terms.days == dueInDays) terms,
+                            },
+                            labelOf: (terms) => terms.label,
+                            onToggle: (terms) => _setDue(sampleToday.add(Duration(days: terms.days))),
+                          ),
                           _LabeledField(
                             label: 'Due date',
                             child: TextFormField(
@@ -243,7 +279,11 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                               decoration: InputDecoration(
                                 suffixIcon: const Icon(Icons.calendar_today_rounded),
                                 // Live summary of the choice.
-                                helperText: 'Due in $dueInDays days',
+                                helperText: switch (dueInDays) {
+                                  0 => 'Due today',
+                                  1 => 'Due tomorrow',
+                                  _ => 'Due in $dueInDays days',
+                                },
                               ),
                             ),
                           ),
@@ -257,6 +297,8 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                             controller: _notes,
                             minLines: 3,
                             maxLines: 6,
+                            // What the printed invoice's notes box holds.
+                            maxLength: InvoicePdfBudget.notesMaxLength,
                             textCapitalization: TextCapitalization.sentences,
                             decoration: InputDecoration(
                               hintText: 'Payment terms, bank details, thank-you note…',

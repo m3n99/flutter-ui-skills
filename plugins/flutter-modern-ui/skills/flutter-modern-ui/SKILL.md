@@ -1,6 +1,6 @@
 ---
 name: flutter-modern-ui
-description: Build or restyle Flutter UI that looks modern and stays consistent with the project's design system — screens, widgets, themes, adaptive phone/tablet/desktop layouts, sheets, forms, lists, dashboards, RTL. Use for any Flutter UI work, or when the user says the UI looks plain, dated, generic or AI-made. Studies the existing app first, asks about platforms, RTL, emoji and motion, and verifies its work with screenshots.
+description: Build or restyle Flutter UI that looks modern and stays consistent with the project's design system — screens, widgets, themes, adaptive phone/tablet/desktop layouts, sheets, forms, lists, dashboards, RTL, printed PDF documents. Use for any Flutter UI work, or when the user says the UI looks plain, dated, generic or AI-made. Studies the existing app first, asks about platforms, RTL, emoji and motion, and verifies its work with screenshots.
 ---
 
 # Flutter Modern UI
@@ -57,10 +57,11 @@ Read only the references the screen needs:
 | KPI tiles, tables, charts | `references/data-display.md` |
 | Loading / empty / error states | `references/states.md` |
 | Messages, errors, delete with Undo | `references/messages.md` |
-| Arabic / Hebrew / Persian, numbers, PDF | `references/rtl-arabic.md` |
+| Arabic / Hebrew / Persian, numbers | `references/rtl-arabic.md` |
+| Printed documents (PDF): fonts, LTR runs, line budgets, stamps | `references/rtl-arabic.md` › Printing, `assets/examples/invoice_pdf.dart` |
 | Contrast, semantics, text scale, focus | `references/accessibility.md` |
 
-Reference compositions to imitate: `assets/examples/` (dashboard, records list-detail with filter sheet and undo, long form, app shell).
+Reference compositions to imitate: `assets/examples/` (dashboard, records list-detail with filter sheet and undo, long form, app shell, printed invoice).
 
 ## Step 5 — Motion
 
@@ -68,7 +69,7 @@ Apply the `flutter-motion` skill for the surfaces the user chose. Reuse the shar
 
 ## Step 6 — Verify by looking
 
-Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 × light / dark × platforms × directions), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. For larger passes, hand the screenshots to the `flutter-ui-reviewer` agent for an independent review.
+Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 × light / dark × platforms × directions), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. Printed documents get the same loop: sample PDFs (typical, empty optional fields, longest content), block checks, then rasterize and open every page. For larger passes, hand the screenshots to the `flutter-ui-reviewer` agent for an independent review.
 
 ## Step 7 — Record and report
 

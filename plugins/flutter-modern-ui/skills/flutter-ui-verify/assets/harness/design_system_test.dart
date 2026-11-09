@@ -1,6 +1,6 @@
 // Behaviour tests for the plugin's shared widgets. Copy this file only when
 // the project uses them (AnimatedItems, AppMessenger.deleteWithUndo,
-// SubmitButton).
+// SubmitButton, AppChoiceChips).
 //
 //   flutter test test/ui/design_system_test.dart
 
@@ -9,6 +9,8 @@ import 'dart:async';
 import 'package:app/design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'ui_harness.dart';
 
 class _Counter extends StatefulWidget {
   const _Counter(this.label);
@@ -50,6 +52,9 @@ Widget _list(List<int> items, {bool reduceMotion = false}) {
 }
 
 void main() {
+  // Real glyph widths: chip and label sizes depend on them.
+  setUpAll(loadUiFonts);
+
   testWidgets('AnimatedItems keeps item state across inserts and removes', (tester) async {
     await tester.pumpWidget(_list([1, 2, 3]));
     await tester.pump(const Duration(seconds: 1));
@@ -173,5 +178,43 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('AppChoiceChips: an inline label wraps with the chips; every option stays on a 360 px phone', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const options = ['A4 portrait', 'A5 landscape', 'Letter', 'Legal'];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.3)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(AppSpace.md),
+            child: AppChoiceChips<String>(
+              label: 'Paper',
+              options: options,
+              selected: const {'A4 portrait'},
+              labelOf: (option) => option,
+              onToggle: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final label = tester.getRect(find.text('Paper'));
+    final first = tester.getRect(find.widgetWithText(ChoiceChip, options.first));
+    expect((label.center.dy - first.center.dy).abs(), lessThan(1), reason: 'the label sits on the first chip\'s line');
+    for (final option in options) {
+      final chip = tester.getRect(find.widgetWithText(ChoiceChip, option));
+      expect(chip.left, greaterThanOrEqualTo(0), reason: option);
+      expect(chip.right, lessThanOrEqualTo(360), reason: option);
+    }
   });
 }

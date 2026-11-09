@@ -51,6 +51,8 @@ final List<UiCase> uiCases = [
   UiCase('dashboard_loading', (_) => DashboardScreen(repository: InvoiceRepository.loadingForever())),
   UiCase('dashboard_error', (_) => DashboardScreen(repository: _instant()..failNextLoad = true)),
   UiCase('invoices', (_) => RecordsScreen(repository: _instant())),
+  // From 840 px: the detail pane open, with its ✕ (phones show the list).
+  UiCase('invoices_selected', (_) => RecordsScreen(repository: _instant(), initialSelectedId: 1041)),
   UiCase('invoices_loading', (_) => RecordsScreen(repository: InvoiceRepository.loadingForever())),
   UiCase('invoice_form', (_) => RecordFormScreen(repository: _instant())),
 ];

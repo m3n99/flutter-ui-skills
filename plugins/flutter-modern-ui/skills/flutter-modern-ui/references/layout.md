@@ -73,7 +73,16 @@ The rules in `tokens.md` › Nested shapes, summarized:
 
 ### List-detail
 
-From expanded width: list on the start side (flex 5), hairline divider, detail pane (flex 4). Selecting a row shows it in the pane (cross-fade the pane with `StateSwitcher` keyed by id) and highlights the row (`secondaryContainer` fill + `Semantics(selected: true)`). On compact, the same tap pushes a detail page. The pane shows an empty state ("Select an invoice") when nothing is selected. Reference: `assets/examples/records_screen.dart`.
+From expanded width: list on the start side (flex 5), hairline divider, detail pane (flex 4). Selecting a row shows it in the pane (cross-fade the pane with `StateSwitcher` keyed by id) and highlights the row (`secondaryContainer` fill + `Semantics(selected: true)`). On compact, the same tap pushes a detail page. The pane shows an empty state ("Select an invoice") when nothing is selected.
+
+Getting back to that empty state must be obvious:
+
+- **A visible close**: a ✕ `IconButton` with a tooltip ("Close details") at the end of the pane's header, in a header that stays put while the details scroll. Embedded pane only; a pushed detail page has the app bar's back button.
+- **Clicking the open row again deselects it.**
+- **Esc as a shortcut only**: `CallbackShortcuts` around the list and pane, whose `Focus` takes focus when a row is selected. Esc needs keyboard focus and nobody discovers it; a pane that only closes with Esc leaves users asking how to get back to the page as it first opened.
+- Deleting the open record clears the selection too.
+
+Reference: `assets/examples/records_screen.dart` (`initialSelectedId` opens it with a record selected, for deep links and the pane's screenshot).
 
 ## Grids and carousels
 

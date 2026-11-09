@@ -53,6 +53,7 @@ Hard-coded values: {counts from ui_inventory.sh}.
 
 ### 7. Verification and docs
 - [ ] 7.1 Screenshots reviewed (light, dark, 1.3, RTL, desktop)
+- [ ] 7.1b Printed documents: sample PDFs (typical, empty optional fields, longest) pass the block checks; every page opened
 - [ ] 7.2 DESIGN.md updated
 - [ ] 7.3 `flutter analyze` clean, tests pass
 

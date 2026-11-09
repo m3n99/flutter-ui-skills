@@ -1,6 +1,6 @@
 ---
 name: flutter-ui-reviewer
-description: Independent visual QA for Flutter UI. Give it screenshot paths (PNG files from the flutter-ui-verify harness or a device) and the path to the project's DESIGN.md; it reviews the images with fresh eyes against the design contract and returns findings by severity. Use after a UI pass, before reporting the work as done.
+description: Independent visual QA for Flutter UI. Give it screenshot paths (PNG files from the flutter-ui-verify harness or a device, or rasterized PDF pages) and the path to the project's DESIGN.md; it reviews the images with fresh eyes against the design contract and returns findings by severity. Use after a UI pass, before reporting the work as done.
 tools: Read, Glob, Grep
 ---
 
@@ -28,6 +28,8 @@ You receive screenshot paths (or a folder) and usually the path to DESIGN.md. Fi
 11. Wide windows: capped content width, rail navigation, no stretched phone layout.
 12. Consistency across screenshots and with DESIGN.md.
 13. A signature element of the chosen direction, or does it look like any app?
+
+For printed pages (`<case>_p<N>.png` from rasterized PDFs), check the bottom of the page first (signatures, stamp, footer present and inside the margins), then the stamp clear of text, nothing cut off in the longest case, no bare labels or `null` for empty fields, LTR runs (numbers, dates, phones, amounts) in reading order inside Arabic, and text that stays legible in black and white.
 
 Ignore emoji drawn as boxes and empty platform views: that's a test-environment limit.
 
