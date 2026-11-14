@@ -1,5 +1,55 @@
 # Changelog
 
+## 1.2.0
+
+From the feedback log of 1.1.0 on an Arabic, Android-only app built on Flutter 3.50 (problems 1–11).
+
+### Intake asks about the look (1)
+- **intake.md**: a new question, *the look*: cards, plain rows or rich, with sketches for question tools that show previews. It's asked even when the spec says "basic" or "simple" (those usually mean uncluttered, not unstyled). With nobody to answer, the first list screen is built with cards and its screenshot shown before the rest. DESIGN.md records it (*Look*), and the reviewer checks screens against it.
+
+### Soft containers that stay soft (2)
+- **Fixed**: `ToneColors.fromSeed` took the container from `fidelity`, which puts it at the seed's own tone, so a saturated seed turned "soft" tiles into solid red and amber blocks. It now takes the strong color from `fidelity` and the container from `tonalSpot`.
+- **Fixed**: `AppTheme` with `variant: fidelity` or `content` had the same problem in the scheme's primary and tertiary containers; they now come from `tonalSpot` too.
+- **contrast_test.dart**: containers must read as tints (light: tone ≥ 80 and chroma ≤ 50; dark: tone ≤ 40), a check contrast alone can't make. `UiConfig.softContainers` lists extra tones; the design-system test runs saturated seeds through `ToneColors`.
+
+### Pick-one sheets (3)
+- **`showAppPicker`**: one tap chooses and closes, the current option shows a check; `SheetScaffold.primaryAction` is optional, so read-only and pick-one sheets have no footer. Example: the records screen's sort sheet.
+- **sheets_test.dart**: `SheetCase.picker(...)` checks that options are on screen with real tap targets and that a tap closes the sheet, instead of requiring a primary button. The sheets' screenshots moved into the sheet test, so `visual_test.dart` no longer needs `sheetCases` and an empty list works.
+
+### Shell and edit-mode cases (4)
+- **The shell case**: `UiCase(act:)` drives a case after it renders. The example shell mounts every tab in an `IndexedStack`, switches tab and pushes a route; with two default FAB hero tags that push throws, which a page rendered on its own never shows. components.md: FABs on shell tabs need `heroTag: null`. A repo test proves both sides.
+- **Every form twice**: `record_form_screen.dart` creates and edits (`initial`), and the harness cases cover both. forms.md › Create and edit: fill controllers where they're created or in a listener, never in `build`; a new anti-pattern says the same.
+
+### Core and extras kits (5)
+- **`scripts/copy_design_system.py`**: `--kit core` (default: tokens, theme, palette, cards, pills, empty states, skeletons, sheets, chips, messages, `Ltr`) or `--kit extras` (motion, `AdaptiveShell`, `KpiTile`), one line each. It keeps files you changed and writes the barrel for what's there.
+- **`flutter-ui-verify/scripts/copy_harness.py`**: copies the harness (and `--pdf`, `--design-system-test`) without overwriting your cases.
+
+### Flutter 3.50 and `material_ui` (6)
+- Both copy scripts rewrite `package:flutter/material.dart` / `cupertino.dart` to `material_ui` / `cupertino_ui` when the project's pubspec lists `material_ui`. Step 0 checks which library the project uses; theming.md covers the `GlobalMaterialLocalizations` clash with `flutter_localizations`.
+- CI builds and tests the sandbox both ways (a `material_ui` app and a `package:flutter/material.dart` app).
+
+### RTL traps (7)
+- **rtl-arabic.md is required reading** whenever the app has a right-to-left language.
+- **Glyph coverage**: `flutter-ui-verify/scripts/check_glyphs.py` lists every character in the app's strings (Dart literals, ARB files, `--chars` for what `intl` adds) that the fonts lack. Tajawal, for one, has no `₪`, `٫`, `٬` or `✓`.
+- **Amount fields**: an LTR field's start is the left, so in RTL the digits sit away from the prefix or glue to the suffix; align them with `TextAlign.end` in RTL (example form, forms.md › Money).
+- **Mirrored icons**: `Icons.chevron_left` / `chevron_right` already flip in RTL; swapping them by direction flips twice.
+
+### Lint the diff (8)
+- **`scripts/lint_ui.py`**: raw colors, font sizes, spacing, sizes, radii, opacities and durations, token arithmetic (`AppSpace.xs + 2`) and left/right APIs, on the whole of `lib/` or only the lines a branch changed (`--diff`). Step 7 runs it before the anti-pattern scan; CI runs it on the templates, which gained the tokens they were missing (`AppDurations.shake`, `.shimmer`, `AppSize.emptyStateWidth`, …).
+
+### Faking dependencies (9)
+- **harness.md › Faking dependencies**: register fakes in the service locator in `UiConfig.setUp` (runs once before the first case), stub platform plugins that call native code on start (connectivity, auth), and treat a screen that can't render in a test as one that needs something injected.
+
+### Contact sheets (10)
+- The screenshot run writes a contact sheet per case (`visual_test.dart`) and per sheet (`sheets_test.dart`) to `screenshots/contact_sheets/`: every variant side by side, labeled. Review starts there.
+
+### Reviewer by default (11)
+- The `flutter-ui-reviewer` agent is the default whenever a pass touches more than three screens, or it's the first pass on an app, and it checks the agreed look.
+
+### Also
+- Anti-patterns 58 → 68; the review checklist covers the look, pickers, the shell, edit mode and glyphs.
+- `scripts/sandbox.sh --material-ui | --framework-material` builds the sandbox through the same copy scripts users run.
+
 ## 1.1.0
 
 From the feedback log of 1.0.0 on the same Arabic, Windows-first + Android app (entries 1–3).

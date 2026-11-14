@@ -8,6 +8,9 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] New repeated styles went into the theme / tokens and DESIGN.md.
 - [ ] Deliberate deviations recorded in DESIGN.md were respected.
 
+- [ ] The screens match the agreed look (cards, plain rows or rich in DESIGN.md); nothing reads as unstyled defaults.
+- [ ] `lint_ui.py --diff` is clean, or each finding is a marked, explained exception.
+
 ## Hierarchy
 - [ ] The most important element is obvious within one second (size + weight + position).
 - [ ] One primary action per screen and per sheet.
@@ -26,6 +29,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Every status has an icon + label (never color alone); business states use palette tones, not `error`.
 - [ ] Selected chips show a check; selected rows have fill + selected semantics.
 - [ ] A few single-choice chips wrap (never scroll) and every option is on screen at 360 px × 1.3; an inline label sits in the same wrap.
+- [ ] Tinted containers (pills, tiles, selected chips) read as soft tints in light mode and deep tones in dark mode, not solid blocks.
 
 ## States
 - [ ] Loading uses skeletons shaped like the content (all data screens).
@@ -43,18 +47,23 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Filter sheets: "Clear all" in place, "Apply (n)".
 - [ ] Form save bar stays above the keyboard; labels above fields; keyboard types, input actions, autofill set.
 - [ ] Validation after first submit; warnings don't block.
+- [ ] Every form renders in create and edit mode; edit mode fills its controllers outside `build`.
+- [ ] Pick-one sheets close on the tap that chooses (no Apply).
 
 ## Platforms
 - [ ] Touch: targets ≥ 48 px (sheet test passes `androidTapTargetGuideline`).
 - [ ] Desktop: hover, click cursor, focus, visible scrollbars, tooltips, 40 px density, shortcuts for the main actions.
 - [ ] Layout adapts at 600 / 840 / 1200; content capped (forms 640, dashboards 1440).
 - [ ] List-detail: the pane has a visible ✕ with a tooltip, a second click on the open row deselects, Esc closes it.
+- [ ] FABs on the tabs of an IndexedStack shell have `heroTag: null`; the shell case (all tabs mounted, a route pushed) passes.
 
 ## RTL (if applicable)
 - [ ] Directional APIs only; pointing icons mirror.
 - [ ] Numbers, dates, phones and amounts stay LTR.
 - [ ] Arabic text has zero letter-spacing and readable line height.
 - [ ] Charts mirrored with the value axis on the reading start.
+- [ ] Amount fields: digits at the reading start, not glued to the currency; chevrons not swapped by hand.
+- [ ] `check_glyphs.py` finds nothing missing: currency signs, `٫` `٬`, `✓` all in the font or its fallback.
 
 ## Printed documents (if the app prints)
 - [ ] Sample PDFs for the typical case, every optional field empty and the longest content the forms allow, in each printed direction; block checks pass (inside the margins, stamp clear of text, page count).
@@ -75,7 +84,8 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 ## Verification
 - [ ] `flutter analyze` clean for changed files; existing tests still pass.
 - [ ] Layout matrix and sheet tests pass.
-- [ ] Screenshots rendered and **looked at** (light, dark, 1.3 text scale, RTL if applicable, desktop if applicable).
+- [ ] Screenshots rendered and **looked at** (light, dark, 1.3 text scale, RTL if applicable, desktop if applicable), contact sheets first.
+- [ ] More than three screens touched, or a first pass: the `flutter-ui-reviewer` agent reviewed them.
 
 ## Scope and records
 - [ ] State management, routing, DI untouched (presentation-only) unless asked.

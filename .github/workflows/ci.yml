@@ -43,9 +43,39 @@ jobs:
           [ ! -f /tmp/missing ] || status=1
           exit $status
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Examples and widgets follow the non-negotiables (lint_ui.py)
+        run: python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/lint_ui.py plugins/flutter-modern-ui/skills/flutter-modern-ui/assets
+
+      - name: The examples' fonts cover every character they show (check_glyphs.py)
+        run: |
+          python -m pip install --quiet fonttools
+          mkdir -p build/fonts
+          for weight in Regular Bold; do
+            curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-$weight.ttf" -o "build/fonts/IBMPlexSansArabic-$weight.ttf"
+          done
+          python plugins/flutter-modern-ui/skills/flutter-ui-verify/scripts/check_glyphs.py \
+            --font build/fonts/IBMPlexSansArabic-Regular.ttf --font build/fonts/IBMPlexSansArabic-Bold.ttf \
+            plugins/flutter-modern-ui/skills/flutter-modern-ui/assets
+
+      - name: Scripts run (help, kit list)
+        run: |
+          for script in plugins/flutter-modern-ui/skills/*/scripts/*.py; do python "$script" --help > /dev/null; done
+          python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/copy_design_system.py --list
+
   templates:
-    name: Templates compile, UI and PDF tests, screenshots
+    # material_ui: what `flutter create` makes from Flutter 3.50 (the copy
+    # scripts rewrite every Material import). framework: an app still on
+    # package:flutter/material.dart.
+    name: Templates (${{ matrix.material }}) compile, UI and PDF tests, screenshots
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        material: [material_ui, framework]
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +88,7 @@ jobs:
 
       - name: Build the sandbox app from the templates
         id: sandbox
-        run: bash scripts/sandbox.sh build/sandbox
+        run: bash scripts/sandbox.sh ${{ matrix.material == 'material_ui' && '--material-ui' || '--framework-material' }} build/sandbox
 
       # Each check below runs even when an earlier one failed, so one run
       # shows every failure (and still uploads the screenshots and pages).
@@ -96,12 +126,12 @@ jobs:
       - name: Screenshots
         if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
         working-directory: build/sandbox
-        run: flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true
+        run: flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screenshots
+          name: screenshots-${{ matrix.material }}
           path: |
             build/sandbox/test/ui/screenshots/
             build/sandbox/test/pdf/out/

@@ -1,6 +1,6 @@
 ---
 name: flutter-modern-ui
-description: Build or restyle Flutter UI that looks modern and stays consistent with the project's design system — screens, widgets, themes, adaptive phone/tablet/desktop layouts, sheets, forms, lists, dashboards, RTL, printed PDF documents. Use for any Flutter UI work, or when the user says the UI looks plain, dated, generic or AI-made. Studies the existing app first, asks about platforms, RTL, emoji and motion, and verifies its work with screenshots.
+description: Build or restyle Flutter UI that looks modern and stays consistent with the project's design system — screens, widgets, themes, adaptive phone/tablet/desktop layouts, sheets, forms, lists, dashboards, RTL, printed PDF documents. Use for any Flutter UI work, or when the user says the UI looks plain, dated, generic or AI-made. Studies the existing app first, asks about platforms, RTL, the look (cards, rows or rich), emoji and motion, and verifies its work with screenshots.
 ---
 
 # Flutter Modern UI
@@ -18,19 +18,23 @@ Do this before any direction, token file or screen. Details: `references/discove
 3. **Map, don't replace**: write down the project's names (its spacing class, color access, card widget, message component) and use them. A missing token goes **into the existing file**. Never create a second system or a new `theme/` folder.
 4. **Follow the existing flows**: how screens get data (bloc → state → builder, service locator, providers), how messages are shown, how navigation and platform differences work. New UI reuses those paths.
 5. **Respect deliberate deviations** (a custom palette instead of `fromSeed`, desktop-sized controls, outlined inputs) and note them.
-6. **Baseline**: run `flutter analyze` and `flutter test` before changing UI so new warnings and failures are clearly yours.
+6. **Material library**: `package:flutter/material.dart` or, from Flutter 3.50, `package:material_ui/material_ui.dart` (`material_ui` in pubspec.yaml). New code imports what the project imports.
+7. **Baseline**: run `flutter analyze` and `flutter test` before changing UI so new warnings and failures are clearly yours.
 
 ## Step 1 — Intake: ask once, early
 
-Ask the questions in `references/intake.md` in one short round (use the question tool when available): **platforms**, **RTL languages**, **emoji**, **where things should animate**, and **direction / brand** if no system exists yet. Skip what DESIGN.md already answers. When nobody is there to answer, take the stated defaults and say which you took.
+Ask the questions in `references/intake.md` in one short round (use the question tool when available): **platforms**, **RTL languages**, **the look** (cards, plain rows or rich), **emoji**, **where things should animate**, and **direction / brand** if no system exists yet. Skip what DESIGN.md already answers. When nobody is there to answer, take the stated defaults and say which you took, except for the look: build the first list screen with cards, show its screenshot and ask before doing the rest. A spec that says "basic" or "simple" doesn't answer it; a wrong guess costs a full redesign round.
 
 ## Step 2 — The design system
 
 - **Project has one** → extend it in place (Step 0). Add only what's missing.
-- **Project has none** → set one up with the `flutter-design-system` skill: pick a direction (`references/directions.md`), copy `assets/design_system/` into the project's conventional location (default `lib/core/design_system/`), set `AppTheme.config`, retune the `DIRECTION` lines, and write `DESIGN.md`.
+- **Project has none** → set one up with the `flutter-design-system` skill: pick a direction (`references/directions.md`), copy the templates with `python3 scripts/copy_design_system.py` (this skill's folder) into the project's conventional location (default `lib/core/design_system/`), set `AppTheme.config`, retune the `DIRECTION` lines, and write `DESIGN.md`.
+  - **Core kit** (default), what every app needs: tokens, density, palette, typography, theme, context extensions, `AppCard`, `StatusPill` / `IconBadge` / `EmojiBadge`, `EmptyState`, skeletons, sheets and pick-one sheets, chips, messages, `SectionHeader`, `Ltr`.
+  - **Extras** (`--kit extras`, later is fine): motion pieces, `AdaptiveShell` / `ContentWidth`, `KpiTile` / `KpiGrid`. Add them when the app animates, ships on tablet or desktop, or has a dashboard; don't hand-write lookalikes.
+  - The script keeps files you already changed, writes the barrel for what's there, and rewrites imports for `material_ui` projects.
 - **User shared reference apps or screenshots** → derive the direction from them with the `flutter-design-system` skill.
 
-Templates require Flutter ≥ 3.41 (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `SizeTransition.alignment`). On older SDKs: drop `persist`, use `AppBarTheme` / `InputDecorationTheme` and `SizeTransition.axisAlignment`; `CupertinoPageTransitionsBuilder` comes from `package:flutter/cupertino.dart`.
+Templates require Flutter ≥ 3.41 (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `SizeTransition.alignment`). On older SDKs: drop `persist`, use `AppBarTheme` / `InputDecorationTheme` and `SizeTransition.axisAlignment`; `CupertinoPageTransitionsBuilder` comes from `package:flutter/cupertino.dart`. On Flutter 3.50+ with `material_ui`, the copy scripts import `material_ui` / `cupertino_ui` instead (`references/theming.md` › API notes, including the `GlobalMaterialLocalizations` clash with `flutter_localizations`).
 
 ## Step 3 — Plan the screen
 
@@ -43,7 +47,7 @@ Before writing widgets, decide in a few lines (in `UI_PASS.md` for multi-screen 
 
 ## Step 4 — Build
 
-Read only the references the screen needs:
+Read only the references the screen needs. **When the app has a right-to-left language, `references/rtl-arabic.md` is required reading before the first widget**, whatever the screen.
 
 | Need | Read |
 |---|---|
@@ -69,11 +73,11 @@ Apply the `flutter-motion` skill for the surfaces the user chose. Reuse the shar
 
 ## Step 6 — Verify by looking
 
-Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 × light / dark × platforms × directions), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. Printed documents get the same loop: sample PDFs (typical, empty optional fields, longest content), block checks, then rasterize and open every page. For larger passes, hand the screenshots to the `flutter-ui-reviewer` agent for an independent review.
+Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 × light / dark × platforms × directions), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. Printed documents get the same loop: sample PDFs (typical, empty optional fields, longest content), block checks, then rasterize and open every page. **When a pass touches more than three screens, or it's the first pass on an app, hand the screenshots to the `flutter-ui-reviewer` agent** with DESIGN.md: fresh eyes catch what the builder has stopped seeing, such as a whole pass that came out too plain for the agreed look.
 
 ## Step 7 — Record and report
 
-- Scan the diff against `references/anti-patterns.md`.
+- Run `python3 scripts/lint_ui.py --diff` (raw colors, sizes, spacing and durations, token arithmetic like `AppSpace.xs + 2`, left/right APIs), fix what it finds, then scan the diff against `references/anti-patterns.md` for what a grep can't see.
 - Update `DESIGN.md` with any new token, pattern or decision, and tick `UI_PASS.md`.
 - Report in a few lines: direction, what changed, which screenshots were reviewed, anything left open.
 

@@ -45,7 +45,8 @@ class AppThemeConfig {
     this.schemeOverride,
   });
 
-  /// Brand color. Use [DynamicSchemeVariant.fidelity] to keep its exact hue.
+  /// Brand color. Use [DynamicSchemeVariant.fidelity] to keep its exact hue;
+  /// the containers stay soft either way (see [AppTheme.build]).
   final Color seed;
   final DynamicSchemeVariant variant;
 
@@ -129,6 +130,13 @@ abstract final class AppTheme {
       brightness: brightness,
       dynamicSchemeVariant: config.variant,
     );
+    // fidelity and content put the primary and tertiary containers at the
+    // seed's own tone: with a saturated seed, selected chips and tinted
+    // blocks turn solid. Keep their strong colors; take the containers from
+    // tonalSpot. (Vivid containers on purpose: set them in schemeOverride.)
+    if (config.variant == DynamicSchemeVariant.fidelity || config.variant == DynamicSchemeVariant.content) {
+      scheme = _softContainers(scheme, config.seed);
+    }
     if (config.surfaces == SurfaceStyle.eyeComfort) scheme = _eyeComfort(scheme);
     scheme = config.schemeOverride?.call(scheme) ?? scheme;
 
@@ -401,6 +409,19 @@ abstract final class AppTheme {
   /// Warm, dimmed neutrals. Keeps the seed's primary/secondary/tertiary.
   /// Contrast (checked): onSurface ≥ 10:1, onSurfaceVariant ≥ 5.5:1 and
   /// outline ≥ 3.2:1 on every surface level, both modes.
+  /// Tinted containers for the primary and tertiary hues (tone 90 in light
+  /// mode, 30 in dark), as tonalSpot builds them.
+  static ColorScheme _softContainers(ColorScheme scheme, Color seed) {
+    final primary = ColorScheme.fromSeed(seedColor: seed, brightness: scheme.brightness);
+    final tertiary = ColorScheme.fromSeed(seedColor: scheme.tertiary, brightness: scheme.brightness);
+    return scheme.copyWith(
+      primaryContainer: primary.primaryContainer,
+      onPrimaryContainer: primary.onPrimaryContainer,
+      tertiaryContainer: tertiary.primaryContainer,
+      onTertiaryContainer: tertiary.onPrimaryContainer,
+    );
+  }
+
   static ColorScheme _eyeComfort(ColorScheme scheme) {
     if (scheme.brightness == Brightness.dark) {
       return scheme.copyWith(

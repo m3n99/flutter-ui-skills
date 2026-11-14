@@ -31,15 +31,15 @@ A design system is what makes the tenth screen look like the first. This skill p
 
 ### B. Create a new system
 
-1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, brand color, emoji, motion.
+1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, the look (cards, rows or rich), brand color, emoji, motion.
 2. Choose a direction (`../flutter-modern-ui/references/directions.md`); state it in one line.
-3. Copy `../flutter-modern-ui/assets/design_system/` into the project's conventional location (default `lib/core/design_system/`), fix imports, then:
+3. Copy the templates with `python3 ../flutter-modern-ui/scripts/copy_design_system.py --to <folder>` (default `lib/core/design_system/`): the **core kit** first; `--kit extras` adds motion, the adaptive shell and KPI tiles when the app needs them. It writes the barrel and, in `material_ui` projects, the right imports. Then:
    - set `AppTheme.config` (seed, variant, font, script, surfaces, input style);
    - retune every `DIRECTION` line in `tokens.dart` and `app_density.dart`;
    - add domain tones to `AppPalette` (e.g. `overdue`, `paid`) and one status → label/icon/tone mapping per domain enum;
    - bundle fonts in `pubspec.yaml`;
    - wire `MaterialApp(theme:, darkTheme:, scaffoldMessengerKey: AppMessenger.key)`.
-4. Delete template widgets the app won't use (keep the barrel file in sync).
+4. Need another template later? Run the script again with that kit; it keeps the files you changed. Don't rebuild a template widget by hand: hand copies drift from the originals.
 5. Contrast test, then build one representative screen and screenshot it (flutter-ui-verify) before rolling out.
 6. Write DESIGN.md from the template.
 

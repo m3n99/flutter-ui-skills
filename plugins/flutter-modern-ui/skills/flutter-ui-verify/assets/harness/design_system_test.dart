@@ -1,6 +1,6 @@
-// Behaviour tests for the plugin's shared widgets. Copy this file only when
-// the project uses them (AnimatedItems, AppMessenger.deleteWithUndo,
-// SubmitButton, AppChoiceChips).
+// Behaviour tests for the plugin's shared widgets and theme. Copy this file
+// only when the project uses them (AnimatedItems, AppMessenger.deleteWithUndo,
+// SubmitButton, AppChoiceChips, ToneColors, AppTheme).
 //
 //   flutter test test/ui/design_system_test.dart
 
@@ -215,6 +215,42 @@ void main() {
       final chip = tester.getRect(find.widgetWithText(ChoiceChip, option));
       expect(chip.left, greaterThanOrEqualTo(0), reason: option);
       expect(chip.right, lessThanOrEqualTo(360), reason: option);
+    }
+  });
+
+  test('ToneColors.fromSeed: saturated seeds still give soft containers with readable text', () {
+    const seeds = {
+      'red': Color(0xFFD32F2F),
+      'amber': Color(0xFFFFB300),
+      'green': Color(0xFF1E8E3E),
+      'orange': Color(0xFFFF5A1F),
+      'purple': Color(0xFF7C3AED),
+      'lime': Color(0xFFC6FF00),
+    };
+    final failures = <String>[];
+    for (final MapEntry(key: name, value: seed) in seeds.entries) {
+      for (final brightness in Brightness.values) {
+        final tone = ToneColors.fromSeed(seed, brightness);
+        final label = '$name ${brightness.name}';
+        final problem = softContainerProblem(tone.container, brightness);
+        if (problem != null) failures.add('$label: container $problem');
+        final ratio = contrastRatio(tone.onContainer, tone.container);
+        if (ratio < 4.5) failures.add('$label: onContainer on container ${ratio.toStringAsFixed(2)}:1');
+      }
+    }
+    expect(failures, isEmpty, reason: '\n${failures.join('\n')}');
+  });
+
+  test('AppTheme: a fidelity brand seed keeps its containers soft', () {
+    const config = AppThemeConfig(seed: Color(0xFFE11D48), variant: DynamicSchemeVariant.fidelity);
+    for (final brightness in Brightness.values) {
+      final scheme = AppTheme.build(brightness, config: config).colorScheme;
+      for (final (name, color) in [
+        ('primaryContainer', scheme.primaryContainer),
+        ('tertiaryContainer', scheme.tertiaryContainer),
+      ]) {
+        expect(softContainerProblem(color, brightness), isNull, reason: '$name, ${brightness.name}');
+      }
     }
   });
 }

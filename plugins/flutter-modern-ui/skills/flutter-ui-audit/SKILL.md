@@ -62,7 +62,7 @@ While fixing:
 
 ### 6. Verify
 
-Re-run `flutter analyze`, the tests, the layout matrix and the sheet test; re-render the screenshots and compare before/after for every finding. For bigger passes, hand the after-screenshots to the `flutter-ui-reviewer` agent.
+Re-run `flutter analyze`, the tests, the layout matrix and the sheet test; re-render the screenshots and compare before/after for every finding. When the pass touches more than three screens, hand the after-screenshots to the `flutter-ui-reviewer` agent.
 
 ### 7. Close
 

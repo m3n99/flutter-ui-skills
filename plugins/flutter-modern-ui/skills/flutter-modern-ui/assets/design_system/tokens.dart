@@ -101,6 +101,9 @@ abstract final class AppIconSize {
   static const double dense = 20;
   static const double regular = 24;
   static const double feature = 32;
+
+  /// The icon in an EmptyState's tinted circle.
+  static const double emptyState = 40;
   static const double hero = 48;
 }
 
@@ -119,6 +122,9 @@ abstract final class AppSize {
 
   /// Floating SnackBar width on pointer (desktop) platforms.
   static const double messageWidth = 420;
+
+  /// Empty states: title and message wrap at this width.
+  static const double emptyStateWidth = 360;
 
   static const double formMaxWidth = 640;
   static const double readingMaxWidth = 720;
@@ -178,6 +184,18 @@ abstract final class AppDurations {
   /// Messages: plain text, and with an action (Undo, Open, Print).
   static const Duration message = Duration(seconds: 4);
   static const Duration messageWithAction = Duration(seconds: 6);
+
+  /// A failed submit's shake.
+  static const Duration shake = Duration(milliseconds: 420);
+
+  /// How long a success check stays before the button resets.
+  static const Duration confirmation = Duration(milliseconds: 1200);
+
+  /// One sweep of a skeleton's shimmer.
+  static const Duration shimmer = Duration(milliseconds: 1400);
+
+  /// Loads shorter than this show no skeleton at all (no flash).
+  static const Duration skeletonDelay = Duration(milliseconds: 150);
 }
 
 /// Motion curves (Material 3 easing).

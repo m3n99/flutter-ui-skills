@@ -83,7 +83,7 @@ String formatMoney(int cents) {
 }
 
 class InvoiceRepository {
-  InvoiceRepository({this.latency = const Duration(milliseconds: 700)}) : _hang = false;
+  InvoiceRepository({this.latency = const Duration(milliseconds: 700)}) : _hang = false; // lint-ui: ok (fake network)
 
   /// A repository whose loads never finish (no pending timers): renders the
   /// loading state in tests and screenshots.
@@ -130,6 +130,22 @@ class InvoiceRepository {
   Future<void> delete(int id) async {
     await Future<void>.delayed(latency ~/ 2);
     _invoices.removeWhere((invoice) => invoice.id == id);
+  }
+
+  Future<Invoice> update(int id, {required String customer, required int amountCents, required DateTime due}) async {
+    await Future<void>.delayed(latency);
+    final index = _invoices.indexWhere((invoice) => invoice.id == id);
+    final old = _invoices[index];
+    final invoice = Invoice(
+      id: id,
+      number: old.number,
+      customer: customer,
+      amountCents: amountCents,
+      due: due,
+      status: old.status,
+    );
+    _invoices[index] = invoice;
+    return invoice;
   }
 
   Future<Invoice> create({required String customer, required int amountCents, required DateTime due}) async {

@@ -100,6 +100,7 @@ extension InvoiceStatusUi on InvoiceStatus {
 - `AdaptiveShell`: NavigationBar < 600, rail 600–1199, extended rail ≥ 1200.
 - 3–5 destinations, outlined icon + filled `selectedIcon`, one-word labels.
 - Tabs inside a screen: `TabBar` (label-size indicator, no divider) or `SegmentedButton` for 2–3 views.
+- **FABs on shell tabs need `heroTag: null`** (or a unique tag). An `IndexedStack` shell, and go_router's `StatefulShellRoute.indexedStack`, keep every tab mounted in one route, so two FABs with the default tag throw "There are multiple heroes that share the same tag within a subtree" as soon as any route is pushed. Rendering one page at a time never shows it; the harness's shell case does.
 
 ## Avatars and images
 

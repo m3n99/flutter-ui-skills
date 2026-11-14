@@ -16,6 +16,8 @@ If `rg`/`fd` are missing: `grep -rlE "ThemeData\(|ThemeExtension<" lib` and `fin
 
 Read every file you find: tokens, colors, typography, the theme builder, context extensions, shared widgets (cards, buttons, inputs, sheets, dialogs, pills, toasts, empty states, skeletons).
 
+Check which Material library the project imports: `package:flutter/material.dart`, or `package:material_ui/material_ui.dart` (Flutter 3.50 deprecated the former; `material_ui` in pubspec.yaml). Everything you add imports the same one (`theming.md` › API notes).
+
 Then read the project's **design notes**: `DESIGN.md`, `docs/design*`, `README` sections about UI, and `UI_PASS.md` if a previous pass left one. These override this skill's defaults.
 
 ## B. Map, don't replace

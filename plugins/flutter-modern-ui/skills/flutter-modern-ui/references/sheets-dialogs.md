@@ -9,7 +9,7 @@ Every sheet uses `showAppSheet` + `SheetScaffold` (`assets/design_system/widgets
 | Choose, filter, short input (1–6 fields), share/export options | Sheet (`showAppSheet`): bottom sheet < 600 px, 560 px dialog wider |
 | Confirm one action | `AlertDialog` (420 px) |
 | Long form, multi-step, anything over ~6 fields | Full-screen route (`fullscreenDialog: true`) on phones; large dialog or pane on desktop |
-| Quick choice from a list (sort, account) | Sheet with a list, or a `MenuAnchor` on desktop |
+| Quick choice from a list (sort, account, language) | Pick-one sheet (`showAppPicker`): one tap chooses and closes; or a `MenuAnchor` on desktop |
 | Persistent condition (offline, read-only mode) | `MaterialBanner` / inline banner, not a dialog |
 
 Prefer sheets over dialogs for anything with input or more than two actions.
@@ -19,7 +19,7 @@ Prefer sheets over dialogs for anything with input or more than two actions.
 1. **Drag handle**: sheets only, from the theme.
 2. **Header**: title in headlineSmall at the start, close ✕ (`IconButton` with the localized close tooltip) at the end. Padding 24 start, 8 end.
 3. **Body**: scrolls when long. Padding 24 sides, 8 top, 24 bottom. Sections are `SheetSection`s (label in labelLarge / `onSurfaceVariant`, 8 px above its content), 24 apart.
-4. **Footer**: sticky, never scrolls. Hairline top border, inside `SafeArea(top: false)`, padding 24 × 12.
+4. **Footer**: sticky, never scrolls. Hairline top border, inside `SafeArea(top: false)`, padding 24 × 12. Pick-one sheets have none: the tap on an option is the action.
 
 ## Footer buttons: the same order in every sheet
 
@@ -42,6 +42,13 @@ Prefer sheets over dialogs for anything with input or more than two actions.
 - "Clear all" resets the choices **in the sheet** only; "Apply" makes them stick. Both behave like every other sheet (no apply-and-close on reset).
 - Show the active count on Apply ("Apply (3)") and on the screen's filter button badge.
 - Results animate when the sheet closes (`AnimatedItems`).
+
+## Pick-one sheets
+
+- One choice that applies at once (sort order, account, language): `showAppPicker`. Options are `ListTile`s with an optional leading icon; the current one shows a check and the selected colors (never color alone); a tap chooses and closes. No footer, no Apply. Reference: the sort sheet in `assets/examples/records_screen.dart`.
+- A choice that's part of something larger (a filter sheet, a form) stays as chips or radio tiles in a `SheetScaffold` with a primary action.
+- More than ~7 options: a search field on top; more than ~20: a full-screen picker.
+- The harness checks them as `SheetCase.picker(...)`: options on screen with real tap targets, and a tap closes the sheet.
 
 ## Keyboard
 

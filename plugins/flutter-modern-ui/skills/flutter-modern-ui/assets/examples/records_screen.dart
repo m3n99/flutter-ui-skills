@@ -2,6 +2,8 @@
 // Shows:
 // - search + status filter chips + a filter sheet (SheetScaffold: sections,
 //   chips with checks, "Clear all" in place, "Apply (n)");
+// - sorting through a pick-one sheet (showAppPicker): one choice, so one tap
+//   chooses and closes, with no Apply button;
 // - AnimatedItems: filters and search animate rows out and in, new records
 //   grow in at the top, a new sort replays the staggered entrance;
 // - delete: confirm dialog → row hides at once → message with Undo →
@@ -10,6 +12,10 @@
 //   push to a detail page on phones; the pane always has a way back to the
 //   empty state: a ✕ in its header, clicking the open row again, and Esc as
 //   a shortcut only (it needs focus and nobody discovers it);
+// - edit opens the same form pre-filled (RecordFormScreen(initial:));
+// - the FAB has `heroTag: null`: screens in an IndexedStack shell (or
+//   go_router's StatefulShellRoute.indexedStack) share one route, and two
+//   FABs with the default tag throw when any route is pushed;
 // - loading skeleton, error with retry, first-use and no-results empty states.
 
 import 'package:flutter/material.dart';
@@ -27,6 +33,12 @@ extension InvoiceSortLabel on InvoiceSort {
         InvoiceSort.amount => 'Amount',
         InvoiceSort.customer => 'Customer',
       };
+
+  IconData get icon => switch (this) {
+        InvoiceSort.dueDate => Icons.event_rounded,
+        InvoiceSort.amount => Icons.payments_rounded,
+        InvoiceSort.customer => Icons.sort_by_alpha_rounded,
+      };
 }
 
 @immutable
@@ -36,8 +48,8 @@ class InvoiceFilters {
   final Set<InvoiceStatus> statuses;
   final InvoiceSort sort;
 
-  /// Shown on the Apply button and the filter badge.
-  int get activeCount => statuses.length + (sort == InvoiceSort.dueDate ? 0 : 1);
+  /// Shown on the Apply button and the filter badge. The sort isn't a filter.
+  int get activeCount => statuses.length;
 
   InvoiceFilters toggle(InvoiceStatus status) {
     final next = {...statuses};
@@ -71,6 +83,18 @@ Future<InvoiceFilters?> showInvoiceFilters(BuildContext context, InvoiceFilters 
   return showAppSheet<InvoiceFilters>(context: context, builder: (_) => _FilterSheet(initial: current));
 }
 
+/// One choice: a pick-one sheet, closed by the tap that chooses.
+Future<InvoiceSort?> showInvoiceSort(BuildContext context, InvoiceSort current) {
+  return showAppPicker<InvoiceSort>(
+    context: context,
+    title: 'Sort by',
+    options: InvoiceSort.values,
+    labelOf: (sort) => sort.label,
+    iconOf: (sort) => sort.icon,
+    selected: current,
+  );
+}
+
 class _FilterSheet extends StatefulWidget {
   const _FilterSheet({required this.initial});
 
@@ -82,9 +106,8 @@ class _FilterSheet extends StatefulWidget {
 
 class _FilterSheetState extends State<_FilterSheet> {
   late Set<InvoiceStatus> _statuses = {...widget.initial.statuses};
-  late InvoiceSort _sort = widget.initial.sort;
 
-  InvoiceFilters get _draft => InvoiceFilters(statuses: _statuses, sort: _sort);
+  InvoiceFilters get _draft => InvoiceFilters(statuses: _statuses, sort: widget.initial.sort);
 
   @override
   Widget build(BuildContext context) {
@@ -96,10 +119,7 @@ class _FilterSheetState extends State<_FilterSheet> {
       secondaryAction: OutlinedButton(
         onPressed: count == 0
             ? null
-            : () => setState(() {
-                  _statuses = {};
-                  _sort = InvoiceSort.dueDate;
-                }),
+            : () => setState(() => _statuses = {}),
         child: const Text('Clear all'),
       ),
       primaryAction: FilledButton(
@@ -117,15 +137,6 @@ class _FilterSheetState extends State<_FilterSheet> {
             onToggle: (status) => setState(() {
               if (!_statuses.remove(status)) _statuses.add(status);
             }),
-          ),
-        ),
-        SheetSection(
-          label: 'Sort by',
-          child: AppChoiceChips<InvoiceSort>(
-            options: InvoiceSort.values,
-            selected: {_sort},
-            labelOf: (sort) => sort.label,
-            onToggle: (sort) => setState(() => _sort = sort),
           ),
         ),
       ],
@@ -198,6 +209,24 @@ class _RecordsScreenState extends State<RecordsScreen> {
     if (result != null && mounted) setState(() => _filters = result);
   }
 
+  Future<void> _pickSort() async {
+    final sort = await showInvoiceSort(context, _filters.sort);
+    if (sort != null && mounted) setState(() => _filters = InvoiceFilters(statuses: _filters.statuses, sort: sort));
+  }
+
+  Future<void> _edit(Invoice invoice, {bool popRoute = false}) async {
+    final saved = await Navigator.of(context).push<Invoice>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => RecordFormScreen(repository: widget.repository, initial: invoice),
+      ),
+    );
+    if (saved == null || !mounted) return;
+    // A pushed detail page still shows the old values: back to the list.
+    if (popRoute) Navigator.of(context).pop();
+    await _load(quiet: true);
+  }
+
   Future<void> _openForm() async {
     final created = await Navigator.of(context).push<Invoice>(
       MaterialPageRoute(fullscreenDialog: true, builder: (_) => RecordFormScreen(repository: widget.repository)),
@@ -217,7 +246,11 @@ class _RecordsScreenState extends State<RecordsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(invoice.number)),
-          body: _DetailPane(invoice: invoice, onDelete: () => _delete(invoice, popRoute: true)),
+          body: _DetailPane(
+            invoice: invoice,
+            onEdit: () => _edit(invoice, popRoute: true),
+            onDelete: () => _delete(invoice, popRoute: true),
+          ),
         ),
       ),
     );
@@ -261,6 +294,9 @@ class _RecordsScreenState extends State<RecordsScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
+        // This screen is a tab of an IndexedStack shell: tabs share one
+        // route, so default hero tags would clash as soon as a route opens.
+        heroTag: null,
         onPressed: _openForm,
         icon: const Icon(Icons.add_rounded),
         label: const Text('New invoice'),
@@ -302,6 +338,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                             : _DetailPane(
                                 key: ValueKey(selected.id),
                                 invoice: selected,
+                                onEdit: () => _edit(selected),
                                 onDelete: () => _delete(selected),
                                 onClose: _closeDetail,
                               ),
@@ -326,6 +363,11 @@ class _RecordsScreenState extends State<RecordsScreen> {
         SliverAppBar.medium(
           title: const Text('Invoices'),
           actions: [
+            IconButton(
+              tooltip: 'Sort: ${_filters.sort.label}',
+              onPressed: _pickSort,
+              icon: const Icon(Icons.swap_vert_rounded),
+            ),
             IconButton(
               tooltip: 'Filters',
               onPressed: _openFilters,
@@ -404,7 +446,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           actionLabel: 'Clear filters',
                           onAction: () {
                             _search.clear();
-                            setState(() => _filters = const InvoiceFilters());
+                            setState(() => _filters = InvoiceFilters(sort: _filters.sort));
                           },
                         )
                       : EmptyState(
@@ -484,9 +526,16 @@ class _InvoiceCard extends StatelessWidget {
 }
 
 class _DetailPane extends StatelessWidget {
-  const _DetailPane({super.key, required this.invoice, required this.onDelete, this.onClose});
+  const _DetailPane({
+    super.key,
+    required this.invoice,
+    required this.onEdit,
+    required this.onDelete,
+    this.onClose,
+  });
 
   final Invoice invoice;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   /// The embedded pane's ✕. A pushed detail page has the app bar's back
@@ -534,6 +583,7 @@ class _DetailPane extends StatelessWidget {
               ),
             ),
           ),
+          IconButton(tooltip: 'Edit invoice', onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
           if (onClose != null)
             IconButton(tooltip: 'Close details', onPressed: onClose, icon: const Icon(Icons.close_rounded)),
         ],

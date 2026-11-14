@@ -69,7 +69,7 @@ class _SubmitButtonState extends State<SubmitButton> {
         });
         if (_done) {
           _doneTimer?.cancel();
-          _doneTimer = Timer(const Duration(milliseconds: 1200), () {
+          _doneTimer = Timer(AppDurations.confirmation, () {
             if (mounted) setState(() => _done = false);
           });
         }
