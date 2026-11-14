@@ -5,7 +5,9 @@
 // 2. uiConfig: the real theme function, the platforms that ship, RTL if the
 //    app supports a right-to-left language, localization delegates, `setUp`
 //    for DI fakes and plugin stubs (references/harness.md › Faking
-//    dependencies), the theme-extension tones to check.
+//    dependencies), the theme-extension tones to check. Phones and tablets
+//    render under fake system bars (`systemBars`, default: Android's status
+//    and navigation bars, iOS's Dynamic Island and home indicator).
 // 3. uiCases: every screen in the states that matter (content, loading,
 //    empty, error), built with fake data: no network, no real database, no
 //    pending timers. Also:
@@ -40,6 +42,7 @@ final UiConfig uiConfig = UiConfig(
     UiVariant(size: UiSize.phone),
     UiVariant(size: UiSize.phone, brightness: Brightness.dark),
     UiVariant(size: UiSize.phone, textScale: 1.3, direction: TextDirection.rtl),
+    UiVariant(size: UiSize.phone, textScale: 1.6),
     UiVariant(size: UiSize.desktop, platform: TargetPlatform.windows),
   ],
   // Status tones live in a ThemeExtension, so the theme-level contrast test

@@ -17,10 +17,10 @@ One plugin, five skills and a reviewer agent:
 
 | | What it does | Use it when |
 |---|---|---|
-| `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, asks once about platforms / RTL / the look / emoji / motion, then builds on the existing system with 17 focused references and lints its own diff | any Flutter UI work |
+| `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, asks once about platforms / RTL / the look / emoji / how much motion and where, then builds on the existing system with 17 focused references, keeps everything clear of the system bars, and lints its own diff | any Flutter UI work |
 | `flutter-design-system` | Creates, extends, repairs or documents the design system: tokens, theme, density, shared components, `DESIGN.md`. Studies existing code (inventory script) or reference screenshots | new apps, inconsistent apps, "make it look like these" |
-| `flutter-motion` | Purposeful animation through a few shared pieces: entrances, `AnimatedItems`, state switches, counters, progress, charts, buttons, transitions, micro-interactions | "add animations", "make it feel alive", janky motion |
-| `flutter-ui-verify` | A `flutter_test` harness: layout matrix, sheet / keyboard / tap-target checks, contrast and soft-container test, screenshots and contact sheets Claude opens and reviews, a glyph check for the app's fonts; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
+| `flutter-motion` | Purposeful animation at the level the user picks (none, soft or expressive, asked with examples before building) through a few shared pieces: entrances, `AnimatedItems`, state switches, counters, progress, charts, buttons, transitions, micro-interactions | "add animations", "make it feel alive", janky motion |
+| `flutter-ui-verify` | A `flutter_test` harness: layout matrix up to text scale 1.6, phones rendered under their system bars with a check that nothing touches them, sheet / keyboard / tap-target checks, contrast and soft-container test, screenshots and contact sheets Claude opens and reviews, a glyph check for the app's fonts; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
 | `flutter-ui-audit` | Reviews existing screens, reports findings with evidence, fixes them presentation-only, proves it with before/after screenshots | "review / polish / modernize this screen" |
 | `flutter-ui-reviewer` (agent) | Independent visual QA on the screenshots against DESIGN.md | larger passes, so the work isn't grading itself |
 
@@ -32,7 +32,7 @@ plugins/flutter-modern-ui/
     │   ├── SKILL.md
     │   ├── references/      discovery · intake · directions · tokens · theming · layout · adaptive ·
     │   │                    components · forms · sheets-dialogs · data-display · states · messages ·
-    │   │                    rtl-arabic · accessibility · anti-patterns (68) · review-checklist
+    │   │                    rtl-arabic · accessibility · anti-patterns (75) · review-checklist
     │   ├── scripts/         copy_design_system.py (core / extras kits) · lint_ui.py
     │   └── assets/
     │       ├── design_system/   drop-in Dart: tokens, density, palette, typography, theme, widgets, motion
@@ -55,14 +55,15 @@ python3 <flutter-modern-ui>/scripts/copy_design_system.py                 # core
 python3 <flutter-modern-ui>/scripts/copy_design_system.py --kit extras    # motion, adaptive shell, KPI tiles
 ```
 
-The **core** kit is what every app needs (tokens, theme, palette, cards, pills, empty states, skeletons, sheets and pickers, chips, messages, `Ltr`); the **extras** add motion, `AdaptiveShell` and `KpiTile` when the app animates, runs on tablets or desktop, or has a dashboard. The script keeps files you've changed, writes the barrel, and in `material_ui` projects (Flutter 3.50+) imports `material_ui` / `cupertino_ui`.
+The **core** kit is what every app needs (tokens, theme, motion level, palette, cards, pills, `MetaItem`, empty states, skeletons, sheets and pickers, chips, `SaveBar`, messages, `Ltr`); the **extras** add motion, `AdaptiveShell` and `KpiTile` when the app animates, runs on tablets or desktop, or has a dashboard. The script keeps files you've changed, writes the barrel, and in `material_ui` projects (Flutter 3.50+) imports `material_ui` / `cupertino_ui`.
 
 - **Tokens**: spacing, radius roles with a concentric-corner helper, elevation, strokes, opacity, sizes, breakpoints and window size classes, motion durations and M3 curves.
-- **`AppThemeConfig`**: seed and scheme variant, font and fallback, **Arabic script** (zero letter-spacing, taller lines), **eye-comfort surfaces** (warm, dimmed, contrast-checked), **filled or outlined inputs**, touch and desktop density.
+- **`AppThemeConfig`**: seed and scheme variant, font and fallback, **Arabic script** (zero letter-spacing, taller lines), **eye-comfort surfaces** (warm, dimmed, contrast-checked), **filled or outlined inputs**, touch and desktop density, and the **motion level** (`none`, `soft`, `expressive`) that every shared motion piece follows.
+- **Context helpers**: `context.isNarrow` (width ÷ text scale < 340: stack paired rows at big fonts), `context.iconSize` (inline icons grow with text), `context.listEndPadding(fab:)` (lists end clear of the navigation bar and the FAB).
 - **`AppTheme`**: light and dark, every common component themed, desktop scrollbars and tooltips, checkmarked chips, data tables, predictive-back page transitions.
 - **`AppDensity`**: 48 px touch vs 40 px desktop controls, chosen by platform.
 - **`AppPalette`**: success / warning / info tones (add your domain tones): a strong color from the seed and a soft container, even for saturated brand seeds; soft and hover shadows.
-- **Widgets**: `AppCard` (ink, hover, press scale, raised tiles), `StatusPill` (icon required), `IconBadge`, `EmojiBadge`, `SectionHeader`, `EmptyState`, `Shimmer` / `SkeletonBox` / `ShowAfter`, `Ltr`, `showAppSheet` + `SheetScaffold`, `showAppPicker` (pick-one sheet, no footer), `AppChoiceChips` (wrapping, with an optional inline label), `AppMessenger` (one message component, `persist: false`, failure helper, **delete with Undo**), `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`.
+- **Widgets**: `AppCard` (ink, hover, press scale, raised tiles), `StatusPill` (icon required), `IconBadge`, `EmojiBadge`, `SectionHeader`, `EmptyState`, `Shimmer` / `SkeletonBox` / `ShowAfter`, `Ltr`, `showAppSheet` + `SheetScaffold` (with an inline `error`), `showAppPicker` (pick-one sheet, no footer), `SaveBar` (bottom action inside the safe area), `MetaItem` (icon + muted detail), `AppChoiceChips` (wrapping, with an optional inline label), `AppMessenger` (one message component, `persist: false`, failure helper, **delete with Undo**), `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`.
 - **Motion**: `Entrance`, `AnimatedItems` (diffing sliver list/grid that keeps item state), `StateSwitcher`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`, `ShakeOnChange`, `PopOnChange`, `MiniBarChart` + `NiceScale`.
 
 ### Verification harness (`flutter-ui-verify/assets/harness/`)
@@ -72,6 +73,12 @@ Copy with `python3 <flutter-ui-verify>/scripts/copy_harness.py` (→ `test/ui/`;
 ```bash
 flutter test test/ui                                                              # layout matrix, sheets, contrast
 flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true  # screenshots → test/ui/screenshots/
+```
+
+Phones and tablets render under the system bars a device draws (status bar with a camera cutout or the Dynamic Island, navigation bar or home indicator), drawn in the screenshots too, and the layout test fails when text or a tap target sits under them or touches them, at rest or with a list scrolled to its end:
+
+```
+[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): SafeArea(top: false) around it, plus 8 px or more  ← lib/features/bills/bill_form.dart:120
 ```
 
 Each case also gets a contact sheet (`screenshots/contact_sheets/<case>.png`, every variant side by side), so a pass is reviewed a screen at a time. Two scripts cover what tests can't see:
@@ -148,7 +155,7 @@ This app is Arabic-only and ships on Windows and Android. Make the dashboard con
 
 /flutter-modern-ui:flutter-motion Add animations to the records list and the dashboard charts.
 
-/flutter-modern-ui:flutter-ui-verify Check every screen and sheet at 360 px and text scale 1.3, then show me the screenshots.
+/flutter-modern-ui:flutter-ui-verify Check every screen and sheet at 360 px and text scale 1.6, then show me the screenshots.
 
 /flutter-modern-ui:flutter-ui-verify The receipt PDF: render the longest case and the one with no optional fields, then show me the pages.
 
@@ -157,7 +164,7 @@ This app is Arabic-only and ships on Windows and Android. Make the dashboard con
 
 Tips:
 
-- Answer the intake questions (platforms, RTL, the look, emoji, motion) once; they land in `DESIGN.md` and later sessions read them. The look (cards, plain rows or rich) matters most: "basic" in a spec rarely means plain rows.
+- Answer the intake questions (platforms, RTL, the look, emoji, motion) once; they land in `DESIGN.md` and later sessions read them. The look (cards, plain rows or rich) matters most: "basic" in a spec rarely means plain rows. For motion you pick a level (none, soft or expressive) and the places, each shown with a small example.
 - Commit `DESIGN.md`. It's how the tenth screen ends up looking like the first.
 - The skills change presentation only. Your state management, routing and DI stay as they are.
 

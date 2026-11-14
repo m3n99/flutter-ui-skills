@@ -91,7 +91,6 @@ class _DashboardContent extends StatelessWidget {
     final outstanding = open.fold<int>(0, (sum, i) => sum + i.amountCents);
     final overdueAmount = overdue.fold<int>(0, (sum, i) => sum + i.amountCents);
     final collected = InvoiceRepository.collectedByMonth.last;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return RefreshIndicator.adaptive(
       onRefresh: onRefresh,
@@ -105,7 +104,7 @@ class _DashboardContent extends StatelessWidget {
                 sliver: const SliverToBoxAdapter(child: _GreetingHeader()),
               ),
               SliverPadding(
-                padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.lg, side, bottomInset + AppSpace.lg),
+                padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.lg, side, context.listEndPadding()),
                 sliver: SliverList.list(
                   children: [
                     KpiGrid(
@@ -228,7 +227,9 @@ class _DueSoonGroup extends StatelessWidget {
     const inset = AppSpace.xs;
     final rowRadius = BorderRadius.circular(AppRadius.concentric(AppRadius.card, inset));
     final text = context.textStyles;
-    final colors = context.colors;
+    // Big fonts or a small phone: the amount and the pill move under the
+    // details instead of squeezing the name.
+    final narrow = context.isNarrow;
 
     return AppCard(
       padding: const EdgeInsets.all(inset),
@@ -250,24 +251,36 @@ class _DueSoonGroup extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         spacing: AppSpace.xxs,
                         children: [
-                          Text(invoice.customer, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                           Text(
-                            '${invoice.number} · due ${formatShortDate(invoice.due)}',
-                            style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-                            maxLines: 1,
+                            invoice.customer,
+                            style: text.titleSmall,
+                            maxLines: narrow ? 2 : 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          Wrap(
+                            spacing: AppSpace.sm,
+                            runSpacing: AppSpace.xxs,
+                            children: [
+                              MetaItem(icon: Icons.tag_rounded, text: invoice.number, ltr: true),
+                              MetaItem(icon: Icons.event_outlined, text: 'Due ${formatShortDate(invoice.due)}'),
+                            ],
+                          ),
+                          if (narrow) ...[
+                            Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
+                            invoice.status.pill,
+                          ],
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      spacing: AppSpace.xxs,
-                      children: [
-                        Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
-                        invoice.status.pill,
-                      ],
-                    ),
+                    if (!narrow)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        spacing: AppSpace.xxs,
+                        children: [
+                          Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
+                          invoice.status.pill,
+                        ],
+                      ),
                   ],
                 ),
               ),

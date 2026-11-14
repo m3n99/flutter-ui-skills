@@ -64,3 +64,5 @@ Use cards on phones; switch to a table on large widths (≥ 1200, or ≥ 840 for
 ## Amounts everywhere
 
 - Minor units in data, `intl` formatting at the edge, tabular figures, `Ltr` in RTL, the same decimals in a column, negative values with a minus sign (and color only as a second signal).
+- Totals in several currencies: one line per currency, never one summed number (`forms.md` › Money).
+- A hero summary (this month's total) is one `AppCard` on `primaryContainer` with the amounts in `headlineMedium`; shares by category are pill `LinearProgressIndicator`s scaled to the largest category, with the amount as text beside each.

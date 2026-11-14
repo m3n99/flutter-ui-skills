@@ -31,8 +31,22 @@ final UiConfig uiConfig = UiConfig(
   localeFor: (_) => const Locale('ar'),
   scaffoldMessengerKey: AppMessenger.key,        // or the project's messenger key
   navigatorKey: navigatorKey,                    // if routes use a global key
+  // systemBars: defaultSystemBars,              // the default; (_) => EdgeInsets.zero turns them off
+  // systemBarGap: 8,                            // null: draw the bars, skip the check
 );
 ```
+
+### System bars
+
+Phones and tablets render under the system bars a real device draws over the app (`defaultSystemBars`): Android gets a 32 px status bar with a camera cutout and a 48 px three-button navigation bar; iOS a 59 px Dynamic Island area and a 34 px home indicator; desktop nothing. They reach the app as `MediaQuery` padding, so `SafeArea`, app bars and navigation bars react exactly as on a device, and the screenshots draw them on top: what they cover, the user can't see.
+
+`layout_smoke_test.dart` and `sheets_test.dart` then check that no text, icon, field or tap target sits under a bar or within `systemBarGap` (8 px) of it:
+
+- what stays put (headers, bottom bars, buttons): both bars;
+- scroll views at their start: the status bar;
+- every scroll view that reaches the navigation bar or a FAB, scrolled to its end: its last rows must clear the bar by 8 px, and the FAB.
+
+App bars, `NavigationBar`, `NavigationRail` and `BottomAppBar` pad themselves, so for them only overlap counts. One problem showing in many variants is reported once: `[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): SafeArea(top: false) around it, plus 8 px or more  ← lib/features/bills/bill_form.dart:120`.
 
 ### Fake data, by architecture
 
@@ -144,7 +158,7 @@ flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens 
 
 Screenshots land in `test/ui/screenshots/<case>__<variant>.png`, with one contact sheet per case and per sheet in `test/ui/screenshots/contact_sheets/` (every shot variant side by side, labeled). Review the contact sheets first; open single shots for detail.
 
-The default matrix is 3 sizes × 2 text scales × 2 themes × platforms × directions per case; it runs in seconds per case because time is fake. Trim only what the app doesn't ship.
+The default matrix is 3 sizes × 3 text scales (1.0, 1.3 and 1.6: Android's big fonts, iOS's larger sizes, large display sizes) × 2 themes × platforms × directions per case; it runs in seconds per case because time is fake. Trim only what the app doesn't ship.
 
 ## Reading failures
 
@@ -161,7 +175,12 @@ The default matrix is 3 sizes × 2 text scales × 2 themes × platforms × direc
 | Error | Usual cause | Fix |
 |---|---|---|
 | RenderFlex overflowed … on the right | text or chips in a `Row` without flex | `Expanded`/`Flexible` + `maxLines` + ellipsis; `Wrap`; stack on compact; shorten a label |
-| RenderFlex overflowed … on the bottom | fixed heights, text scale 1.3, keyboard | remove fixed heights; scroll view; `FittedBox(scaleDown)` for big values |
+| RenderFlex overflowed … on the bottom | fixed heights, text scale 1.3 / 1.6, keyboard | remove fixed heights; scroll view; `FittedBox(scaleDown)` for big values |
+| Overflow only at 1.6 | two things side by side in a row | stack them when `context.isNarrow`; one KPI tile / form field per row |
+| … under / … px from the status bar | a header without an app bar, outside `SafeArea` or flush against it | `SafeArea(bottom: false)` + ≥ `AppSpace.md` above the first row; full-bleed headers pad by `MediaQuery.paddingOf(context).top` |
+| … px from the navigation bar | a bottom bar or button without `SafeArea`, or with no padding | `SaveBar` (safe area + 12 px), or `SafeArea(top: false)` + ≥ 8 px |
+| at the end of the scroll … from the navigation bar | the list doesn't end with the bottom inset (an explicit `ListView(padding:)` drops it) | `context.listEndPadding()` as the last padding / sliver |
+| at the end of the scroll … behind the floating action button | no room for the FAB under the last row | `context.listEndPadding(fab: true)` |
 | Vertical viewport was given unbounded height | `ListView` inside `Column` / sliver list | `Expanded`, or slivers |
 | BoxConstraints forces an infinite width | `TextField` / `Expanded` inside an unbounded `Row` | give the field `Expanded` or a width |
 | Incorrect use of ParentDataWidget | `Expanded` / `Positioned` not directly in a Flex / Stack | move it |

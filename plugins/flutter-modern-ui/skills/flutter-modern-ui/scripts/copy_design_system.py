@@ -8,10 +8,11 @@
     python3 copy_design_system.py --list
 
 Kits
-  core    tokens, density, palette, typography, theme, context extensions,
-          AppCard, PressScale, StatusPill / IconBadge / EmojiBadge, EmptyState,
-          skeletons, sheets and pickers, chips, messages, SectionHeader, Ltr.
-          What every app needs; enough for an Android-only app.
+  core    tokens, density, motion level, palette, typography, theme, context
+          extensions, AppCard, PressScale, StatusPill / IconBadge / EmojiBadge,
+          MetaItem, EmptyState, skeletons, sheets and pickers, chips, SaveBar,
+          messages, SectionHeader, Ltr. What every app needs; enough for an
+          Android-only app.
   extras  motion (Entrance, AnimatedItems, StateSwitcher, ShakeOnChange,
           SubmitButton, AnimatedNumber, AppProgressBar, MiniBarChart),
           AdaptiveShell / ContentWidth, KpiTile / KpiGrid. Add when the app
@@ -43,6 +44,7 @@ KITS = {
     "core": [
         "tokens.dart",
         "app_density.dart",
+        "app_motion.dart",
         "app_palette.dart",
         "app_typography.dart",
         "app_theme.dart",
@@ -50,10 +52,12 @@ KITS = {
         "widgets/app_card.dart",
         "widgets/press_scale.dart",
         "widgets/status_pill.dart",
+        "widgets/meta_item.dart",
         "widgets/empty_state.dart",
         "widgets/skeleton.dart",
         "widgets/app_sheet.dart",
         "widgets/controls.dart",
+        "widgets/save_bar.dart",
         "widgets/app_messenger.dart",
         "widgets/section_header.dart",
         "widgets/ltr.dart",
@@ -191,7 +195,7 @@ def main():
         print(f"Imports rewritten for material_ui in {len(changed)} file(s).")
     if needs_cupertino and "cupertino_ui" not in deps:
         print("app_theme.dart needs CupertinoPageTransitionsBuilder: flutter pub add cupertino_ui")
-    print("Next: set AppTheme.config (seed, variant, font, script), wire AppTheme.light/dark and AppMessenger.key in MaterialApp, write DESIGN.md.")
+    print("Next: set AppTheme.config (seed, variant, font, script, motion level), wire AppTheme.light/dark and AppMessenger.key in MaterialApp, write DESIGN.md.")
     return 0
 
 

@@ -32,7 +32,7 @@ Hard-coded values: {counts from ui_inventory.sh}.
 
 ### 2. Dimensions and layout
 - [ ] 2.1 Touch targets ≥ 48 on touch platforms
-- [ ] 2.2 Layout test covers {screens and sheets} at 360 × 1.3
+- [ ] 2.2 Layout test covers {screens and sheets} at 360 × 1.3 and 1.6, under the system bars
 
 ### 3. Nested shapes
 - [ ] 3.1 {group-card rows: radius 12 − 8 = 4}
@@ -52,7 +52,7 @@ Hard-coded values: {counts from ui_inventory.sh}.
 - [ ] 6.4 Submit buttons can't double-submit
 
 ### 7. Verification and docs
-- [ ] 7.1 Screenshots reviewed (light, dark, 1.3, RTL, desktop)
+- [ ] 7.1 Screenshots reviewed (light, dark, 1.3, 1.6, RTL, desktop; nothing under the system bars)
 - [ ] 7.1b Printed documents: sample PDFs (typical, empty optional fields, longest) pass the block checks; every page opened
 - [ ] 7.2 DESIGN.md updated
 - [ ] 7.3 `flutter analyze` clean, tests pass

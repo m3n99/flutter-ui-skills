@@ -60,6 +60,9 @@ class _SheetMode extends InheritedWidget {
 ///    fills the rest. In RTL the primary therefore sits on the left.
 ///    Pick-one sheets have no footer: tapping an option is the action
 ///    ([showAppPicker]).
+/// 4. [error]: when the action fails, say so inside the sheet, right above
+///    the footer. A SnackBar would show on the page behind the sheet, where
+///    nobody sees it.
 ///
 /// As a bottom sheet the content is lifted above the keyboard; dialogs move
 /// themselves.
@@ -72,6 +75,7 @@ class SheetScaffold extends StatelessWidget {
     this.secondaryAction,
     this.showClose = true,
     this.bodyPadding = const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.xs, AppSpace.lg, AppSpace.lg),
+    this.error,
   });
 
   /// Lets tests find the primary action of any sheet.
@@ -91,6 +95,10 @@ class SheetScaffold extends StatelessWidget {
   /// Around the body. Pickers pass less, so their rows reach the edges.
   final EdgeInsetsGeometry bodyPadding;
 
+  /// What went wrong with the last action ("Couldn't save: the check number
+  /// is already used"), shown above the footer; null hides it.
+  final String? error;
+
   @override
   Widget build(BuildContext context) {
     final asDialog = _SheetMode.of(context) ?? context.windowSize != WindowSize.compact;
@@ -98,6 +106,7 @@ class SheetScaffold extends StatelessWidget {
     final primary = primaryAction;
     final secondary = secondaryAction;
     final hasFooter = primary != null || secondary != null;
+    final message = error;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -130,8 +139,8 @@ class SheetScaffold extends StatelessWidget {
             child: SafeArea(
               top: false,
               // The footer keeps clear of the home indicator; without one,
-              // the body does.
-              bottom: !hasFooter,
+              // the error or else the body does.
+              bottom: !hasFooter && message == null,
               child: SingleChildScrollView(
                 padding: bodyPadding,
                 child: Column(
@@ -142,6 +151,7 @@ class SheetScaffold extends StatelessWidget {
               ),
             ),
           ),
+          if (message != null) _SheetError(message: message, hasFooter: hasFooter),
           if (hasFooter)
             DecoratedBox(
               decoration: BoxDecoration(
@@ -164,6 +174,37 @@ class SheetScaffold extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// The failed action's message, inside the sheet: an icon and the error
+/// color, announced to screen readers.
+class _SheetError extends StatelessWidget {
+  const _SheetError({required this.message, required this.hasFooter});
+
+  final String message;
+  final bool hasFooter;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.colors.error;
+    final row = Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.xs, AppSpace.lg, AppSpace.xs),
+      child: Semantics(
+        liveRegion: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: AppSpace.xs,
+          children: [
+            Icon(Icons.error_outline_rounded, size: context.iconSize(AppIconSize.dense), color: color),
+            Expanded(child: Text(message, style: context.textStyles.bodyMedium?.copyWith(color: color))),
+          ],
+        ),
+      ),
+    );
+    // Without a footer the error is the last thing in the sheet, so it keeps
+    // clear of the navigation bar itself.
+    return hasFooter ? row : SafeArea(top: false, child: row);
   }
 }
 

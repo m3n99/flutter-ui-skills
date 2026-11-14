@@ -1,6 +1,6 @@
 ---
 name: flutter-ui-verify
-description: Verify Flutter UI by actually rendering it — a layout matrix (phone/tablet/desktop × text scale 1.0/1.3 × light/dark × touch/desktop × LTR/RTL) that reports overflows with the source line, sheet checks (keyboard, tap targets), a contrast test, screenshots Claude opens and reviews like a designer, and printed documents (sample PDFs checked for dropped or overlapping blocks, rasterized and reviewed). Use after building or changing UI or a PDF layout, before saying UI work is done, or when asked to test, check, screenshot or QA Flutter screens or printouts.
+description: Verify Flutter UI by actually rendering it — a layout matrix (phone/tablet/desktop × text scale 1.0/1.3/1.6 × light/dark × touch/desktop × LTR/RTL, under the phone's system bars) that reports overflows with the source line and anything touching the status or navigation bar, sheet checks (keyboard, tap targets), a contrast test, screenshots Claude opens and reviews like a designer, and printed documents (sample PDFs checked for dropped or overlapping blocks, rasterized and reviewed). Use after building or changing UI or a PDF layout, before saying UI work is done, or when asked to test, check, screenshot or QA Flutter screens or printouts.
 ---
 
 # Flutter UI Verify
@@ -13,8 +13,8 @@ The harness lives in `assets/harness/` and runs on plain `flutter_test`: no devi
 |---|---|---|
 | `ui_harness.dart` | `test/ui/` | shared machinery (pumping, error capture, fonts, keyboard, shots, contrast math) |
 | `ui_cases.dart` | `test/ui/` | **the only file to edit**: theme, matrix, screens and sheets to render |
-| `layout_smoke_test.dart` | `test/ui/` | every case × matrix: no overflow / layout / build errors, with the source line |
-| `sheets_test.dart` | `test/ui/` | every sheet: ≥ 48 px labeled tap targets on touch; the primary action on screen and above a 300 px keyboard; pick-one sheets: options on screen, a tap closes the sheet. With `VISUAL`, the sheets' screenshots |
+| `layout_smoke_test.dart` | `test/ui/` | every case × matrix: no overflow / layout / build errors, with the source line; on phones and tablets nothing under or touching the system bars, also with each list scrolled to its end |
+| `sheets_test.dart` | `test/ui/` | every sheet: ≥ 48 px labeled tap targets on touch; clear of the system bars; the primary action on screen and above a 300 px keyboard; pick-one sheets: options on screen, a tap closes the sheet. With `VISUAL`, the sheets' screenshots |
 | `contrast_test.dart` | `test/ui/` | text, icons, borders and status tones ≥ WCAG AA in light and dark; containers soft enough to read as tints |
 | `visual_test.dart` | `test/ui/` | screenshots and one contact sheet per case to `test/ui/screenshots/` (only with `VISUAL`) |
 | `design_system_test.dart` | `test/ui/` | behaviour of the shared widgets and tones (only if the project uses them) |
@@ -35,7 +35,7 @@ Copy them with `python3 <this skill>/scripts/copy_harness.py`, run from the proj
 
    Bundle the app's fonts (the harness loads `FontManifest.json` and falls back to the SDK's Roboto) so tests measure and draw real glyphs.
 2. **Static check**: `flutter analyze`. Changed files clean.
-3. **Layout matrix**: `flutter test test/ui/layout_smoke_test.dart`. Each failure reads `[360_dark_android_rtl_x1.3] A RenderFlex overflowed by 13 pixels on the right. ← lib/features/bills/bill_tile.dart:42`. Fix by cause (`references/harness.md` › Fix table), then re-run.
+3. **Layout matrix**: `flutter test test/ui/layout_smoke_test.dart` (text scale 1.0, 1.3 and 1.6; phones and tablets under their system bars). Each failure reads `[360_dark_android_rtl_x1.3] A RenderFlex overflowed by 13 pixels on the right. ← lib/features/bills/bill_tile.dart:42`, or for the system bars `[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): … ← lib/…`. Fix by cause (`references/harness.md` › Fix table), then re-run.
 4. **Sheets**: `flutter test test/ui/sheets_test.dart`.
 5. **Contrast**: `flutter test test/ui/contrast_test.dart`. Passing contrast isn't the same as looking right: the soft-container check flags containers as strong as their seed.
 6. **Screenshots**: `flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true`.

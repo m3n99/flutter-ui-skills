@@ -34,16 +34,30 @@ Cards (recommended)            Plain rows                     Rich
 - on section headers too
 - on empty states and success messages too
 
-**5. Motion** — "Where should things animate? (pick any)"
-- **Cards**: entrance on load (fade + slight slide, staggered), press feedback, hover lift on desktop
-- **Lists**: animated insert / remove, neighbours slide into place, reorder
-- **Pages and views**: route transitions, tab switches, shared-element / container transform
-- **Buttons**: press scale, spinner inside the button while saving, success check
-- **Charts and numbers**: bars and lines move from old to new values, counters tween
-- **Sheets and dialogs**: slide-up, keyboard-aware
-- **Skeletons**: shimmer while loading
+**5. Motion: how much, and where** — always asked **before the first screen is built**, in two parts, with the examples below so the user picks from something concrete. Ask even when the spec or the customer already hinted at motion ("keep it basic", "make it feel alive"): the hint becomes the recommended option, not the answer, because "basic" may still mean a calm fade and "alive" rarely means bouncing everything.
 
-Add: "All motion stays 150–350 ms with standard easing and switches off when the system asks for reduced motion."
+*a. "How much motion do you want?"*
+
+| Level | What it feels like | Small example: invoices loading |
+|---|---|---|
+| **None** | Material's own motion only: ripples, page transitions, switches, sheets sliding up | the rows are simply there |
+| **Soft** (recommended for most apps) | calm and quick: things fade in with a short rise, all at once; a light press; no overshoot | the rows fade in together, rising 4 % of their height, in 250 ms |
+| **Expressive** | noticeable and lively: rows rise one after another, grids scale in, counters roll, a pop on success, a shake on errors | the rows rise 12 % one after another, 40 ms apart, in 300 ms each |
+
+*b. "Where should it move?" (pick any)*, each place with its soft and expressive version:
+
+| Place | Soft | Expressive |
+|---|---|---|
+| **Cards and lists on load** | fade + 4 % rise, together | 12 % rise, staggered row by row (first 8) |
+| **List changes** (add, delete, filter) | rows fade and fold; neighbours slide | the same, grid tiles also scale in from 92 % |
+| **Numbers and charts** | values tween from old to new; a changed badge grows 8 % | the same, a little longer; a changed badge pops 18 % |
+| **Buttons** | ripple, 2 % press, spinner while saving, a check when done | 4 % press, spinner, a check that overshoots into place |
+| **Errors** | a 4 px shake of the button, with the message | an 8 px shake, with the message |
+| **Pages** | the platform's transition | container transform from a card into its page, shared axis between steps (`flutter-motion` › recipes) |
+| **Sheets and dialogs** | Material's slide-up | Material's slide-up |
+| **Loading** | skeleton shimmer | skeleton shimmer |
+
+Add: "Every level keeps motion short (150–450 ms), switches it off when the system asks for reduced motion, and never moves what you're reading."
 
 **6. Direction** (only when there is no design system yet) — "Any brand color or apps whose look you like? Otherwise I'll pick a direction that fits the domain." Options: the six directions in `directions.md`, "match these screenshots", or "you choose".
 
@@ -57,7 +71,7 @@ State the defaults in one line at the top of the work and carry on:
 | RTL | Yes if any ARB / l10n file is `ar`, `he`, `fa` or `ur`; otherwise no |
 | Look | **Don't default silently.** Build the first list screen with cards, show its screenshot and ask before doing the rest. Never fall back to bare `ListTile` rows: they read as unstyled |
 | Emoji | None |
-| Motion | Press feedback, skeleton shimmer, state cross-fades, list insert/remove, buttons with progress |
+| Motion | **Ask anyway** (it's quick, and the user may be back before the first screen is done); until then soft, on cards and lists on load, list changes, numbers, buttons and loading. A spec that says "basic" points to none or soft: confirm which |
 | Direction | From the domain (`directions.md` › Choosing quickly) |
 
 ## Acting on the answers
@@ -79,6 +93,6 @@ State the defaults in one line at the top of the work and carry on:
 - excluded from semantics (the label speaks);
 - `flutter_test` has no emoji font: screenshots show boxes; devices render them in color.
 
-**Motion** → build one reusable piece per surface and route every screen through it (`flutter-motion` skill): `Entrance` / `AnimatedItems` for cards and lists, `StateSwitcher` for states, `SubmitButton` for buttons, `AnimatedNumber` / `AppProgressBar` / chart durations for values, theme page transitions for routes. Durations from tokens, gated by `context.motion(...)`.
+**Motion** → record the level and the places in DESIGN.md (*Motion*), set `AppThemeConfig.motion` (`MotionLevel.none`, `.soft` or `.expressive`), and route every screen through one shared piece per place (`flutter-motion` skill): `Entrance` / `AnimatedItems` for cards and lists, `StateSwitcher` for states, `PressScale` (in `AppCard`) and `SubmitButton` for buttons, `AnimatedNumber` / `AppProgressBar` / chart durations for values, theme page transitions for routes. They read the level from the theme (rise, stagger, press, pop, shake); durations come from tokens through `context.motion(...)`, which also scales them by the level. A place the user didn't pick doesn't move, whatever the level.
 
 **Direction** → `directions.md`, then the `flutter-design-system` skill.

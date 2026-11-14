@@ -1,6 +1,8 @@
 // UI test harness: renders screens and sheets across sizes, text scales,
-// themes, platforms and reading directions; collects layout errors with the
-// source line; checks tap targets and the keyboard; saves screenshots.
+// themes, platforms and reading directions, under the system bars a phone
+// draws (status bar, Dynamic Island, navigation bar); collects layout errors
+// with the source line; checks tap targets, the keyboard and what touches the
+// system bars; saves screenshots.
 //
 // Project-independent. Configure it in ui_cases.dart.
 
@@ -11,6 +13,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show DiagnosticsDebugCreator;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -69,6 +72,16 @@ class UiVariant {
   /// Stable, file-name-safe id: `360_light_android_ltr_x1.3`.
   String get id => '${size.name}_${brightness.name}_${platform.name}_${direction.name}_x$textScale';
 }
+
+/// The system bars a phone or tablet draws over the app, in logical pixels:
+/// on top the status bar with a camera cutout (Android) or the Dynamic Island
+/// (iOS); at the bottom the three-button navigation bar (Android) or the home
+/// indicator (iOS). Desktop windows have none.
+EdgeInsets defaultSystemBars(UiVariant variant) => switch (variant.platform) {
+      TargetPlatform.android || TargetPlatform.fuchsia => const EdgeInsets.only(top: 32, bottom: 48),
+      TargetPlatform.iOS => const EdgeInsets.only(top: 59, bottom: 34),
+      TargetPlatform.linux || TargetPlatform.macOS || TargetPlatform.windows => EdgeInsets.zero,
+    };
 
 /// A screen in a given state, built with fake data.
 @immutable
@@ -129,7 +142,7 @@ class UiConfig {
   const UiConfig({
     required this.theme,
     this.sizes = const [UiSize.phone, UiSize.tablet, UiSize.desktop],
-    this.textScales = const [1.0, 1.3],
+    this.textScales = const [1.0, 1.3, 1.6],
     this.brightnesses = const [Brightness.light, Brightness.dark],
     this.platforms = const [TargetPlatform.android],
     this.directions = const [TextDirection.ltr],
@@ -137,8 +150,11 @@ class UiConfig {
       UiVariant(size: UiSize.phone),
       UiVariant(size: UiSize.phone, brightness: Brightness.dark),
       UiVariant(size: UiSize.phone, textScale: 1.3),
+      UiVariant(size: UiSize.phone, textScale: 1.6),
       UiVariant(size: UiSize.desktop),
     ],
+    this.systemBars = defaultSystemBars,
+    this.systemBarGap = 8,
     this.localizationsDelegates = const <LocalizationsDelegate<dynamic>>[],
     this.supportedLocales = const [Locale('en')],
     this.localeFor,
@@ -154,6 +170,9 @@ class UiConfig {
   final ThemeData Function(Brightness brightness, TargetPlatform platform) theme;
 
   final List<UiSize> sizes;
+
+  /// 1.3 is Android's old largest font; 1.6 stands for the bigger sizes of
+  /// Android 14+ and iOS, and for large display sizes.
   final List<double> textScales;
   final List<Brightness> brightnesses;
 
@@ -165,6 +184,18 @@ class UiConfig {
 
   /// The curated set of screenshots per case.
   final List<UiVariant> shots;
+
+  /// The system bars each variant renders under. They reach the app as
+  /// MediaQuery padding, like on a device (SafeArea, app bars and navigation
+  /// bars react to them), and screenshots draw them. `(_) => EdgeInsets.zero`
+  /// turns them off.
+  final EdgeInsets Function(UiVariant variant) systemBars;
+
+  /// The least space between the system bars and text, icons or tap targets:
+  /// the little padding on top of the safe area, so nothing touches the
+  /// status bar, the Dynamic Island or the navigation bar. null skips the
+  /// check (the bars are still drawn).
+  final double? systemBarGap;
 
   final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;
   final List<Locale> supportedLocales;
@@ -239,35 +270,58 @@ Future<void> pumpUi(
     variant.size.height * variant.size.devicePixelRatio,
   );
   tester.view.devicePixelRatio = variant.size.devicePixelRatio;
+  final bars = config.systemBars(variant);
+  final ratio = variant.size.devicePixelRatio;
+  final barPadding = FakeViewPadding(
+    left: bars.left * ratio,
+    top: bars.top * ratio,
+    right: bars.right * ratio,
+    bottom: bars.bottom * ratio,
+  );
+  tester.view.padding = barPadding;
+  tester.view.viewPadding = barPadding;
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpWidget(
     RepaintBoundary(
       key: uiShotKey,
-      child: MaterialApp(
-        key: ValueKey(variant.id),
-        debugShowCheckedModeBanner: false,
-        theme: config.theme(variant.brightness, variant.platform),
-        locale: config.localeFor?.call(variant.direction),
-        localizationsDelegates: config.localizationsDelegates,
-        supportedLocales: config.supportedLocales,
-        scaffoldMessengerKey: config.scaffoldMessengerKey,
-        navigatorKey: config.navigatorKey,
-        builder: (context, child) {
-          final content = child ?? const SizedBox.shrink();
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(variant.textScale),
-              disableAnimations: variant.reduceMotion,
+      child: Stack(
+        fit: StackFit.expand,
+        textDirection: TextDirection.ltr,
+        children: [
+          MaterialApp(
+            key: ValueKey(variant.id),
+            debugShowCheckedModeBanner: false,
+            theme: config.theme(variant.brightness, variant.platform),
+            locale: config.localeFor?.call(variant.direction),
+            localizationsDelegates: config.localizationsDelegates,
+            supportedLocales: config.supportedLocales,
+            scaffoldMessengerKey: config.scaffoldMessengerKey,
+            navigatorKey: config.navigatorKey,
+            builder: (context, child) {
+              final content = child ?? const SizedBox.shrink();
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(variant.textScale),
+                  disableAnimations: variant.reduceMotion,
+                ),
+                child: Directionality(
+                  textDirection: variant.direction,
+                  child: config.wrap?.call(content) ?? content,
+                ),
+              );
+            },
+            home: Builder(builder: home),
+          ),
+          // On top of everything, like the real bars: what they cover shows
+          // in screenshots. It takes no taps and adds no semantics.
+          IgnorePointer(
+            child: CustomPaint(
+              painter: SystemBarsPainter(bars: bars, platform: variant.platform, brightness: variant.brightness),
             ),
-            child: Directionality(
-              textDirection: variant.direction,
-              child: config.wrap?.call(content) ?? content,
-            ),
-          );
-        },
-        home: Builder(builder: home),
+          ),
+        ],
       ),
     ),
   );
@@ -323,7 +377,10 @@ String describeUiError(FlutterErrorDetails details) {
 String? _sourceLocation(String text) {
   for (final match in RegExp(r'file://(/\S+?\.dart):(\d+):(\d+)').allMatches(text)) {
     final path = match.group(1)!;
-    if (path.contains('/packages/flutter/') || path.contains('/.pub-cache/') || path.contains('/flutter_test/')) {
+    if (path.contains('/packages/flutter/') ||
+        path.contains('/.pub-cache/') ||
+        path.contains('/Pub/Cache/') ||
+        path.contains('/flutter_test/')) {
       continue;
     }
     final project = RegExp(r'/(lib|test)/').firstMatch(path);
@@ -344,12 +401,347 @@ const Key _sheetHostKey = Key('ui-sheet-host');
 /// Blank screen the sheet cases open from.
 Widget sheetHost(BuildContext context) => const Scaffold(body: SizedBox.expand(key: _sheetHostKey));
 
-/// Simulates a [height] px software keyboard.
+/// Simulates a [height] px software keyboard. Like on a device, it covers
+/// the navigation bar, so the bottom padding drops to zero while it's up.
 void showKeyboard(WidgetTester tester, double height) {
+  final bars = tester.view.viewPadding;
+  tester.view.padding = FakeViewPadding(left: bars.left, top: bars.top, right: bars.right);
   tester.view.viewInsets = FakeViewPadding(bottom: height * tester.view.devicePixelRatio);
 }
 
-void hideKeyboard(WidgetTester tester) => tester.view.resetViewInsets();
+void hideKeyboard(WidgetTester tester) {
+  final bars = tester.view.viewPadding;
+  tester.view.padding = FakeViewPadding(left: bars.left, top: bars.top, right: bars.right, bottom: bars.bottom);
+  tester.view.resetViewInsets();
+}
+
+/// Paints the system bars over the app the way a phone shows them: the
+/// status bar (time, camera cutout or Dynamic Island, battery) and the
+/// navigation bar (back, home and recents on a translucent scrim) or the home
+/// indicator. Screenshots then show what the bars cover.
+class SystemBarsPainter extends CustomPainter {
+  const SystemBarsPainter({required this.bars, required this.platform, required this.brightness});
+
+  final EdgeInsets bars;
+  final TargetPlatform platform;
+  final Brightness brightness;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final ink = brightness == Brightness.dark ? const Color(0xFFF1F1F1) : const Color(0xFF1F1F1F);
+    final fill = Paint()..color = ink;
+    final line = Paint()
+      ..color = ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6;
+    final black = Paint()..color = const Color(0xFF000000);
+    final ios = platform == TargetPlatform.iOS;
+
+    if (bars.top > 0) {
+      final y = ios ? 11 + 37 / 2 : bars.top / 2;
+      final time = TextPainter(
+        text: TextSpan(
+          text: '9:41',
+          style: TextStyle(color: ink, fontSize: ios ? 17 : 14, fontWeight: FontWeight.w600, fontFamily: 'Roboto'),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      time.paint(canvas, Offset(ios ? 32 : 16, y - time.height / 2));
+      time.dispose();
+      final battery = Rect.fromLTWH(size.width - (ios ? 36 : 30), y - 5.5, 22, 11);
+      canvas.drawRRect(RRect.fromRectAndRadius(battery, const Radius.circular(3)), line);
+      canvas.drawRRect(RRect.fromRectAndRadius(battery.deflate(2.5), const Radius.circular(1.5)), fill);
+      if (ios) {
+        final island = Rect.fromCenter(center: Offset(size.width / 2, y), width: 126, height: 37);
+        canvas.drawRRect(RRect.fromRectAndRadius(island, const Radius.circular(18.5)), black);
+      } else {
+        canvas.drawCircle(Offset(size.width / 2, y), 6, black);
+      }
+    }
+
+    if (bars.bottom > 0) {
+      final top = size.height - bars.bottom;
+      if (ios) {
+        final indicator = Rect.fromCenter(center: Offset(size.width / 2, size.height - 10.5), width: 134, height: 5);
+        canvas.drawRRect(RRect.fromRectAndRadius(indicator, const Radius.circular(2.5)), fill);
+      } else {
+        final scrim = brightness == Brightness.dark ? const Color(0xB3000000) : const Color(0xB3FFFFFF);
+        canvas.drawRect(Rect.fromLTWH(0, top, size.width, bars.bottom), Paint()..color = scrim);
+        final y = top + bars.bottom / 2;
+        final x = size.width / 2;
+        final step = math.min(size.width / 4, 96.0);
+        final back = Path()
+          ..moveTo(x - step + 5, y - 7)
+          ..lineTo(x - step - 6, y)
+          ..lineTo(x - step + 5, y + 7)
+          ..close();
+        canvas.drawPath(back, line);
+        canvas.drawCircle(Offset(x, y), 7.5, line);
+        final recents = Rect.fromCenter(center: Offset(x + step, y), width: 13, height: 13);
+        canvas.drawRRect(RRect.fromRectAndRadius(recents, const Radius.circular(2.5)), line);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SystemBarsPainter oldDelegate) =>
+      oldDelegate.bars != bars || oldDelegate.platform != platform || oldDelegate.brightness != brightness;
+}
+
+/// What touches the system bars in the current frame: text, icons, fields and
+/// tap targets under the status bar or the navigation bar, or closer to them
+/// than [UiConfig.systemBarGap]. Checked:
+/// - what stays put (headers, bottom bars, buttons): both bars;
+/// - scroll views at their start: the status bar;
+/// - every scroll view that reaches the navigation bar or a floating action
+///   button, scrolled to its end: the last rows must clear both.
+/// App bars and navigation bars pad themselves, so for them only overlap
+/// counts. One line per problem, with the source line in lib/ or test/.
+Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiVariant variant) async {
+  final gap = config.systemBarGap;
+  final bars = config.systemBars(variant);
+  if (gap == null || (bars.top <= 0 && bars.bottom <= 0)) return const [];
+  final height = variant.size.height;
+  final top = bars.top;
+  final bottom = height - bars.bottom;
+  final lines = <String>{};
+
+  String distance(double space, String bar) =>
+      space < 0 ? '${(-space).round()} px under $bar' : '${space.round()} px from $bar';
+  final statusBar = 'the status bar (${top.round()} px)';
+  final navigationBar = 'the navigation bar (${bars.bottom.round()} px)';
+
+  // At rest: what stays put, and scroll views at their start.
+  final atRest = <(Element, String)>[];
+  for (final item in _barItems(height)) {
+    final margin = item.padsItself ? 0.0 : gap;
+    final scroll = item.scrollable;
+    final position = scroll?.position;
+    final atStart = position == null ||
+        !position.hasContentDimensions ||
+        position.pixels <= position.minScrollExtent + 0.5;
+    if (top > 0 && atStart && item.rect.top < top + margin - 0.5) {
+      final where = scroll == null ? '' : 'at the top of the scroll, ';
+      atRest.add((
+        item.element,
+        '$where${_describeBarItem(item.element)} is ${distance(item.rect.top - top, statusBar)}: '
+            'keep it inside SafeArea plus ${gap.round()} px or more',
+      ));
+    } else if (bars.bottom > 0 && scroll == null && item.rect.bottom > bottom - margin + 0.5) {
+      atRest.add((
+        item.element,
+        '${_describeBarItem(item.element)} is ${distance(bottom - item.rect.bottom, navigationBar)}: '
+            'SafeArea(top: false) around it, plus ${gap.round()} px or more',
+      ));
+    }
+  }
+  lines.addAll(_barLines(atRest));
+
+  // Each scroll view that runs into the navigation bar or under a floating
+  // action button, scrolled to its end.
+  final fabs = [
+    for (final element in find.byType(FloatingActionButton).evaluate())
+      if (_globalRect(element) case final Rect rect) rect,
+  ];
+  final scrollables = [
+    for (final element in find.byType(Scrollable).evaluate())
+      if (element is StatefulElement && element.state is ScrollableState) element.state as ScrollableState,
+  ];
+  for (final state in scrollables) {
+    if (!state.mounted || axisDirectionToAxis(state.widget.axisDirection) != Axis.vertical) continue;
+    if (_insideTextField(state.context)) continue;
+    final viewport = _globalRect(state.context);
+    if (viewport == null) continue;
+    final reachesBar = bars.bottom > 0 && viewport.bottom > bottom - gap + 0.5;
+    if (!reachesBar && !fabs.any(viewport.overlaps)) continue;
+    final position = state.position;
+    if (!position.hasContentDimensions || !position.hasPixels) continue;
+    final start = position.pixels;
+    for (var i = 0; i < 5 && position.pixels < position.maxScrollExtent - 0.5; i++) {
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+    }
+    await settleFrames(tester, frames: 4);
+    final atEnd = <(Element, String)>[];
+    for (final item in _barItems(height)) {
+      if (!identical(item.scrollable, state) || item.padsItself) continue;
+      if (reachesBar && item.rect.bottom > bottom - gap + 0.5) {
+        atEnd.add((
+          item.element,
+          'at the end of the scroll, ${_describeBarItem(item.element)} is '
+              '${distance(bottom - item.rect.bottom, navigationBar)}: end the list with the bottom inset '
+              '(MediaQuery.paddingOf(context).bottom) plus 24 px',
+        ));
+      } else if (fabs.any((fab) => fab.overlaps(item.rect))) {
+        atEnd.add((
+          item.element,
+          'at the end of the scroll, ${_describeBarItem(item.element)} is behind the floating action button: '
+              'end the list with the bottom inset plus the FAB height and 24 px',
+        ));
+      }
+    }
+    // Before scrolling back: rows that scroll out are unmounted.
+    lines.addAll(_barLines(atEnd));
+    if (state.mounted) {
+      state.position.jumpTo(start);
+      await tester.pump();
+    }
+  }
+  return lines.toList();
+}
+
+/// One line per flagged thing, with its source line: a tap target that's
+/// flagged covers its own label and icon. Call it while the elements are
+/// still mounted.
+List<String> _barLines(List<(Element, String)> flagged) {
+  final elements = {for (final (element, _) in flagged) element};
+  final lines = <String>[];
+  for (final (element, message) in flagged) {
+    var covered = false;
+    element.visitAncestorElements((ancestor) {
+      covered = elements.contains(ancestor);
+      return !covered;
+    });
+    if (covered) continue;
+    final location = _projectLocation(element);
+    lines.add(location == null ? message : '$message  ← $location');
+  }
+  return lines;
+}
+
+class _BarItem {
+  const _BarItem(this.element, this.rect, this.scrollable, this.padsItself);
+
+  final Element element;
+  final Rect rect;
+
+  /// The vertical scroll view it moves with; null when it stays put.
+  final ScrollableState? scrollable;
+
+  /// Inside an app bar or a navigation bar, which pad themselves.
+  final bool padsItself;
+}
+
+/// Text, icons, fields and tap targets on screen.
+List<_BarItem> _barItems(double screenHeight) {
+  final items = <_BarItem>[];
+  for (final element in find.byWidgetPredicate(_isBarContent).evaluate()) {
+    final rect = _globalRect(element);
+    if (rect == null || rect.bottom <= 0 || rect.top >= screenHeight || rect.height > screenHeight / 2) continue;
+    ScrollableState? scrollable;
+    var padsItself = false;
+    element.visitAncestorElements((ancestor) {
+      final widget = ancestor.widget;
+      if (scrollable == null &&
+          widget is Scrollable &&
+          axisDirectionToAxis(widget.axisDirection) == Axis.vertical &&
+          ancestor is StatefulElement) {
+        scrollable = ancestor.state as ScrollableState;
+      }
+      if (_padsForSystemBars(widget)) padsItself = true;
+      return true;
+    });
+    items.add(_BarItem(element, rect, scrollable, padsItself));
+  }
+  return items;
+}
+
+bool _isBarContent(Widget widget) => switch (widget) {
+      RichText(:final text) => text.toPlainText().trim().isNotEmpty,
+      EditableText() => true,
+      InkResponse(:final onTap, :final onLongPress, :final onDoubleTap) =>
+        onTap != null || onLongPress != null || onDoubleTap != null,
+      GestureDetector(:final onTap, :final onLongPress) => onTap != null || onLongPress != null,
+      _ => false,
+    };
+
+/// Material components that keep their own content clear of the system bars.
+bool _padsForSystemBars(Widget widget) =>
+    widget is AppBar ||
+    widget is NavigationBar ||
+    widget is BottomNavigationBar ||
+    widget is BottomAppBar ||
+    widget is NavigationRail ||
+    widget is SnackBar ||
+    widget is MaterialBanner;
+
+bool _insideTextField(BuildContext context) {
+  var inside = false;
+  context.visitAncestorElements((ancestor) {
+    inside = ancestor.widget is EditableText;
+    return !inside;
+  });
+  return inside;
+}
+
+Rect? _globalRect(BuildContext context) {
+  final box = context.findRenderObject();
+  if (box is! RenderBox || !box.attached || !box.hasSize || box.size.isEmpty) return null;
+  return MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size);
+}
+
+/// `"Save changes"`, `"Edit invoice" (icon button)`, `an icon`.
+String _describeBarItem(Element element) {
+  final widget = element.widget;
+  if (widget is RichText) {
+    final text = widget.text.toPlainText();
+    return _isIconGlyph(text.trim()) ? 'an icon' : _quote(text);
+  }
+  if (widget is EditableText) return 'a text field';
+  String? label;
+  void visit(Element child) {
+    if (label != null) return;
+    final childWidget = child.widget;
+    if (childWidget is RichText) {
+      final text = childWidget.text.toPlainText().trim();
+      if (text.isNotEmpty && !_isIconGlyph(text)) {
+        label = text;
+        return;
+      }
+    }
+    child.visitChildren(visit);
+  }
+
+  element.visitChildren(visit);
+  final text = label;
+  if (text != null) return '${_quote(text)} (tap target)';
+  String? tooltip;
+  var depth = 0;
+  element.visitAncestorElements((ancestor) {
+    final ancestorWidget = ancestor.widget;
+    if (ancestorWidget is Tooltip) tooltip = ancestorWidget.message;
+    return tooltip == null && ++depth < 12;
+  });
+  final message = tooltip;
+  return message == null ? 'an icon button' : '${_quote(message)} (icon button)';
+}
+
+String _quote(String text) {
+  final flat = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return '"${flat.length > 32 ? '${flat.substring(0, 31)}…' : flat}"';
+}
+
+/// A single icon-font glyph (Material icons live in the private use areas).
+bool _isIconGlyph(String text) {
+  final runes = text.runes.toList();
+  return runes.length == 1 && ((runes.first >= 0xE000 && runes.first <= 0xF8FF) || runes.first >= 0xF0000);
+}
+
+/// The source line of the nearest widget created in the project's lib/ or
+/// test/, walking up from [element] past framework and package widgets
+/// (Material widgets live in a package from Flutter 3.50).
+String? _projectLocation(Element element) {
+  String? found;
+  bool visit(Element candidate) {
+    if (!debugIsLocalCreationLocation(candidate)) return true;
+    final nodes = debugTransformDebugCreator(<DiagnosticsNode>[DiagnosticsDebugCreator(DebugCreator(candidate))]);
+    found = _sourceLocation(nodes.map((node) => node.toStringDeep()).join('\n'));
+    return found == null;
+  }
+
+  if (visit(element)) element.visitAncestorElements(visit);
+  return found;
+}
 
 /// Saves a screenshot of the whole app to `test/ui/screenshots/<name>.png`
 /// (run with `--update-goldens`). Shadows are drawn only when the test has

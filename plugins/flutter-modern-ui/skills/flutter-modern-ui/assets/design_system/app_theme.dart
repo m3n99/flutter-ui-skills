@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app_density.dart';
+import 'app_motion.dart';
 import 'app_palette.dart';
 import 'app_typography.dart';
 import 'tokens.dart';
@@ -42,6 +43,7 @@ class AppThemeConfig {
     this.inputStyle = InputStyle.filled,
     this.touchDensity = AppDensity.touch,
     this.desktopDensity = AppDensity.desktop,
+    this.motion = MotionLevel.soft,
     this.schemeOverride,
   });
 
@@ -62,6 +64,10 @@ class AppThemeConfig {
   final AppDensity touchDensity;
   final AppDensity desktopDensity;
 
+  /// How much the app moves: none (Material's own motion only), soft or
+  /// expressive. Asked before building; recorded in DESIGN.md.
+  final MotionLevel motion;
+
   /// Last word on colors, e.g. a brand-supplied palette:
   /// `(scheme) => scheme.copyWith(primary: brandPrimary)`.
   /// Re-run the contrast test after any override.
@@ -77,6 +83,7 @@ class AppThemeConfig {
     InputStyle? inputStyle,
     AppDensity? touchDensity,
     AppDensity? desktopDensity,
+    MotionLevel? motion,
     ColorScheme Function(ColorScheme scheme)? schemeOverride,
   }) {
     return AppThemeConfig(
@@ -89,6 +96,7 @@ class AppThemeConfig {
       inputStyle: inputStyle ?? this.inputStyle,
       touchDensity: touchDensity ?? this.touchDensity,
       desktopDensity: desktopDensity ?? this.desktopDensity,
+      motion: motion ?? this.motion,
       schemeOverride: schemeOverride ?? this.schemeOverride,
     );
   }
@@ -169,7 +177,7 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: scheme.surface,
       visualDensity: density.visualDensity,
       materialTapTargetSize: density.tapTargetSize,
-      extensions: <ThemeExtension<dynamic>>[AppPalette.fromScheme(scheme), density],
+      extensions: <ThemeExtension<dynamic>>[AppPalette.fromScheme(scheme), density, AppMotion.of(config.motion)],
 
       appBarTheme: AppBarThemeData(
         backgroundColor: scheme.surface,

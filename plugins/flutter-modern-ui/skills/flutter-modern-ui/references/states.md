@@ -37,6 +37,7 @@ Map the project's own status enums and state classes (per-field `BaseStatus`, `A
 
 ## Refresh
 
+- Live data (a local-first database, a stream, sync in the background) needs no pull to refresh: it updates by itself. Show sync instead: a thin bar under the app bar while syncing or offline, and a small pending icon (clock) on rows with writes not yet synced.
 - Keep content visible while refreshing: `RefreshIndicator.adaptive` on lists, or a thin `LinearProgressIndicator` under the app bar. Never replace loaded content with a skeleton on refresh.
 - A failed refresh keeps the old data and shows a message ("Couldn't refresh the invoices. Pull down to try again.").
 - Lists update in place with `AnimatedItems` (new rows grow in, removed rows shrink out).

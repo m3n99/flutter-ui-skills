@@ -36,6 +36,7 @@ AppCard(
 )
 ```
 
+- **Record cards** in a list follow one anatomy (`layout.md` › List screens): badge or avatar, title and amount, details as `MetaItem`s in a `Wrap`, the status pill last; the amount goes under the title when `context.isNarrow`.
 - **Group card**: rows inside one card with 8 px padding; each row's ink radius is `AppRadius.concentric(AppRadius.card, 8)`.
 - **ExpansionTile inside a card**: the theme sets `shape` / `collapsedShape` to `Border()` so it doesn't draw borders over the card's; keep `dividerColor` transparent if it shows lines.
 - **Hero / summary card**: `primaryContainer` fill (or one primary → tertiary gradient in Bold Contrast), display-size number, sheet radius, 20–24 padding.
@@ -71,7 +72,7 @@ AppCard(
 
 ## Chips
 
-- **A few single-choice options (up to 4)**: `AppChoiceChips` wrapping, **never scrolling**, so every option stays visible on a 360 px phone. A scrolling row cut the second of two paper sizes off at 360 px. `SegmentedButton` works too when every label fits one row at text scale 1.3.
+- **A few single-choice options (up to 4)**: `AppChoiceChips` wrapping, **never scrolling**, so every option stays visible on a 360 px phone. A scrolling row cut the second of two paper sizes off at 360 px. **Not `SegmentedButton`** for choices in forms and sheets: its segments share one row, so at big font sizes (1.6) or with longer translations they truncate or overflow, where chips wrap.
 - **Inline label** ("Paper  [A4] [A5]"): `AppChoiceChips(label: 'Paper', …)` renders the label as the first child of the same `Wrap` (`WrapCrossAlignment.center`), so it stays with the first chip and later chips wrap under it. A label above the group is a section label instead (`SheetSection`, a field label).
 - **Filters**: `AppChoiceChips(multiple: true)` in a wrapping block (8 / 8 spacing). Only a long filter list (5 or more) under a header may be one scrolling row (`scrollable: true`, screen padding), and the row must show part of the next chip so it reads as scrollable.
 - **Selected = check + `primaryContainer` fill** (theme). Never selection by color alone.
@@ -92,6 +93,7 @@ extension InvoiceStatusUi on InvoiceStatus {
 ```
 
 - `StatusPill` requires an icon: status is never shown by color alone.
+- Details next to a status (number, date, count) are `MetaItem`s: a small icon and muted text, the icon growing with big fonts.
 - One mapping per domain status, in one place; screens use `status.pill`.
 - Business states use palette tones (add `overdue`, `paid`… to `AppPalette` if the domain needs distinct ones); `danger` / `error` is for failures.
 
@@ -99,7 +101,7 @@ extension InvoiceStatusUi on InvoiceStatus {
 
 - `AdaptiveShell`: NavigationBar < 600, rail 600–1199, extended rail ≥ 1200.
 - 3–5 destinations, outlined icon + filled `selectedIcon`, one-word labels.
-- Tabs inside a screen: `TabBar` (label-size indicator, no divider) or `SegmentedButton` for 2–3 views.
+- Tabs inside a screen: `TabBar` (label-size indicator, no divider; `isScrollable` when labels are long). `SegmentedButton` only for 2–3 one-word views, checked at text scale 1.6 on a 360 px phone.
 - **FABs on shell tabs need `heroTag: null`** (or a unique tag). An `IndexedStack` shell, and go_router's `StatefulShellRoute.indexedStack`, keep every tab mounted in one route, so two FABs with the default tag throw "There are multiple heroes that share the same tag within a subtree" as soon as any route is pushed. Rendering one page at a time never shows it; the harness's shell case does.
 
 ## Avatars and images
