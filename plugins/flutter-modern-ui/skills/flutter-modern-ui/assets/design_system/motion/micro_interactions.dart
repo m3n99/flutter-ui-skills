@@ -2,17 +2,21 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../context_ext.dart';
 import '../tokens.dart';
 
 /// Shakes [child] sideways whenever [trigger] changes, e.g. a failed submit
 /// count or a wrong PIN. Pair it with an error message; motion alone never
 /// carries the meaning.
 class ShakeOnChange extends StatefulWidget {
-  const ShakeOnChange({super.key, required this.trigger, required this.child, this.distance = 8});
+  const ShakeOnChange({super.key, required this.trigger, required this.child, this.distance});
 
   final Object? trigger;
   final Widget child;
-  final double distance;
+
+  /// Swing in logical pixels. Default: the motion level's (soft 4,
+  /// expressive 8); no shake at MotionLevel.none.
+  final double? distance;
 
   @override
   State<ShakeOnChange> createState() => _ShakeOnChangeState();
@@ -39,21 +43,23 @@ class _ShakeOnChangeState extends State<ShakeOnChange> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _reduceMotion = context.reduceMotion;
+    final distance = widget.distance ?? context.appMotion.shakeDistance;
     return AnimatedBuilder(
       animation: _controller,
       child: widget.child,
       builder: (context, child) {
         final t = _controller.value;
-        final dx = math.sin(t * math.pi * 6) * widget.distance * (1 - t);
+        final dx = math.sin(t * math.pi * 6) * distance * (1 - t);
         return Transform.translate(offset: Offset(dx, 0), child: child);
       },
     );
   }
 }
 
-/// Pops [child] (scale 1 → 1.18 → 1) whenever [value] changes: a badge
-/// count, a favourite toggle, a cart total.
+/// Pops [child] (scale 1 → peak → 1) whenever [value] changes: a badge
+/// count, a favourite toggle, a cart total. The peak is the motion level's
+/// (soft 1.08, expressive 1.18); no pop at MotionLevel.none.
 class PopOnChange extends StatefulWidget {
   const PopOnChange({super.key, required this.value, required this.child});
 
@@ -66,10 +72,6 @@ class PopOnChange extends StatefulWidget {
 
 class _PopOnChangeState extends State<PopOnChange> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(vsync: this, duration: AppDurations.slow);
-  late final Animation<double> _scale = TweenSequence<double>([
-    TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.18).chain(CurveTween(curve: Curves.easeOut)), weight: 40),
-    TweenSequenceItem(tween: Tween<double>(begin: 1.18, end: 1).chain(CurveTween(curve: AppCurves.pop)), weight: 60),
-  ]).animate(_controller);
   bool _reduceMotion = false;
 
   @override
@@ -86,13 +88,18 @@ class _PopOnChangeState extends State<PopOnChange> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    _reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return ScaleTransition(scale: _scale, child: widget.child);
+    _reduceMotion = context.reduceMotion;
+    final peak = context.appMotion.popScale;
+    final scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1, end: peak).chain(CurveTween(curve: Curves.easeOut)), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: peak, end: 1).chain(CurveTween(curve: AppCurves.pop)), weight: 60),
+    ]).animate(_controller);
+    return ScaleTransition(scale: scale, child: widget.child);
   }
 }
 
 /// Cross-fades between loading, empty, error and content with a slight
-/// upward settle. Give every state child a distinct key, e.g.
+/// upward settle (half the motion level's entrance rise). Give every state child a distinct key, e.g.
 /// `ValueKey('loading')`. Children align to the top so short and long
 /// states don't jump.
 class StateSwitcher extends StatelessWidget {
@@ -103,9 +110,9 @@ class StateSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reduce = MediaQuery.disableAnimationsOf(context);
+    final rise = context.appMotion.entranceOffset / 2;
     return AnimatedSwitcher(
-      duration: reduce ? Duration.zero : AppDurations.medium,
+      duration: context.motion(AppDurations.medium),
       switchInCurve: AppCurves.enter,
       switchOutCurve: AppCurves.exit,
       layoutBuilder: (current, previous) => Stack(
@@ -115,7 +122,7 @@ class StateSwitcher extends StatelessWidget {
       transitionBuilder: (child, animation) => FadeTransition(
         opacity: animation,
         child: SlideTransition(
-          position: animation.drive(Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero)),
+          position: animation.drive(Tween<Offset>(begin: Offset(0, rise), end: Offset.zero)),
           child: child,
         ),
       ),

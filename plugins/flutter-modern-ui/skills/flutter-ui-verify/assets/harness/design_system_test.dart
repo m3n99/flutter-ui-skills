@@ -1,6 +1,7 @@
 // Behaviour tests for the plugin's shared widgets and theme. Copy this file
 // only when the project uses them (AnimatedItems, AppMessenger.deleteWithUndo,
-// SubmitButton, AppChoiceChips, ToneColors, AppTheme).
+// SubmitButton, AppChoiceChips, ToneColors, AppTheme, the motion level,
+// context.isNarrow / listEndPadding, SheetScaffold.error).
 //
 //   flutter test test/ui/design_system_test.dart
 
@@ -239,6 +240,91 @@ void main() {
       }
     }
     expect(failures, isEmpty, reason: '\n${failures.join('\n')}');
+  });
+
+  testWidgets('motion level: none shows entrances at once, soft and expressive animate them', (tester) async {
+    Future<Duration> pumpLevel(MotionLevel level) async {
+      late Duration medium;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(config: AppThemeConfig(motion: level)),
+          home: Builder(
+            builder: (context) {
+              medium = context.motion(AppDurations.medium);
+              return const Scaffold(body: Entrance(child: Text('row')));
+            },
+          ),
+        ),
+      );
+      return medium;
+    }
+
+    final entranceFade = find.descendant(of: find.byType(Entrance), matching: find.byType(FadeTransition));
+
+    expect(await pumpLevel(MotionLevel.none), Duration.zero);
+    expect(entranceFade, findsNothing, reason: 'none: the end state at once');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(await pumpLevel(MotionLevel.soft), AppDurations.medium);
+    expect(entranceFade, findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(await pumpLevel(MotionLevel.expressive), AppDurations.medium * 1.2);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('isNarrow follows width ÷ text scale; listEndPadding clears the bars and the FAB', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 32, bottom: 48);
+    addTearDown(tester.view.reset);
+
+    Future<(bool, double)> measure(double textScale) async {
+      late bool narrow;
+      late double end;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: Builder(
+            builder: (context) {
+              narrow = context.isNarrow;
+              end = context.listEndPadding(fab: true);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      return (narrow, end);
+    }
+
+    expect((await measure(1.0)).$1, isFalse, reason: '360 px at 1.0 is not narrow');
+    expect((await measure(1.3)).$1, isTrue, reason: '360 ÷ 1.3 = 277 < 340');
+    expect((await measure(1.0)).$2, 48 + AppSpace.lg + AppSize.fabClearance);
+  });
+
+  testWidgets('SheetScaffold.error shows inside the sheet, above the footer', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: SheetScaffold(
+            title: 'Add payment',
+            error: "Couldn't save: the check number is already used.",
+            primaryAction: FilledButton(onPressed: null, child: Text('Save')),
+            children: [Text('Amount')],
+          ),
+        ),
+      ),
+    );
+
+    final error = tester.getRect(find.textContaining("Couldn't save"));
+    final save = tester.getRect(find.text('Save'));
+    expect(error.bottom, lessThanOrEqualTo(save.top), reason: 'the message sits above the footer');
   });
 
   test('AppTheme: a fidelity brand seed keeps its containers soft', () {

@@ -34,13 +34,14 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 ## States
 - [ ] Loading uses skeletons shaped like the content (all data screens).
 - [ ] Empty (first use / no results / nothing to do) and error (what failed + Retry) states exist.
-- [ ] Refresh keeps content visible.
+- [ ] Refresh keeps content visible; live data has no pull to refresh.
 
 ## Messages
 - [ ] One message component; messages name the thing; errors say what failed and what to do.
 - [ ] Messages with actions close by themselves (`persist: false`).
 - [ ] Destructive actions confirm and/or offer Undo (hide → Undo → commit on close).
 - [ ] Saves can't be submitted twice.
+- [ ] A failed action in a sheet says so inside the sheet (`SheetScaffold(error:)`), not in a SnackBar behind it.
 
 ## Sheets and forms
 - [ ] Sheets use the shared anatomy: header + ✕, scrolling body, sticky footer; secondary start (label width), primary end.
@@ -49,6 +50,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Validation after first submit; warnings don't block.
 - [ ] Every form renders in create and edit mode; edit mode fills its controllers outside `build`.
 - [ ] Pick-one sheets close on the tap that chooses (no Apply).
+- [ ] Optional fields say "(optional)" in the label; totals in several currencies show one line per currency.
 
 ## Platforms
 - [ ] Touch: targets ≥ 48 px (sheet test passes `androidTapTargetGuideline`).
@@ -56,6 +58,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Layout adapts at 600 / 840 / 1200; content capped (forms 640, dashboards 1440).
 - [ ] List-detail: the pane has a visible ✕ with a tooltip, a second click on the open row deselects, Esc closes it.
 - [ ] FABs on the tabs of an IndexedStack shell have `heroTag: null`; the shell case (all tabs mounted, a route pushed) passes.
+- [ ] Nothing touches the system bars: headers, bottom bars and buttons sit in the safe area plus ≥ 8 px; lists end clear of the navigation bar and the FAB (the layout test's system-bar check passes; the screenshots show the bars).
 
 ## RTL (if applicable)
 - [ ] Directional APIs only; pointing icons mirror.
@@ -73,18 +76,19 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 
 ## Accessibility
 - [ ] Light and dark pass `contrast_test.dart`.
-- [ ] Text scale 1.3 doesn't overflow or clip (layout test).
+- [ ] Text scale 1.3 and 1.6 don't overflow or clip (layout test); when narrow, paired rows stack (amount under the name) and KPI tiles go one per row.
 - [ ] Icon-only buttons have tooltips; rows merge semantics; decorative emoji/icons excluded.
 
 ## Motion
-- [ ] Only the surfaces chosen in intake animate; durations from tokens; reduced motion respected.
+- [ ] The motion level (none / soft / expressive) and the places were asked before building, with examples; `AppThemeConfig.motion` matches DESIGN.md.
+- [ ] Only the places chosen in intake animate; durations from tokens; reduced motion respected.
 - [ ] Lists keep item state on insert/remove; charts and numbers animate from previous values.
 - [ ] No infinite animations besides loading indicators; controllers disposed.
 
 ## Verification
 - [ ] `flutter analyze` clean for changed files; existing tests still pass.
 - [ ] Layout matrix and sheet tests pass.
-- [ ] Screenshots rendered and **looked at** (light, dark, 1.3 text scale, RTL if applicable, desktop if applicable), contact sheets first.
+- [ ] Screenshots rendered and **looked at** (light, dark, 1.3 and 1.6 text scale, RTL if applicable, desktop if applicable), contact sheets first; the drawn system bars cover nothing that matters.
 - [ ] More than three screens touched, or a first pass: the `flutter-ui-reviewer` agent reviewed them.
 
 ## Scope and records

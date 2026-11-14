@@ -23,13 +23,15 @@ Do this before any direction, token file or screen. Details: `references/discove
 
 ## Step 1 — Intake: ask once, early
 
-Ask the questions in `references/intake.md` in one short round (use the question tool when available): **platforms**, **RTL languages**, **the look** (cards, plain rows or rich), **emoji**, **where things should animate**, and **direction / brand** if no system exists yet. Skip what DESIGN.md already answers. When nobody is there to answer, take the stated defaults and say which you took, except for the look: build the first list screen with cards, show its screenshot and ask before doing the rest. A spec that says "basic" or "simple" doesn't answer it; a wrong guess costs a full redesign round.
+Ask the questions in `references/intake.md` in one short round (use the question tool when available): **platforms**, **RTL languages**, **the look** (cards, plain rows or rich), **emoji**, **how much motion and where**, and **direction / brand** if no system exists yet. Skip what DESIGN.md already answers. When nobody is there to answer, take the stated defaults and say which you took, except for the look: build the first list screen with cards, show its screenshot and ask before doing the rest. A spec that says "basic" or "simple" doesn't answer it; a wrong guess costs a full redesign round.
+
+**Motion is always asked before building**, even when a spec or the customer already hinted at it: the level (**none**: Material's own motion only; **soft**: calm fades and short rises; **expressive**: staggered, bouncier, more surfaces) and the places, each with the one-line soft and expressive example from `references/intake.md` › Motion, so the user picks from something concrete. A hint from the customer ("keep it basic", "make it lively") becomes the recommended option, not the answer.
 
 ## Step 2 — The design system
 
 - **Project has one** → extend it in place (Step 0). Add only what's missing.
 - **Project has none** → set one up with the `flutter-design-system` skill: pick a direction (`references/directions.md`), copy the templates with `python3 scripts/copy_design_system.py` (this skill's folder) into the project's conventional location (default `lib/core/design_system/`), set `AppTheme.config`, retune the `DIRECTION` lines, and write `DESIGN.md`.
-  - **Core kit** (default), what every app needs: tokens, density, palette, typography, theme, context extensions, `AppCard`, `StatusPill` / `IconBadge` / `EmojiBadge`, `EmptyState`, skeletons, sheets and pick-one sheets, chips, messages, `SectionHeader`, `Ltr`.
+  - **Core kit** (default), what every app needs: tokens, density, motion level, palette, typography, theme, context extensions (`isNarrow`, `listEndPadding`), `AppCard`, `StatusPill` / `IconBadge` / `EmojiBadge`, `MetaItem`, `EmptyState`, skeletons, sheets and pick-one sheets, chips, `SaveBar`, messages, `SectionHeader`, `Ltr`.
   - **Extras** (`--kit extras`, later is fine): motion pieces, `AdaptiveShell` / `ContentWidth`, `KpiTile` / `KpiGrid`. Add them when the app animates, ships on tablet or desktop, or has a dashboard; don't hand-write lookalikes.
   - The script keeps files you already changed, writes the barrel for what's there, and rewrites imports for `material_ui` projects.
 - **User shared reference apps or screenshots** → derive the direction from them with the `flutter-design-system` skill.
@@ -43,7 +45,8 @@ Before writing widgets, decide in a few lines (in `UI_PASS.md` for multi-screen 
 - the **one primary thing** and **one primary action**;
 - the layout per window size (compact / medium / expanded+) — `references/layout.md`, `references/adaptive.md`;
 - every state: loading, empty, error, content, refreshing — `references/states.md`;
-- the motion moments the user asked for — `flutter-motion` skill.
+- the motion level and places from intake (DESIGN.md › Motion) — `flutter-motion` skill;
+- what sits at the top and bottom edges: app bar or a header in `SafeArea`, a bottom bar or the last list row clear of the navigation bar — `references/layout.md` › System bars.
 
 ## Step 4 — Build
 
@@ -53,7 +56,7 @@ Read only the references the screen needs. **When the app has a right-to-left la
 |---|---|
 | Spacing, radius, type, color roles, sizes | `references/tokens.md` |
 | Theme, color scheme, eye comfort, fonts | `references/theming.md` |
-| Screen anatomy, hierarchy, nested shapes | `references/layout.md` |
+| Screen anatomy, hierarchy, nested shapes, system bars, big fonts | `references/layout.md` |
 | Desktop / tablet / platform differences | `references/adaptive.md` |
 | Cards, lists, buttons, chips, status, nav, emoji | `references/components.md` |
 | Forms, money, dates, autocomplete, settings | `references/forms.md` |
@@ -69,11 +72,11 @@ Reference compositions to imitate: `assets/examples/` (dashboard, records list-d
 
 ## Step 5 — Motion
 
-Apply the `flutter-motion` skill for the surfaces the user chose. Reuse the shared pieces (`Entrance`, `AnimatedItems`, `StateSwitcher`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`); every duration comes from tokens and goes through `context.motion(...)`.
+Apply the `flutter-motion` skill at the level and on the surfaces the user chose: set `AppTheme.config`'s `motion` (`MotionLevel.none`, `.soft` or `.expressive`) and the shared pieces (`Entrance`, `AnimatedItems`, `StateSwitcher`, `PressScale`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`) follow it; every duration comes from tokens and goes through `context.motion(...)`.
 
 ## Step 6 — Verify by looking
 
-Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 × light / dark × platforms × directions), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. Printed documents get the same loop: sample PDFs (typical, empty optional fields, longest content), block checks, then rasterize and open every page. **When a pass touches more than three screens, or it's the first pass on an app, hand the screenshots to the `flutter-ui-reviewer` agent** with DESIGN.md: fresh eyes catch what the builder has stopped seeing, such as a whole pass that came out too plain for the agreed look.
+Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 / 1000 / 1366 px × text scale 1.0 / 1.3 / 1.6 × light / dark × platforms × directions, phones and tablets under their system bars, with a check that nothing touches them), the sheet test (keyboard, tap targets), contrast, then **render screenshots and look at them** against `references/review-checklist.md`. Fix and re-shoot. Printed documents get the same loop: sample PDFs (typical, empty optional fields, longest content), block checks, then rasterize and open every page. **When a pass touches more than three screens, or it's the first pass on an app, hand the screenshots to the `flutter-ui-reviewer` agent** with DESIGN.md: fresh eyes catch what the builder has stopped seeing, such as a whole pass that came out too plain for the agreed look.
 
 ## Step 7 — Record and report
 
@@ -89,14 +92,15 @@ Apply the `flutter-ui-verify` skill: `flutter analyze`, the layout matrix (360 /
 4. Cards are flat: tonal fill + hairline `outlineVariant` border. Shadows only for floating elements and raised dashboard tiles.
 5. One primary action per screen and per sheet.
 6. Status is never shown by color alone: every status has an icon and a label; selected chips show a check.
-7. Every data screen has loading (skeleton), empty, error and refresh states.
+7. Every data screen has loading (skeleton), empty, error and refresh states (pull to refresh for loaded data; live data, such as a local-first store or a stream, needs none).
 8. One message component; messages name the thing; errors say what failed and what to do; destructive actions confirm or offer Undo.
 9. Touch targets ≥ 48 px on touch platforms; desktop gets hover, cursor, focus, visible scrollbars and tooltips.
 10. Directional APIs only (`EdgeInsetsDirectional`, `AlignmentDirectional`, start/end). Numbers, dates and phones stay LTR inside RTL. Arabic gets zero letter-spacing.
-11. Text never overflows at 360 px and text scale 1.3. Dynamic text has `maxLines` + ellipsis or shrinks to fit.
-12. Light and dark both look intentional and pass the contrast test.
-13. Motion uses tokens, respects reduced motion, and never animates from zero what was already on screen.
-14. Presentation only: state management, routing, DI and data flow stay as they are unless the user asks.
+11. Text never overflows at 360 px and text scale 1.3 or 1.6. Dynamic text has `maxLines` + ellipsis or shrinks to fit; when the screen is narrow for its text (`context.isNarrow`: width ÷ text scale < 340), rows that pair two things stack.
+12. **Nothing touches the system bars.** Whatever sits near the top or bottom edge (a header, a search bar, a bottom bar, a button, the last list row) is inside `SafeArea` plus at least 8 px, clear of the status bar, the camera cutout or Dynamic Island, the navigation bar and the home indicator. App bars and navigation bars handle this themselves; bottom bars use `SaveBar`, lists end with `context.listEndPadding()`.
+13. Light and dark both look intentional and pass the contrast test.
+14. Motion follows the agreed level (none, soft or expressive), uses tokens, respects reduced motion, and never animates from zero what was already on screen.
+15. Presentation only: state management, routing, DI and data flow stay as they are unless the user asks.
 
 ## Scope discipline
 

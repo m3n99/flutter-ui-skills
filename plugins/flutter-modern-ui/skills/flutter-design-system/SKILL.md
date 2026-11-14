@@ -31,10 +31,10 @@ A design system is what makes the tenth screen look like the first. This skill p
 
 ### B. Create a new system
 
-1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, the look (cards, rows or rich), brand color, emoji, motion.
+1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, the look (cards, rows or rich), brand color, emoji, how much motion (none, soft, expressive) and where.
 2. Choose a direction (`../flutter-modern-ui/references/directions.md`); state it in one line.
 3. Copy the templates with `python3 ../flutter-modern-ui/scripts/copy_design_system.py --to <folder>` (default `lib/core/design_system/`): the **core kit** first; `--kit extras` adds motion, the adaptive shell and KPI tiles when the app needs them. It writes the barrel and, in `material_ui` projects, the right imports. Then:
-   - set `AppTheme.config` (seed, variant, font, script, surfaces, input style);
+   - set `AppTheme.config` (seed, variant, font, script, surfaces, input style, motion level);
    - retune every `DIRECTION` line in `tokens.dart` and `app_density.dart`;
    - add domain tones to `AppPalette` (e.g. `overdue`, `paid`) and one status → label/icon/tone mapping per domain enum;
    - bundle fonts in `pubspec.yaml`;

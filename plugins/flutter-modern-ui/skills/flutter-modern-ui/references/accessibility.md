@@ -41,8 +41,8 @@ Accessible UI is also better-looking UI: clear contrast, real hierarchy, comfort
 
 ## Text scaling
 
-- Layouts survive text scale 1.3 (tested) and stay usable at 2.0.
-- Never clamp text scaling below 1.3. If a fixed area really can't grow (a tab bar label), clamp that widget only (`MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5)`), not the app.
+- Layouts survive text scale 1.3 and 1.6 (tested) and stay usable at 2.0. When the width ÷ text scale drops under 340 (`context.isNarrow`), stack what sits side by side (`layout.md` › Big fonts).
+- Never clamp the app's text scaling. If a fixed area really can't grow (a tab bar label), clamp that widget only (`MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5)`), not the app.
 - Values in tiles shrink to fit (`FittedBox`) rather than overflow; labels wrap to 2 lines.
 - Emoji and icons inside badges don't scale with text (they are icons).
 

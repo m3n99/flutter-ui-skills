@@ -11,7 +11,7 @@ Code: `{lib/core/design_system/}` (import `design_system.dart`). Widgets never u
 - **Languages / direction:** {Arabic only, RTL} · digits: {Western 0-9 / Arabic-Indic}
 - **Look:** {cards / plain rows / rich} — {one card per record with status pill and end-aligned amount; KPI tiles on the dashboard}
 - **Emoji:** {none / KPI tiles only / …}
-- **Motion:** {cards entrance, lists insert/remove, charts, buttons, sheets, skeletons}
+- **Motion:** {none / soft / expressive} (`AppThemeConfig.motion`) on {cards and lists on load, list changes, numbers and charts, buttons, errors, pages, loading}
 - **Derived from references:** {apps / screenshots, what was kept, what was left out} (optional)
 
 ### Deliberate deviations from the plugin defaults
@@ -117,14 +117,16 @@ Chips 8 / 8; selected = fill + check; equal heights.
 
 ## 5. Motion
 
-| What | Duration | Curve |
-|---|---|---|
-| Press / small state change | 150 ms | standard |
-| Card entrance, insert, remove | 250 ms | enter / exit |
-| Charts, progress, counters | 350 ms | standard |
-| Stagger | 40 ms, first 8 | — |
+Level: **{soft}** (`MotionLevel.{soft}`), asked before the first screen. Places: {cards and lists on load, list changes, numbers, buttons, loading}. Places not listed don't move.
 
-Reduced motion: every duration 0 (`context.motion`); no entrance, no shimmer.
+| What | Duration | Curve | {Soft} |
+|---|---|---|---|
+| Press / small state change | 150 ms | standard | {press 0.98} |
+| Card entrance, insert, remove | 250 ms | enter / exit | {rise 4 %, no stagger} |
+| Charts, progress, counters | 350 ms | standard | {tween from the old value} |
+| Errors | 420 ms | — | {shake 4 px, with the message} |
+
+Durations × {1.0 soft / 1.2 expressive}; reduced motion and `MotionLevel.none`: every duration 0 (`context.motion`), no entrance, no shimmer.
 
 ## 6. Messages
 
@@ -141,7 +143,8 @@ Delete with Undo: hide at once → commit on close without Undo → release the 
 ## 7. Layout
 
 - Breakpoints: compact < 600 (bottom nav, sheets, 1 column) · medium 600–{839/1199} (rail, dialogs, 2 columns) · {expanded/large} (extended rail, table + detail).
-- Works from 360 px and text scale 1.3 with no overflow.
+- Works from 360 px and text scale 1.3 and 1.6 with no overflow. Narrow (`context.isNarrow`: width ÷ text scale < 340): {the amount goes under the name, KPI tiles one per row, form fields one per row}.
+- System bars: nothing touches the status bar, the camera cutout or Dynamic Island, the navigation bar or the home indicator. Headers without an app bar sit in `SafeArea` + {16} px; bottom bars are `SaveBar`s (safe area + 12 px); lists end with `context.listEndPadding()` (+ the FAB's 72 px).
 - RTL: directional APIs only; numbers in `Ltr`.
 - List-detail: the pane closes with a ✕ in its header, a second click on the open row, or Esc.
 - A few single-choice options: wrapping chips with an inline label, never a scrolling row.

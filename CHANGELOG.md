@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3.0
+
+Two rules from the maintainer, and the design contract of an Arabic, Android-only app built with 1.2.
+
+### Nothing touches the system bars
+- **The rule** (hub non-negotiable 12, layout.md › System bars and safe areas): whatever sits near the top or bottom edge (a header, a search bar, a bottom bar, a button, the last list row) is inside `SafeArea` plus at least 8 px, clear of the status bar, the camera cutout or Dynamic Island, the navigation bar and the home indicator. App bars and navigation bars pad themselves.
+- **`SaveBar`** (core kit): a form's primary action pinned under the fields, inside the safe area plus 12 px. **`context.listEndPadding(fab:)`**: the bottom inset + 24, + 72 under a FAB. The examples use both; the detail pane's list now ends with the inset too.
+- **The harness renders phones and tablets under their bars** (`UiConfig.systemBars`: Android's 32 px status bar and 48 px navigation bar, iOS's Dynamic Island and home indicator), as `MediaQuery` padding like a device, and draws them in the screenshots. The keyboard now covers the navigation bar, as on a device.
+- **System-bar check** in the layout and sheet tests (`systemBarProblems`): text, icons, fields and tap targets under a bar or within `systemBarGap` (8 px) of it, for what stays put, scroll views at their start, and every list scrolled to its end (whose last row must also clear the FAB). One line per problem across variants, with the source line; a repo test proves it catches each case and passes the safe versions.
+- Source lines now skip widgets from packages too, so they point at the project's code in `material_ui` apps.
+
+### Ask how much motion, and where
+- **intake.md › Motion** is asked before the first screen, even when the spec or the customer hinted at it (the hint becomes the recommendation): the level, **none** (Material's own motion), **soft** or **expressive**, each with a small example, then the places, each with its soft and expressive version.
+- **`AppThemeConfig.motion`** (`MotionLevel`) → the `AppMotion` theme extension: `context.motion(d)` scales durations (0 at none, × 1.2 at expressive), and `Entrance`, `AnimatedItems`, `StateSwitcher`, `PressScale`, `PopOnChange`, `ShakeOnChange` and `SubmitButton` take their rise, stagger, press, pop and shake from the level. Default: soft (a 4 % rise, all at once).
+- DESIGN.md records the level and the places; the flutter-motion skill asks first and documents the levels (principles.md › Motion levels); the review checklist and an anti-pattern check that it was asked.
+
+### From that app's design contract
+- **Big fonts**: the layout matrix adds text scale 1.6 (and a 1.6 screenshot). `context.isNarrow` (width ÷ text scale < 340) stacks rows that pair two things; the examples put the amount under the name; `KpiGrid` goes one tile per row; `context.iconSize` grows inline icons with the text up to 1.4×.
+- **`MetaItem`** (core kit): a small icon and muted detail text, for card rows; layout.md › List screens describes the list-screen and record-card anatomy.
+- **Errors inside sheets**: `SheetScaffold(error:)` shows a failed action above the footer; a SnackBar would open behind the modal sheet. Several entries in one sheet ("Add another" copies the last one).
+- **Not `SegmentedButton`** for choices in forms and sheets: it can't wrap at big font sizes; chips can.
+- Optional fields say "(optional)" in the label (example form); totals in several currencies show one line per currency; live data needs no pull to refresh (sync status instead); hero summary and category shares in data-display.md.
+
+### Also
+- Anti-patterns 68 → 75; review checklist, reviewer agent, visual review and the UI_PASS template cover the bars, 1.6 and the motion level.
+
 ## 1.2.0
 
 From the feedback log of 1.1.0 on an Arabic, Android-only app built on Flutter 3.50 (problems 1–11).

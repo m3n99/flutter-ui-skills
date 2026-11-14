@@ -1,7 +1,8 @@
 // Every sheet and dialog at phone and tablet width, text scale 1.0 and 1.3,
 // each platform in uiConfig:
 // - no layout errors;
-// - touch platforms: tap targets ≥ 48 px and labeled;
+// - touch platforms: tap targets ≥ 48 px and labeled; nothing under or
+//   touching the system bars (a footer keeps clear of the navigation bar);
 // - sheets with a primary action: it's on screen, and still above a 300 px
 //   keyboard;
 // - pick-one sheets (SheetCase.picker): options on screen, and tapping one
@@ -44,6 +45,9 @@ void main() {
                     if (targets != null) failures.add('$label $targets');
                     final labels = await _guideline(tester, labeledTapTargetGuideline);
                     if (labels != null) failures.add('$label $labels');
+                  }
+                  for (final problem in await systemBarProblems(tester, uiConfig, variant)) {
+                    failures.add('$label $problem');
                   }
 
                   if (sheet.picker) {
