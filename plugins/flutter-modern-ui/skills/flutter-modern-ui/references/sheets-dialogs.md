@@ -19,7 +19,10 @@ Prefer sheets over dialogs for anything with input or more than two actions.
 1. **Drag handle**: sheets only, from the theme.
 2. **Header**: title in headlineSmall at the start, close ✕ (`IconButton` with the localized close tooltip) at the end. Padding 24 start, 8 end.
 3. **Body**: scrolls when long. Padding 24 sides, 8 top, 24 bottom. Sections are `SheetSection`s (label in labelLarge / `onSurfaceVariant`, 8 px above its content), 24 apart.
-4. **Footer**: sticky, never scrolls. Hairline top border, inside `SafeArea(top: false)`, padding 24 × 12. Pick-one sheets have none: the tap on an option is the action.
+4. **Footer**: sticky, never scrolls. Hairline top border, inside `SafeArea(top: false)`, padding 24 × 12, so its buttons never touch the navigation bar. Pick-one sheets have none: the tap on an option is the action.
+5. **Errors**: when the primary action fails, the message shows inside the sheet, right above the footer (`SheetScaffold(error: "Couldn't save: …")`), and the sheet stays open with what the user typed. A SnackBar would open on the page underneath, hidden by the sheet.
+
+Several entries in one sheet (three checks for one payment): an "Add another" button under the last entry copies it with the next likely values (number + 1, one month later, same amount and bank), and one save writes them all; editing a group opens the same sheet with every entry and a "set all to" row for the common field.
 
 ## Footer buttons: the same order in every sheet
 
@@ -55,7 +58,7 @@ Prefer sheets over dialogs for anything with input or more than two actions.
 - As a bottom sheet, the content is padded by the keyboard inset (`MediaQuery.viewInsetsOf(context).bottom`), so the focused field and the footer stay visible. `SheetScaffold` does this.
 - Dialogs move themselves (Dialog adds the inset to its padding); don't pad them again.
 - `isScrollControlled: true` and `useSafeArea: true` on modal bottom sheets (in `showAppSheet`).
-- The sheet test checks that the primary action stays above a 300 px keyboard at 360 px and text scale 1.3.
+- The sheet test checks that the primary action stays above a 300 px keyboard at 360 px and text scale 1.3 and 1.6, and that nothing in the sheet touches the navigation bar.
 
 ## Dialog details
 

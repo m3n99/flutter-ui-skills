@@ -4,6 +4,8 @@
 
 Widget: `KpiTile` + `KpiGrid`. Reference: `assets/examples/dashboard_screen.dart`.
 
+- Tiles are for numbers worth a glance, after the screen's answer, not instead of it: a home that is only a grid of numbers gives the user nothing to do (`screens.md` › Home). Lead with the one figure the user came for, set large with its breakdown and its action; put two to four supporting tiles under it.
+
 - Raised tile (`AppCard(raised: true)`, the one shadow exception), tappable when it leads somewhere, padding 16.
 - Top row: badge (36 px emoji badge on the tone's container, or an icon badge), 12 px gap, label in labelMedium / `onSurfaceVariant`, up to 2 lines.
 - 12 px below: the value in headlineSmall + tabular figures, **shrinking to fit** (`FittedBox(fit: BoxFit.scaleDown)`) instead of overflowing: `12,500.50 ₪` doesn't fit a 160 px tile at headline size.
@@ -64,3 +66,5 @@ Use cards on phones; switch to a table on large widths (≥ 1200, or ≥ 840 for
 ## Amounts everywhere
 
 - Minor units in data, `intl` formatting at the edge, tabular figures, `Ltr` in RTL, the same decimals in a column, negative values with a minus sign (and color only as a second signal).
+- Totals in several currencies: one line per currency, never one summed number (`forms.md` › Money).
+- A hero summary (this month's total) is one `AppCard` on `primaryContainer` with the amounts in `headlineMedium`; shares by category are pill `LinearProgressIndicator`s scaled to the largest category, with the amount as text beside each.

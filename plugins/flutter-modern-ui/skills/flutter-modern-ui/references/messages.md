@@ -55,6 +55,7 @@ Notes:
 |---|---|
 | Result of an action (saved, deleted, sent) | Message (SnackBar) |
 | Action failed | Message with what failed + what to do (Retry action when useful) |
+| Action in a sheet or dialog failed | **Inside the sheet** (`SheetScaffold(error:)`), above the footer: a SnackBar shows on the page behind the modal sheet, where nobody sees it. Keep the sheet open with the input intact |
 | Destructive action | Confirm dialog → Undo message |
 | Load failed for the whole screen | Error state in the screen (`EmptyState.error`) |
 | Persistent condition (offline, read-only, trial) | Banner at the top, content stays |

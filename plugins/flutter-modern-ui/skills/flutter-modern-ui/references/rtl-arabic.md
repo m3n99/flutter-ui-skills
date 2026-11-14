@@ -60,7 +60,7 @@ They stay left-to-right inside RTL text.
 
 ## Testing
 
-- Add `TextDirection.rtl` to `uiConfig.directions` (the layout test then covers RTL at 360 / 1000 / 1366 × 1.0 / 1.3).
+- Add `TextDirection.rtl` to `uiConfig.directions` (the layout test then covers RTL at 360 / 1000 / 1366 × 1.0 / 1.3 / 1.6).
 - Screenshot the main screens in RTL at 360 px and text scale 1.3.
 - Mixed-language apps: test both directions; no hard-coded `TextDirection.rtl` outside number helpers.
 - Grep for leftovers: `rg -n "EdgeInsets\.only\((left|right)|Alignment\.(centerLeft|centerRight|topLeft|topRight)|TextAlign\.(left|right)|Positioned\((left|right)" lib`.

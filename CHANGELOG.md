@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.4.0
+
+A review of the whole plugin against Anthropic's own design and skill-authoring guidance. The engineering side was strong; the design side started every app from the same presets, and there was little on flows, screen types or wording.
+
+### A look that belongs to the app
+- **`references/identity.md`**: before any token, a five-line **brief** (subject, audience and setting, the one job, three feeling words, a signature element from the subject's world), proposed by Claude and corrected by the user. The seed, the typeface, the shapes and what the home screen shows come from it; a **sameness check** redoes every line of the plan that would fit any other app; a list of the defaults that mark generated Flutter apps; "take one thing away" after the screenshots.
+- **directions.md**: a direction is the chassis (density, depth, roundness), not the identity; its seeds and fonts are fallbacks. The template's seed is marked as a placeholder (and is no longer indigo).
+- Intake proposes the brief; DESIGN.md opens with it; the design-system skill builds the signature once as a shared widget; the reviewer agent and the visual review ask "whose app is this?" first.
+
+### UX, screen types and words
+- **`references/ux.md`**: the task per screen and its tap count, a home that answers the user's question, navigation models, defaults and remembered choices, feedback by waiting time, undo over confirm, never losing input, first run, search and filters, gestures with visible twins.
+- **`references/screens.md`**: what each screen type is for, its anatomy and how it goes wrong: home, detail, sign-in, onboarding, settings, profile, search, notifications, paywall and checkout, reading and media.
+- **`references/writing.md`**: buttons that say what happens, one name per thing through the flow, wording per element (titles, labels, validation, empty, error, confirmation), and Arabic conventions (verbal nouns on buttons, the six plural forms, punctuation).
+- The hub's Step 3 plans the task, the screen type and the words; two new non-negotiables (a brief exists; no placeholder copy); eleven new anti-patterns (75 → 86); a new first section in the review checklist.
+
+### Examples: one app, built from its brief
+- The example app has a brief (`example_app.dart`): a studio's invoice book, ink blue-black, ledger lines as its signature.
+- **Home** no longer opens with a greeting over four tiles: it answers "what is there to collect, and who do I chase?" with the total, a ledger breakdown (overdue, due this week, later) and one action, then two tiles and the chart.
+- **`sign_in_screen.dart`**: one capped, scrolling column; a brand mark made from the signature; autofill, show-password, Next and Done; the failed attempt reported inside the form with the fields kept (a harness case of its own).
+- **`settings_screen.dart`**: grouped cards, switches that apply at once, pick-one rows that show their value and open a pick-one sheet, each language in its own script, a destructive action apart with typed confirmation. It is the shell's third tab.
+
+### Evals
+- **`plugins/flutter-modern-ui/evals/`**: nine cases for `claude plugin eval`, one per behaviour the skills must cause, graded by regexes, short rubrics and "was a skill loaded". The first run showed a pasted-widget review answered without loading any skill, so the hub and audit descriptions now claim small requests too.
+
+### Also
+- `AppSize.columnMaxWidth` (420) for sign-in and other single-column pages.
+
+## 1.3.0
+
+Two rules from the maintainer, and the design contract of an Arabic, Android-only app built with 1.2.
+
+### Nothing touches the system bars
+- **The rule** (hub non-negotiable 12, layout.md › System bars and safe areas): whatever sits near the top or bottom edge (a header, a search bar, a bottom bar, a button, the last list row) is inside `SafeArea` plus at least 8 px, clear of the status bar, the camera cutout or Dynamic Island, the navigation bar and the home indicator. App bars and navigation bars pad themselves.
+- **`SaveBar`** (core kit): a form's primary action pinned under the fields, inside the safe area plus 12 px. **`context.listEndPadding(fab:)`**: the bottom inset + 24, + 72 under a FAB. The examples use both; the detail pane's list now ends with the inset too.
+- **The harness renders phones and tablets under their bars** (`UiConfig.systemBars`: Android's 32 px status bar and 48 px navigation bar, iOS's Dynamic Island and home indicator), as `MediaQuery` padding like a device, and draws them in the screenshots. The keyboard now covers the navigation bar, as on a device.
+- **System-bar check** in the layout and sheet tests (`systemBarProblems`): text, icons, fields and tap targets under a bar or within `systemBarGap` (8 px) of it, for what stays put, scroll views at their start, and every list scrolled to its end (whose last row must also clear the FAB). One line per problem across variants, with the source line; a repo test proves it catches each case and passes the safe versions.
+- Source lines now skip widgets from packages too, so they point at the project's code in `material_ui` apps.
+
+### Ask how much motion, and where
+- **intake.md › Motion** is asked before the first screen, even when the spec or the customer hinted at it (the hint becomes the recommendation): the level, **none** (Material's own motion), **soft** or **expressive**, each with a small example, then the places, each with its soft and expressive version.
+- **`AppThemeConfig.motion`** (`MotionLevel`) → the `AppMotion` theme extension: `context.motion(d)` scales durations (0 at none, × 1.2 at expressive), and `Entrance`, `AnimatedItems`, `StateSwitcher`, `PressScale`, `PopOnChange`, `ShakeOnChange` and `SubmitButton` take their rise, stagger, press, pop and shake from the level. Default: soft (a 4 % rise, all at once).
+- DESIGN.md records the level and the places; the flutter-motion skill asks first and documents the levels (principles.md › Motion levels); the review checklist and an anti-pattern check that it was asked.
+
+### From that app's design contract
+- **Big fonts**: the layout matrix adds text scale 1.6 (and a 1.6 screenshot). `context.isNarrow` (width ÷ text scale < 340) stacks rows that pair two things; the examples put the amount under the name; `KpiGrid` goes one tile per row; `context.iconSize` grows inline icons with the text up to 1.4×.
+- **`MetaItem`** (core kit): a small icon and muted detail text, for card rows; layout.md › List screens describes the list-screen and record-card anatomy.
+- **Errors inside sheets**: `SheetScaffold(error:)` shows a failed action above the footer; a SnackBar would open behind the modal sheet. Several entries in one sheet ("Add another" copies the last one).
+- **Not `SegmentedButton`** for choices in forms and sheets: it can't wrap at big font sizes; chips can.
+- Optional fields say "(optional)" in the label (example form); totals in several currencies show one line per currency; live data needs no pull to refresh (sync status instead); hero summary and category shares in data-display.md.
+
+### Also
+- Anti-patterns 68 → 75; review checklist, reviewer agent, visual review and the UI_PASS template cover the bars, 1.6 and the motion level.
+
 ## 1.2.0
 
 From the feedback log of 1.1.0 on an Arabic, Android-only app built on Flutter 3.50 (problems 1–11).

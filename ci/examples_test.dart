@@ -7,7 +7,12 @@
 // - components.md › Navigation: in an IndexedStack shell, FABs with the
 //   default hero tag throw when a route is pushed; `heroTag: null` doesn't
 //   (and the harness's shell case would catch it).
+// - layout.md › System bars: the harness's system-bar check catches a header
+//   under the status bar, a button on the navigation bar and a list whose
+//   end can't scroll clear of it, and passes SafeArea + padding, SaveBar and
+//   context.listEndPadding().
 
+import 'package:app/design_system/design_system.dart';
 import 'package:app/examples/record_form_screen.dart';
 import 'package:app/examples/records_screen.dart';
 import 'package:app/examples/sample_data.dart';
@@ -31,7 +36,7 @@ void main() {
     await runVariant(tester, variant, () async {
       await pumpUi(tester, uiConfig, variant, (_) => RecordsScreen(repository: InvoiceRepository(latency: Duration.zero)));
 
-      final row = find.text('INV-1033 · due Oct 5');
+      final row = find.text('Due Oct 5');
       final close = find.byTooltip('Close details');
       final empty = find.text('Select an invoice');
       expect(empty, findsOneWidget);
@@ -113,6 +118,55 @@ void main() {
 
     expect((await pushFromShell(untagged: false)).join('\n'), contains('multiple heroes that share the same tag'));
     expect(await pushFromShell(untagged: true), isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('system bars: the check catches what touches them and passes the safe versions', (tester) async {
+    const variant = UiVariant(size: UiSize.phone);
+
+    Future<String> problemsFor(Widget body) async {
+      var problems = <String>[];
+      await runVariant(tester, variant, () async {
+        await pumpUi(tester, uiConfig, variant, (_) => Scaffold(body: body), settle: Duration.zero);
+        problems = await systemBarProblems(tester, uiConfig, variant);
+      });
+      return problems.join('\n');
+    }
+
+    Widget pinnedBottom(Widget bar) => Column(children: [const Expanded(child: SizedBox.expand()), bar]);
+    Widget rows(EdgeInsetsGeometry padding) => ListView(
+          padding: padding,
+          children: [for (var i = 0; i < 30; i++) ListTile(title: Text('Row $i'), onTap: () {})],
+        );
+
+    final header = await problemsFor(const Text('Good morning'));
+    expect(header, contains('"Good morning" is'));
+    expect(header, contains('the status bar'));
+    expect(
+      await problemsFor(const SafeArea(child: Padding(padding: EdgeInsets.all(AppSpace.md), child: Text('Good morning')))),
+      isEmpty,
+    );
+
+    final button = await problemsFor(pinnedBottom(FilledButton(onPressed: () {}, child: const Text('Pay now'))));
+    expect(button, contains('"Pay now" (tap target) is'));
+    expect(button, contains('the navigation bar'));
+    expect(await problemsFor(pinnedBottom(SaveBar(child: FilledButton(onPressed: () {}, child: const Text('Pay now'))))), isEmpty);
+
+    final list = await problemsFor(SafeArea(bottom: false, child: rows(const EdgeInsets.all(AppSpace.md))));
+    expect(list, contains('at the end of the scroll, "Row 29"'));
+    expect(
+      await problemsFor(
+        SafeArea(
+          bottom: false,
+          child: Builder(
+            builder: (context) => rows(
+              EdgeInsetsDirectional.fromSTEB(AppSpace.md, AppSpace.md, AppSpace.md, context.listEndPadding()),
+            ),
+          ),
+        ),
+      ),
+      isEmpty,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

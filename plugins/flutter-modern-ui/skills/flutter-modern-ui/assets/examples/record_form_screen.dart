@@ -1,8 +1,9 @@
 // Reference composition: a long form. Shows:
 // - sections as cards, labels above fields, helper and error text;
-// - the save bar as the LAST CHILD OF THE BODY COLUMN (not
+// - the SaveBar as the LAST CHILD OF THE BODY COLUMN (not
 //   Scaffold.bottomNavigationBar, which the keyboard covers), so it stays
-//   above the keyboard;
+//   above the keyboard, and inside the safe area plus 12 px, so the button
+//   never touches the navigation bar;
 // - create and edit in one screen: `initial` fills the controllers where
 //   they're created, never in build (filling a controller in build calls
 //   setState during build, and only the pre-filled edit form crashes);
@@ -220,7 +221,9 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                             ),
                           ),
                           _LabeledField(
-                            label: 'Email',
+                            // Optional fields say so in the label; required
+                            // ones carry no mark.
+                            label: 'Email (optional)',
                             child: TextFormField(
                               controller: _email,
                               keyboardType: TextInputType.emailAddress,
@@ -229,7 +232,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                               autofillHints: const [AutofillHints.email],
                               decoration: const InputDecoration(
                                 hintText: 'billing@example.com',
-                                helperText: 'Optional. The invoice is sent here.',
+                                helperText: 'The invoice is sent here.',
                               ),
                               validator: (value) {
                                 final email = value?.trim() ?? '';
@@ -338,7 +341,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                   ),
                 ),
               ),
-              _SaveBar(
+              SaveBar(
                 horizontalPadding: side,
                 child: ShakeOnChange(
                   trigger: _failedSubmits,
@@ -394,34 +397,6 @@ class _LabeledField extends StatelessWidget {
         Text(label, style: context.textStyles.titleSmall),
         child,
       ],
-    );
-  }
-}
-
-/// Pinned footer: hairline on top, safe area at the bottom. Because it is
-/// the last child of the body Column, the Scaffold lifts it above the
-/// keyboard.
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({required this.child, required this.horizontalPadding});
-
-  final Widget child;
-  final double horizontalPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(top: BorderSide(color: colors.outlineVariant)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: AppSpace.sm),
-          child: SizedBox(width: double.infinity, child: child),
-        ),
-      ),
     );
   }
 }

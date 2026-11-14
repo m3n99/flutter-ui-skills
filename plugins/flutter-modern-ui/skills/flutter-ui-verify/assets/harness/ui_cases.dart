@@ -5,7 +5,9 @@
 // 2. uiConfig: the real theme function, the platforms that ship, RTL if the
 //    app supports a right-to-left language, localization delegates, `setUp`
 //    for DI fakes and plugin stubs (references/harness.md › Faking
-//    dependencies), the theme-extension tones to check.
+//    dependencies), the theme-extension tones to check. Phones and tablets
+//    render under fake system bars (`systemBars`, default: Android's status
+//    and navigation bars, iOS's Dynamic Island and home indicator).
 // 3. uiCases: every screen in the states that matter (content, loading,
 //    empty, error), built with fake data: no network, no real database, no
 //    pending timers. Also:
@@ -26,6 +28,8 @@ import 'package:app/examples/example_app.dart';
 import 'package:app/examples/record_form_screen.dart';
 import 'package:app/examples/records_screen.dart';
 import 'package:app/examples/sample_data.dart';
+import 'package:app/examples/settings_screen.dart';
+import 'package:app/examples/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,6 +44,7 @@ final UiConfig uiConfig = UiConfig(
     UiVariant(size: UiSize.phone),
     UiVariant(size: UiSize.phone, brightness: Brightness.dark),
     UiVariant(size: UiSize.phone, textScale: 1.3, direction: TextDirection.rtl),
+    UiVariant(size: UiSize.phone, textScale: 1.6),
     UiVariant(size: UiSize.desktop, platform: TargetPlatform.windows),
   ],
   // Status tones live in a ThemeExtension, so the theme-level contrast test
@@ -106,6 +111,22 @@ final List<UiCase> uiCases = [
   UiCase('invoice_form', (_) => RecordFormScreen(repository: _instant())),
   UiCase('invoice_form_edit', (_) => RecordFormScreen(repository: _instant(), initial: _editing)),
   UiCase('shell', (_) => ExampleShell(repository: _instant()), act: _pushFromShell),
+  UiCase('settings', (_) => const SettingsScreen()),
+  UiCase(
+    'sign_in',
+    (_) => SignInScreen(onSignIn: (email, password) async {}, onForgotPassword: () {}, onCreateAccount: () {}),
+  ),
+  // A state is a case: the failed attempt, with the email kept.
+  UiCase(
+    'sign_in_failed',
+    (_) => SignInScreen(
+      onSignIn: (email, password) async {},
+      onForgotPassword: () {},
+      onCreateAccount: () {},
+      initialEmail: 'maya@northwind.studio',
+      initialError: "That email and password don't match. Try again or reset your password.",
+    ),
+  ),
 ];
 
 final List<SheetCase> sheetCases = [

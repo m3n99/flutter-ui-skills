@@ -5,6 +5,7 @@ Reference: `assets/examples/record_form_screen.dart`.
 ## Field anatomy
 
 - **Label above the field** (titleSmall), field below, helper or error text under it. Floating labels read as dated in most modern designs.
+- **Optional fields say so in the label**: "Email (optional)", «البريد (اختياري)»; required fields carry no mark. One helper (`optional(label)`) keeps the wording the same everywhere.
 - Field gap 16, section gap 16–24 (sections as `AppCard`s with a titleMedium heading, or `SheetSection`s inside sheets).
 - Always set `keyboardType`, `textInputAction` (next / done / search), `autofillHints`, `textCapitalization` for names and sentences, and `obscureText` + a visibility toggle for passwords.
 - Width: forms cap at 640 px (`ContentWidth.horizontalPadding(width, maxWidth: AppSize.formMaxWidth)`); on wide screens two-column field grids (12 px gaps) for short fields only.
@@ -30,6 +31,7 @@ Reference: `assets/examples/record_form_screen.dart`.
   - accepts one decimal separator (`.`, `,` or Arabic `٫`) and at most the currency's decimals;
   - drops everything else (`MoneyInputFormatter` in the example).
 - Display: `intl` `NumberFormat.currency(locale:, symbol:)` with thousands separators and the locale's currency position; tabular figures; inside `Ltr` in RTL layouts.
+- **Several currencies are never added up.** Totals show one line per currency ("₪ 12,400 · $ 3,150"), each formatted on its own; a single number would be wrong for every currency in it.
 - **Amount fields in RTL**: the field is LTR (`textDirection: TextDirection.ltr`), so its own `start` is the left even on an RTL screen. The digits then sit at the far end from a currency prefix, or glued to a suffix (`₪2500`). Align them to the reading start: `textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start`, and keep a space in `prefixText` / `suffixText`. Check the font has the currency glyph (`rtl-arabic.md` › Arabic typography).
 - Decide the digit style once (Western `0-9` vs Arabic-Indic) and record it in DESIGN.md; many Arabic apps in the Levant and Gulf use Western digits.
 - Totals and balances that update live: `AnimatedNumber`.
@@ -77,7 +79,7 @@ Reference: `assets/examples/record_form_screen.dart`.
 
 ## Editable rows (line items, installments)
 
-- Compact (< 600): two lines per row: label on the first line; date | amount (3 : 2) on the second. A one-line row truncates `dd/MM/yyyy` at 360 px.
+- Compact (< 600) or `context.isNarrow`: two lines per row: label on the first line; date | amount (3 : 2) on the second. A one-line row truncates `dd/MM/yyyy` at 360 px. At big font sizes, one field per row.
 - From 600 px: one line per row.
 - Add row: a `TextButton.icon` at the end of the list; new rows animate in (`AnimatedItems` or `AnimatedSize`) and take focus.
 - Remove row: icon button with a tooltip; no confirm for empty rows, Undo for filled ones.

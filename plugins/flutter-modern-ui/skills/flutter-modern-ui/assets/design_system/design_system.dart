@@ -2,6 +2,7 @@
 library;
 
 export 'app_density.dart';
+export 'app_motion.dart';
 export 'app_palette.dart';
 export 'app_theme.dart';
 export 'app_typography.dart';
@@ -21,7 +22,9 @@ export 'widgets/controls.dart';
 export 'widgets/empty_state.dart';
 export 'widgets/kpi_tile.dart';
 export 'widgets/ltr.dart';
+export 'widgets/meta_item.dart';
 export 'widgets/press_scale.dart';
+export 'widgets/save_bar.dart';
 export 'widgets/section_header.dart';
 export 'widgets/skeleton.dart';
 export 'widgets/status_pill.dart';

@@ -2,6 +2,8 @@
 
 Pick one direction per app and apply it everywhere. Mixing directions (glass cards next to flat enterprise tables) is what makes an app feel unfinished. A direction is a set of token values: set them in `AppTheme.config` (`AppThemeConfig`), `AppRadius.card` / `AppRadius.control`, `AppSpace.screen` and `AppDensity`.
 
+**A direction is the chassis, not the identity.** It settles density, depth, roundness and liveliness. What makes the app recognizably itself (its colors, its typeface, its one signature element) comes from the brief in `identity.md`, written first. The seeds and fonts in the tables below are fallbacks for a brief that leaves them open, and the first thing the sameness check questions: two apps on the same direction should still not look alike.
+
 Each table lists every value the templates need, so the theme never contradicts the direction.
 
 ---
@@ -11,8 +13,8 @@ Each table lists every value the templates need, so the theme never contradicts 
 
 | Token | Value |
 |---|---|
-| Seed / variant | Indigo `#4F46E5`, teal `#0F766E` or the brand color · `tonalSpot` (`fidelity` for exact brand hue) |
-| Font | Inter, Manrope, Plus Jakarta Sans · Arabic: IBM Plex Sans Arabic |
+| Seed / variant | the brand color or one from the subject (`identity.md`); fallbacks: teal `#0F766E`, ink `#1F2A44`, forest `#166534` · `tonalSpot` (`fidelity` for exact brand hue) |
+| Font | chosen from the brief's feeling (`identity.md` › Type); fallbacks: Manrope, Plus Jakarta Sans, Figtree · Arabic: IBM Plex Sans Arabic |
 | Radius | card 16 · control 12 · sheet 24 |
 | Control height | touch 48–52 · desktop 40 |
 | Screen padding | 20 |
@@ -22,7 +24,7 @@ Each table lists every value the templates need, so the theme never contradicts 
 | Motion | 200–300 ms, press scale, staggered entrance |
 | Emoji fit | KPI tiles only, if at all |
 
-Signature moves: large bold title at the top of the scroll (`SliverAppBar.large` or a greeting header), muted secondary text, one accent used sparingly, a summary hero card.
+Typical moves: large bold title at the top of the scroll (`SliverAppBar.large`), muted secondary text, one accent used sparingly, the answer to the user's daily question first. The app's own signature comes from its brief.
 
 ---
 
@@ -41,7 +43,7 @@ Signature moves: large bold title at the top of the scroll (`SliverAppBar.large`
 | Motion | snappy 150–220 ms, staggered entrances, counters that tween, `PopOnChange` on toggles |
 | Emoji fit | headers and empty states work |
 
-Signature moves: oversized numerals (displayMedium + tabular), full-bleed hero card, pill buttons, icons in filled tinted circles.
+Typical moves: oversized numerals (displayMedium + tabular), full-bleed hero card, pill buttons, icons in filled tinted circles.
 
 ---
 
@@ -61,7 +63,7 @@ Signature moves: oversized numerals (displayMedium + tabular), full-bleed hero c
 | Motion | minimal: fades only |
 | Emoji fit | none |
 
-Signature moves: big images at 3:2 or 4:5, serif titles, small-caps overlines (labelSmall + letterSpacing 1.2 + uppercase; never on Arabic), generous whitespace.
+Typical moves: big images at 3:2 or 4:5, serif titles, small-caps overlines (labelSmall + letterSpacing 1.2 + uppercase; never on Arabic), generous whitespace.
 
 ---
 
@@ -95,7 +97,7 @@ Rules: blur is expensive: at most 2–3 blurred elements on screen, never inside
 | Motion | springy pops (`AppCurves.pop`) for celebrations only, confetti on success, progress rings |
 | Emoji fit | everywhere it carries meaning, always with a label |
 
-Signature moves: illustrations in empty states, chunky buttons, progress rings, big friendly icons.
+Typical moves: illustrations in empty states, chunky buttons, progress rings, big friendly icons.
 
 ---
 
@@ -117,7 +119,7 @@ Signature moves: illustrations in empty states, chunky buttons, progress rings, 
 | Motion | functional 150–250 ms: list insert/remove, state cross-fades, chart value changes |
 | Emoji fit | KPI tiles and section headers, if the user wants them |
 
-Signature moves: KPI row at the top, filter chips under the app bar, table + detail pane on wide windows, clear status tones from `AppPalette`.
+Typical moves: KPI row at the top, filter chips under the app bar, table + detail pane on wide windows, clear status tones from `AppPalette`.
 
 ---
 
@@ -141,6 +143,6 @@ For apps used for hours (ledgers, admin, reading, field tools): `AppThemeConfig(
 - Kids, learning, habits → Playful.
 - Long working sessions → add Eye comfort.
 
-If the app already has a brand color, keep it as the seed with `DynamicSchemeVariant.fidelity`. If the user shared reference apps, derive the direction from them (`flutter-design-system` skill › study-reference-apps).
+If the app already has a brand color, keep it as the seed with `DynamicSchemeVariant.fidelity`. If the user shared reference apps, derive the direction from them (`flutter-design-system` skill › study-reference-apps). Either way, write the brief (`identity.md`) before setting tokens: the direction narrows the choices, the brief makes them.
 
 When a direction changes radius or density, update the tokens, not individual widgets: a 16 px card in an Enterprise Dense app is a token bug, not a screen bug.

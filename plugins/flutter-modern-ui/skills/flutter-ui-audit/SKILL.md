@@ -1,6 +1,6 @@
 ---
 name: flutter-ui-audit
-description: Audit existing Flutter screens for design quality, consistency, platform fit, RTL, accessibility and motion, then fix them with presentation-only changes verified by screenshots. Use when the user asks to review, polish, modernize, "make prettier", QA or critique Flutter UI, or shares a screen file or screenshot and asks what's wrong with it.
+description: Audit existing Flutter screens for design quality, identity, UX flow, wording, consistency, platform fit, RTL, accessibility and motion, then fix them with presentation-only changes verified by screenshots. Use whenever the user asks to review, check, polish, modernize, "make prettier", QA or critique Flutter UI or UX, says an app feels generic or clumsy to use, or pastes a widget, a screen file or a screenshot and asks whether anything is wrong with it, even as a quick question: load this skill first instead of reviewing from memory.
 ---
 
 # Flutter UI Audit
@@ -11,6 +11,7 @@ Standards (read before auditing):
 - `../flutter-modern-ui/references/anti-patterns.md`
 - `../flutter-modern-ui/references/review-checklist.md`
 - `../flutter-modern-ui/references/tokens.md` (replacement values)
+- `../flutter-modern-ui/references/identity.md`, `ux.md`, `writing.md` (does it belong to this app, does the flow serve the task, do the words say what happens)
 - the project's `DESIGN.md`, if it exists: it overrides the defaults.
 
 ## Workflow
@@ -35,11 +36,11 @@ Go through the checklist and anti-patterns for each screen. Record each finding 
 - **Why it matters**: one clause (hierarchy, dark mode, RTL, overflow, consistency, accessibility).
 - **Fix**: the exact replacement (token, role, shared widget, pattern).
 
-Areas: system use · hierarchy · spacing · shapes (nesting, card types) · status & selection (never color alone) · states (skeletons, empty, error) · messages (one component, copy, Undo, `persist: false`) · sheets (shared anatomy, footer order) · forms (labels, keyboard, save bar) · platforms (touch targets, desktop pointer affordances, breakpoints) · RTL · accessibility (contrast, semantics, text scale) · motion (purpose, tokens, reduced motion, list state).
+Areas: identity (a brief and a signature, or defaults that would fit any app) · flow (the task per screen, taps for the frequent ones, where the primary action sits, what gets retyped or lost) · words (button labels, one name per thing, empty and error text) · system use · hierarchy · spacing · shapes (nesting, card types) · status & selection (never color alone) · states (skeletons, empty, error) · messages (one component, copy, Undo, `persist: false`) · sheets (shared anatomy, footer order) · forms (labels, keyboard, save bar) · platforms (touch targets, desktop pointer affordances, breakpoints) · RTL · accessibility (contrast, semantics, text scale) · motion (purpose, tokens, reduced motion, list state).
 
 Severity:
 - **High**: broken or inaccessible: overflow, unreadable contrast, broken dark mode or RTL, tiny tap targets, missing error/empty states, primary action hidden by the keyboard, double submits, deletes without confirm or Undo.
-- **Medium**: dated or inconsistent: default seed/tint, heavy shadows, no hierarchy, off-grid spacing, several primary buttons, spinner-only loading, sheets with different layouts, generic messages, status by color.
+- **Medium**: dated, generic or inconsistent: default seed and font with no brief behind them, a home screen that is a menu or a grid of numbers with no next step, the frequent task buried, placeholder wording ("Submit", "Success", "No data"), heavy shadows, no hierarchy, off-grid spacing, several primary buttons, spinner-only loading, sheets with different layouts, generic messages, status by color.
 - **Low**: polish: icon style mixing, missing press feedback, missing tabular figures, 2 px misalignment.
 
 ### 4. Report
@@ -49,6 +50,7 @@ Lead with a 2–3 sentence verdict naming the three changes with the biggest pay
 ### 5. Fix (unless the user asked for a report only)
 
 Order:
+0. **The brief**, if the app has none: write the five lines from what the app is and get them confirmed; they decide the theme-level fixes.
 1. **Theme level** (one change, many screens): seed/variant, tints, component themes, density by platform, typography (Arabic tracking), semantic and domain tones.
 2. **Tokens**: replace raw values in the audited files; add missing tokens to the project's existing token file.
 3. **Shared patterns** the findings call for, in the project's naming: status mapping, sheet anatomy, message component with Undo, skeletons, animated lists.

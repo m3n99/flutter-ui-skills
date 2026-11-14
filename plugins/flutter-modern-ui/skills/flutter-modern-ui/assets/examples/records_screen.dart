@@ -16,6 +16,11 @@
 // - the FAB has `heroTag: null`: screens in an IndexedStack shell (or
 //   go_router's StatefulShellRoute.indexedStack) share one route, and two
 //   FABs with the default tag throw when any route is pushed;
+// - card rows: title and amount on one line (the amount under the title when
+//   the screen is narrow: big fonts, small phones), details as MetaItems,
+//   the status pill last;
+// - the list ends with context.listEndPadding(fab: true), so its last row
+//   scrolls clear of the navigation bar and the FAB;
 // - loading skeleton, error with retry, first-use and no-results empty states.
 
 import 'package:flutter/material.dart';
@@ -459,8 +464,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
                 ),
             ],
         },
-        // Clears the floating button and the home indicator.
-        SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom + AppSpace.xxl * 2)),
+        // Clears the navigation bar or home indicator, and the FAB.
+        SliverToBoxAdapter(child: SizedBox(height: context.listEndPadding(fab: true))),
       ],
     );
   }
@@ -478,6 +483,13 @@ class _InvoiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final text = context.textStyles;
+    final customer = Text(
+      invoice.customer,
+      style: text.titleMedium,
+      maxLines: context.isNarrow ? 2 : 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    final amount = Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleMedium.tabular));
 
     return Semantics(
       selected: selected,
@@ -493,20 +505,23 @@ class _InvoiceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: AppSpace.xxs,
                 children: [
-                  Row(
+                  // Narrow (big fonts, small phones): the amount goes under
+                  // the name instead of squeezing it to a few letters.
+                  if (context.isNarrow) ...[
+                    customer,
+                    amount,
+                  ] else
+                    Row(
+                      spacing: AppSpace.sm,
+                      children: [Expanded(child: customer), amount],
+                    ),
+                  Wrap(
                     spacing: AppSpace.sm,
+                    runSpacing: AppSpace.xxs,
                     children: [
-                      Expanded(
-                        child: Text(invoice.customer, style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ),
-                      Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleMedium.tabular)),
+                      MetaItem(icon: Icons.tag_rounded, text: invoice.number, ltr: true),
+                      MetaItem(icon: Icons.event_outlined, text: 'Due ${formatShortDate(invoice.due)}'),
                     ],
-                  ),
-                  Text(
-                    '${invoice.number} · due ${formatShortDate(invoice.due)}',
-                    style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpace.xxs),
                   invoice.status.pill,
@@ -596,7 +611,9 @@ class _DetailPane extends StatelessWidget {
         header,
         Expanded(
           child: ListView(
-            padding: const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.sm, AppSpace.lg, AppSpace.lg),
+            // An explicit padding turns off ListView's automatic safe area:
+            // end with the bottom inset too.
+            padding: EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.sm, AppSpace.lg, context.listEndPadding()),
             children: [
               Align(
                 alignment: AlignmentDirectional.centerStart,

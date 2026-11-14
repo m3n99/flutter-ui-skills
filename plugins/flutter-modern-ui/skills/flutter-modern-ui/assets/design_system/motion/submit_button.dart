@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../app_motion.dart';
 import '../context_ext.dart';
 import '../tokens.dart';
 import '../widgets/controls.dart';
@@ -116,6 +117,9 @@ class _SubmitButtonState extends State<SubmitButton> {
       _Phase.done => Icon(Icons.check_rounded, key: const ValueKey('done'), color: foreground),
     };
 
+    // Expressive: the spinner and the check overshoot into place.
+    final curve = context.appMotion.level == MotionLevel.expressive ? AppCurves.pop : AppCurves.standard;
+
     return IgnorePointer(
       ignoring: phase != _Phase.idle,
       child: FilledButton(
@@ -133,7 +137,7 @@ class _SubmitButtonState extends State<SubmitButton> {
             AnimatedSwitcher(
               duration: context.motion(AppDurations.fast),
               transitionBuilder: (child, animation) => ScaleTransition(
-                scale: animation.drive(Tween<double>(begin: 0.6, end: 1)),
+                scale: animation.drive(CurveTween(curve: curve)).drive(Tween<double>(begin: 0.6, end: 1)),
                 child: FadeTransition(opacity: animation, child: child),
               ),
               child: overlay,

@@ -105,6 +105,10 @@ abstract final class AppIconSize {
   /// The icon in an EmptyState's tinted circle.
   static const double emptyState = 40;
   static const double hero = 48;
+
+  /// Icons inline with text grow with the text scale up to this factor
+  /// (`context.iconSize`).
+  static const double maxTextScale = 1.4;
 }
 
 /// Fixed component sizes and content widths.
@@ -116,6 +120,14 @@ abstract final class AppSize {
   static const double progressBar = 8;
   static const double spinner = 18;
 
+  /// Room under a list's last row for a floating action button: its height
+  /// (56) and margin (16). See `context.listEndPadding(fab: true)`.
+  static const double fabClearance = 72;
+
+  /// Width (as text sees it) a KPI tile needs; KpiGrid goes one per row below
+  /// two of them.
+  static const double kpiTileMinWidth = 150;
+
   /// Sheets shown as dialogs on wide windows.
   static const double sheetMaxWidth = 560;
   static const double confirmDialogWidth = 420;
@@ -126,6 +138,8 @@ abstract final class AppSize {
   /// Empty states: title and message wrap at this width.
   static const double emptyStateWidth = 360;
 
+  /// One narrow column: sign-in, onboarding, a short standalone form.
+  static const double columnMaxWidth = 420;
   static const double formMaxWidth = 640;
   static const double readingMaxWidth = 720;
 
@@ -135,6 +149,10 @@ abstract final class AppSize {
 
 /// Window-width breakpoints (Material 3 window size classes).
 abstract final class AppBreakpoints {
+  /// Window width ÷ text scale below which rows that pair two things stack
+  /// (`context.isNarrow`): small phones, big fonts, large display sizes.
+  static const double narrow = 340;
+
   static const double medium = 600;
   static const double expanded = 840;
   static const double large = 1200;
@@ -160,8 +178,9 @@ enum WindowSize {
   bool atLeast(WindowSize other) => index >= other.index;
 }
 
-/// Motion durations. Gate every duration with `context.motion(...)` so it
-/// becomes zero when the platform asks for reduced motion.
+/// Motion durations. Gate every duration with `context.motion(...)`: it
+/// scales them by the motion level (AppMotion) and makes them zero at
+/// MotionLevel.none and when the platform asks for reduced motion.
 abstract final class AppDurations {
   /// Press feedback, toggles, color and border changes.
   static const Duration fast = Duration(milliseconds: 150);

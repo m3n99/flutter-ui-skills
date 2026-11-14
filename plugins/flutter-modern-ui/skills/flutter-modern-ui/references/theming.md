@@ -108,7 +108,7 @@ Material has no success / warning / info roles. `AppPalette` (a `ThemeExtension`
 - Dark surfaces come from the same seed (or the eye-comfort dark values). Never invert colors or use pure black (except an explicit OLED option).
 - Borders carry separation in dark mode; shadows barely read (raised tiles keep their border in dark).
 - Images and illustrations: check they don't glow; dim with an overlay if needed.
-- Status bar: full-bleed headers set `SystemUiOverlayStyle` by background luminance; edge-to-edge on Android (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`) with `SafeArea` on content.
+- Status bar: full-bleed headers set `SystemUiOverlayStyle` by background luminance; edge-to-edge on Android (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`, the default from Android 15) with `SafeArea` plus a little padding on content (`layout.md` › System bars and safe areas).
 
 ## 8. Reading the theme in widgets
 

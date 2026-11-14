@@ -184,7 +184,7 @@ class _AnimatedItemsState<T> extends State<AnimatedItems<T>> {
       final t = animation.drive(CurveTween(curve: AppCurves.standard));
       transition = FadeTransition(
         opacity: t,
-        child: ScaleTransition(scale: t.drive(Tween<double>(begin: 0.95, end: 1)), child: child),
+        child: ScaleTransition(scale: t.drive(Tween<double>(begin: context.appMotion.insertScale, end: 1)), child: child),
       );
     } else {
       final t = animation.drive(CurveTween(curve: AppCurves.emphasized));

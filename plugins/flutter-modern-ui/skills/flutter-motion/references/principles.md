@@ -9,6 +9,27 @@
 
 If an animation does none of these, it's decoration: cut it or make it optional.
 
+## Motion levels
+
+One knob for the whole app, `AppThemeConfig.motion`, read by the shared pieces through `context.appMotion`:
+
+| | none | soft (default) | expressive |
+|---|---|---|---|
+| Durations (`context.motion`) | 0 | × 1.0 | × 1.2 |
+| Entrance rise | — | 4 % of the height | 12 % |
+| Stagger | — | none (all at once) | 40 ms, first 8 |
+| Grid insert scale | — | from 98 % | from 92 % |
+| Press (`PressScale`, `AppCard`) | — | 0.98 | 0.96 |
+| `PopOnChange` peak | — | 1.08 | 1.18 |
+| `ShakeOnChange` swing | — | 4 px | 8 px |
+| `SubmitButton` spinner / check | swap | scale in | overshoot (`AppCurves.pop`) |
+
+- **none** keeps Material's own motion (ripples, page transitions, switches, sheets) and shows every shared piece in its end state. Choose it when the spec asks for a plain app, for kiosks and for data-entry tools used all day.
+- **soft** suits most apps: motion explains changes without being noticed.
+- **expressive** suits consumer, onboarding, celebration and dashboard-heavy apps. Container transforms and shared-axis transitions (`recipes.md`) belong here.
+- Reduced motion beats every level: durations become zero.
+- A project with its own motion helpers maps the same idea onto them: one setting, read in one place.
+
 ## Durations (tokens)
 
 | Token | ms | Use |
