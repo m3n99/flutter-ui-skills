@@ -95,6 +95,7 @@ class KpiTile extends StatelessWidget {
 /// Lays out KPI tiles in rows of equal height: 4 per row from 840 px of
 /// available width, 2 per row, and 1 per row when the width text sees
 /// (width ÷ text scale) is under two tiles' worth: small phones, big fonts.
+/// Fewer tiles than columns share the row.
 class KpiGrid extends StatelessWidget {
   const KpiGrid({super.key, required this.children, this.spacing = AppSpace.sm});
 
@@ -106,11 +107,14 @@ class KpiGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final textWidth = constraints.maxWidth / context.textScale;
-        final columns = textWidth >= AppBreakpoints.expanded
+        final fit = textWidth >= AppBreakpoints.expanded
             ? 4
             : textWidth >= AppSize.kpiTileMinWidth * 2
                 ? 2
                 : 1;
+        // Never more columns than tiles: two tiles share a wide row instead
+        // of leaving half of it empty.
+        final columns = children.length < fit ? children.length : fit;
         return Column(
           spacing: spacing,
           children: [

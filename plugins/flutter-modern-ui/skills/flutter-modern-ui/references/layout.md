@@ -8,7 +8,7 @@ Most modern screens share one skeleton. Start from it and remove what you don't 
 Scaffold (bg: surface)
 └─ SafeArea(bottom: false)
    └─ CustomScrollView
-      ├─ SliverAppBar.large / .medium      ← title that collapses on scroll (or a greeting header)
+      ├─ SliverAppBar.large / .medium      ← title that collapses on scroll (or a plain title)
       ├─ Search / filter chips             ← SliverToBoxAdapter, screen padding
       ├─ SliverPadding(horizontal: screen or ContentWidth.horizontalPadding(width))
       │   └─ SliverList / AnimatedItems / SliverGrid
@@ -129,7 +129,7 @@ Phones draw over the app: the status bar (with a camera cutout, or the Dynamic I
 | Where | How |
 |---|---|
 | App bar, `SliverAppBar`, `NavigationBar`, `NavigationRail` | they pad themselves: don't add `SafeArea` around them |
-| A header without an app bar (greeting, search at the top) | `SafeArea(bottom: false)` around the scroll view, then ≥ `AppSpace.md` above the first row |
+| A header without an app bar (a title, search at the top) | `SafeArea(bottom: false)` around the scroll view, then ≥ `AppSpace.md` above the first row |
 | Full-bleed header color or image | the background runs under the status bar; its content pads by `MediaQuery.paddingOf(context).top` + `AppSpace.md` |
 | Bottom bar with a button (save, checkout, continue) | `SaveBar`: `SafeArea(top: false)` + `AppSpace.sm` all round, inside a surface with a hairline |
 | A list that runs to the bottom of the screen | ends with `context.listEndPadding()`; `fab: true` under a FAB. A `ListView` with an explicit `padding` loses its automatic safe area: add the inset yourself |

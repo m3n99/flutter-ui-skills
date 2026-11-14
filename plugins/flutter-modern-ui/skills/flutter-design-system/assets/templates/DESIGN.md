@@ -4,6 +4,19 @@ The contract for every screen. Read it before changing UI; update it in the same
 
 Code: `{lib/core/design_system/}` (import `design_system.dart`). Widgets never use raw numbers or colors: every value below is a token.
 
+## Brief
+
+Who this app is, in five lines. Every later choice answers to them (`flutter-modern-ui` › identity).
+
+- **Subject:** {what the app is, in its own world's words}
+- **Audience and setting:** {who, where, for how long}
+- **The job:** {the one thing it must make easy; the home screen shows it first}
+- **Feeling:** {three words that rule something out}
+- **Signature:** {the one element from the subject's world} — appears on {home card, record card, empty state} only
+- **Palette:** {ink `#1F2A44` (seed, fidelity) · warm paper surfaces · check-green settled · stamp-red overdue · pencil-grey details}
+- **Typeface:** {family, why; numerals tabular} · icons: {`Icons.*_rounded`}
+- **Voice:** {plain and exact; buttons say what happens; one name per thing}
+
 ## Direction and decisions
 
 - **Direction:** {Soft Minimal / Enterprise Dense / …}{, eye comfort}. {One sentence on the feel.}

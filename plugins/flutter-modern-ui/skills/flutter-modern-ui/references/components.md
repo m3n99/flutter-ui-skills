@@ -4,7 +4,7 @@ Ready widgets: `assets/design_system/widgets/`. Snippets assume `context.colors`
 
 ## App bars
 
-- Top-level screens: `SliverAppBar.large` or `.medium` (title collapses on scroll), or a greeting header (avatar 40 + "Good morning" in muted bodySmall + name in titleLarge + one icon button).
+- Top-level screens: `SliverAppBar.large` or `.medium` (title collapses on scroll), or a plain `headlineSmall` title over the screen's first block. A greeting header (avatar + "Good morning" + name + a bell) only when the app has an account and something to say to it; by default it's filler above the content the user came for (`screens.md` › Home).
 - Detail screens: `SliverAppBar.medium` or a plain `AppBar` with titleLarge.
 - At most 2 action icons, each with a tooltip; the rest in a `MenuAnchor` overflow.
 - Filter actions show the active count: `Badge(isLabelVisible: count > 0, label: Text('$count'), child: Icon(Icons.tune_rounded))`.

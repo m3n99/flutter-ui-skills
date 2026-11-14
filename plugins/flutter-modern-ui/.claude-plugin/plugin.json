@@ -1,7 +1,7 @@
 {
   "name": "flutter-modern-ui",
-  "description": "Flutter UI engineering skills for Claude: study the existing app and its design system, build consistent modern screens for phone, tablet and desktop (RTL included), add purposeful animation, and verify the result by rendering screenshots and printed documents and reviewing them.",
-  "version": "1.3.0",
+  "description": "Flutter UI and UX skills for Claude: study the existing app and its design system, write a design brief so the look belongs to the app, plan flows and wording, build consistent modern screens for phone, tablet and desktop (RTL included), add purposeful animation, and verify the result by rendering screenshots and printed documents and reviewing them.",
+  "version": "1.4.0",
   "author": {
     "name": "Maen Khdour",
     "url": "https://github.com/m3n99"

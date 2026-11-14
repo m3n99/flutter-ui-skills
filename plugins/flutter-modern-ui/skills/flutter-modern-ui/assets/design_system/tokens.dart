@@ -138,6 +138,8 @@ abstract final class AppSize {
   /// Empty states: title and message wrap at this width.
   static const double emptyStateWidth = 360;
 
+  /// One narrow column: sign-in, onboarding, a short standalone form.
+  static const double columnMaxWidth = 420;
   static const double formMaxWidth = 640;
   static const double readingMaxWidth = 720;
 

@@ -28,6 +28,8 @@ import 'package:app/examples/example_app.dart';
 import 'package:app/examples/record_form_screen.dart';
 import 'package:app/examples/records_screen.dart';
 import 'package:app/examples/sample_data.dart';
+import 'package:app/examples/settings_screen.dart';
+import 'package:app/examples/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -109,6 +111,22 @@ final List<UiCase> uiCases = [
   UiCase('invoice_form', (_) => RecordFormScreen(repository: _instant())),
   UiCase('invoice_form_edit', (_) => RecordFormScreen(repository: _instant(), initial: _editing)),
   UiCase('shell', (_) => ExampleShell(repository: _instant()), act: _pushFromShell),
+  UiCase('settings', (_) => const SettingsScreen()),
+  UiCase(
+    'sign_in',
+    (_) => SignInScreen(onSignIn: (email, password) async {}, onForgotPassword: () {}, onCreateAccount: () {}),
+  ),
+  // A state is a case: the failed attempt, with the email kept.
+  UiCase(
+    'sign_in_failed',
+    (_) => SignInScreen(
+      onSignIn: (email, password) async {},
+      onForgotPassword: () {},
+      onCreateAccount: () {},
+      initialEmail: 'maya@northwind.studio',
+      initialError: "That email and password don't match. Try again or reset your password.",
+    ),
+  ),
 ];
 
 final List<SheetCase> sheetCases = [

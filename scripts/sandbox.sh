@@ -80,11 +80,14 @@ cat >> pubspec.yaml <<'YAML'
           weight: 700
 YAML
 
-# The DIRECTION step a project would do: set the bundled font in the theme config.
+# The DIRECTION step a project would do, from the example app's brief
+# (lib/examples/example_app.dart): an ink blue-black seed kept exact, and the
+# bundled font.
 THEME="lib/design_system/app_theme.dart"
-sed -i.bak "s/static const AppThemeConfig config = AppThemeConfig();/static const AppThemeConfig config = AppThemeConfig(fontFamily: 'IBM Plex Sans Arabic');/" "$THEME"
+CONFIG="AppThemeConfig(seed: Color(0xFF1F2A44), variant: DynamicSchemeVariant.fidelity, fontFamily: 'IBM Plex Sans Arabic')"
+sed -i.bak "s/static const AppThemeConfig config = AppThemeConfig();/static const AppThemeConfig config = $CONFIG;/" "$THEME"
 rm -f "$THEME.bak"
-grep -q "AppThemeConfig(fontFamily: 'IBM Plex Sans Arabic')" "$THEME" || { echo "Could not set the font in $THEME" >&2; exit 1; }
+grep -qF "$CONFIG" "$THEME" || { echo "Could not set the theme config in $THEME" >&2; exit 1; }
 
 flutter pub get >/dev/null
 echo "Sandbox ready ($(has_dep material_ui && echo material_ui || echo 'package:flutter/material.dart')): $OUT"

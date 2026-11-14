@@ -34,7 +34,9 @@ enum InputStyle {
 @immutable
 class AppThemeConfig {
   const AppThemeConfig({
-    this.seed = const Color(0xFF4F46E5),
+    // A placeholder, not a choice: take the seed from the brand or from the
+    // app's subject (references/identity.md).
+    this.seed = const Color(0xFF0F766E),
     this.variant = DynamicSchemeVariant.tonalSpot,
     this.fontFamily,
     this.fontFamilyFallback,
@@ -113,7 +115,9 @@ class AppThemeConfig {
 /// )
 /// ```
 abstract final class AppTheme {
-  /// DIRECTION: set the seed, variant, fonts, script and styles here once.
+  /// DIRECTION: set the seed, variant, fonts, script, styles and motion level
+  /// here once, from the app's brief (references/identity.md): the defaults
+  /// are placeholders that would fit any app.
   static const AppThemeConfig config = AppThemeConfig();
 
   static ThemeData light({TargetPlatform? platform, AppThemeConfig config = AppTheme.config}) =>
