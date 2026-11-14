@@ -1,6 +1,6 @@
 ---
 name: flutter-design-system
-description: Create, extend, repair or document a Flutter app's design system — tokens, color scheme, typography, density, shared components and a DESIGN.md contract that keeps every screen consistent. Use when setting up theming for a new app, when an existing app's UI is inconsistent, when the user shares screenshots or names apps whose look they want, or before building screens in a project with no design system.
+description: Create, extend, repair or document a Flutter app's design system — a design brief that gives the app its own identity, tokens, color scheme, typography, density, shared components and a DESIGN.md contract that keeps every screen consistent. Use when setting up theming or branding for a new app, when an existing app's UI is inconsistent or looks like every other app, when the user shares screenshots or names apps whose look they want, or before building screens in a project with no design system.
 ---
 
 # Flutter Design System
@@ -27,21 +27,23 @@ A design system is what makes the tenth screen look like the first. This skill p
 3. Fill gaps **in the existing files**: missing tokens (elevation, sizes, concentric radius helper, density), missing component themes, semantic/domain tones, a single message component, the sheet anatomy.
 4. Resolve contradictions inside the theme (a dense app with 52 px buttons, white cards in an eye-comfort palette), not per screen.
 5. Run the contrast test (flutter-ui-verify › `contrast_test.dart`).
-6. Write or update DESIGN.md from what now exists, including deliberate deviations.
+6. Write or update DESIGN.md from what now exists, including deliberate deviations. If it has no brief, write the five lines from what the app already is (`../flutter-modern-ui/references/identity.md`) and have the user confirm them.
 
 ### B. Create a new system
 
 1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, the look (cards, rows or rich), brand color, emoji, how much motion (none, soft, expressive) and where.
-2. Choose a direction (`../flutter-modern-ui/references/directions.md`); state it in one line.
-3. Copy the templates with `python3 ../flutter-modern-ui/scripts/copy_design_system.py --to <folder>` (default `lib/core/design_system/`): the **core kit** first; `--kit extras` adds motion, the adaptive shell and KPI tiles when the app needs them. It writes the barrel and, in `material_ui` projects, the right imports. Then:
-   - set `AppTheme.config` (seed, variant, font, script, surfaces, input style, motion level);
+2. **Write the brief** (`../flutter-modern-ui/references/identity.md`): subject, audience and setting, the job, three feeling words, a signature element from the subject's world. Propose it; the user corrects it. From it: the named palette (seed first), the typeface, the shape language, what the home screen shows. Run the sameness check on the plan and redo any line that would fit another app.
+3. Choose a direction (`../flutter-modern-ui/references/directions.md`) for the chassis (density, depth, roundness); state it in one line.
+4. Copy the templates with `python3 ../flutter-modern-ui/scripts/copy_design_system.py --to <folder>` (default `lib/core/design_system/`): the **core kit** first; `--kit extras` adds motion, the adaptive shell and KPI tiles when the app needs them. It writes the barrel and, in `material_ui` projects, the right imports. Then:
+   - set `AppTheme.config` from the brief (seed, variant, font, script, surfaces, input style, motion level): the shipped seed is a placeholder;
+   - build the signature element once as a shared widget, from tokens;
    - retune every `DIRECTION` line in `tokens.dart` and `app_density.dart`;
    - add domain tones to `AppPalette` (e.g. `overdue`, `paid`) and one status → label/icon/tone mapping per domain enum;
    - bundle fonts in `pubspec.yaml`;
    - wire `MaterialApp(theme:, darkTheme:, scaffoldMessengerKey: AppMessenger.key)`.
-4. Need another template later? Run the script again with that kit; it keeps the files you changed. Don't rebuild a template widget by hand: hand copies drift from the originals.
-5. Contrast test, then build one representative screen and screenshot it (flutter-ui-verify) before rolling out.
-6. Write DESIGN.md from the template.
+5. Need another template later? Run the script again with that kit; it keeps the files you changed. Don't rebuild a template widget by hand: hand copies drift from the originals.
+6. Contrast test, then build one representative screen and screenshot it (flutter-ui-verify) before rolling out. Look at it next to the brief: would someone guess what the app is about?
+7. Write DESIGN.md from the template, the brief first.
 
 ### C. From references (screenshots, apps the user likes)
 
@@ -55,6 +57,7 @@ Follow `references/study-existing-app.md`: inventory every value actually used, 
 
 Write it so a reviewer can check every rule against a screen or the source. Sections (template has them all):
 
+- Brief: subject, audience, job, feeling, signature (and where it appears), the named palette, the typeface
 - Direction and decisions (with the intake answers and deliberate deviations)
 - Tokens: spacing, radius, elevation (with the raised-tile exception), type roles, color roles, sizes, density
 - Nested shapes and card types (padding / radius per card type)
@@ -74,7 +77,7 @@ For multi-screen work (a redesign, an audit fix-up), keep `UI_PASS.md` (template
 ## Rules
 
 - One system. Never a second theme folder next to the project's.
-- Names from the project; values from the direction; decisions in DESIGN.md.
+- Names from the project; identity from the brief; density and depth from the direction; decisions in DESIGN.md.
 - Every color pair passes the contrast test in light and dark.
 - Components are extracted only when repeated (twice or more) or when the pattern is error-prone (sheets, undo, animated lists, messages).
 - Presentation only: no changes to state management, routing or data flow.

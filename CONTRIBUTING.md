@@ -2,9 +2,19 @@
 
 ## The best contribution: real-project feedback
 
-Use the skills on a real app, keep a log with [`docs/feedback-template.md`](docs/feedback-template.md), and open an issue or PR with its **open** entries. Versions 1.0, 1.1 and 1.2 came out of exactly such logs; concrete findings ("the template says X at `file:line`, the app needed Y, suggest Z") turn into fixes quickly. Each release's changelog names the findings it took in, so you can mark them **fixed in x.y.z**.
+Use the skills on a real app, keep a log with [`docs/feedback-template.md`](docs/feedback-template.md), and open an issue or PR with its **open** entries. Versions 1.0 to 1.3 came out of exactly such logs; concrete findings ("the template says X at `file:line`, the app needed Y, suggest Z") turn into fixes quickly. Each release's changelog names the findings it took in, so you can mark them **fixed in x.y.z**.
 
 ## Rules for changes
+
+- **Measure changes to the skills' text.** `plugins/flutter-modern-ui/evals/` holds one case per behaviour the skills must cause (asking about the look and the motion level before building, deciding the look from the subject, a home screen that answers its question, catching a button on the navigation bar, errors inside sheets, stacking rows at big fonts, using the project's own tokens, interface wording, Arabic wording). Each case is a prompt a user would type, plus graders: a regex or a judged rubric on the reply, and whether one of the plugin's skills was loaded.
+
+  ```bash
+  cd plugins/flutter-modern-ui
+  claude plugin eval . --tag smoke --runs 1 --ablation none     # four quick cases while editing
+  claude plugin eval . --runs 3                                 # the whole suite, with and without the plugin
+  ```
+
+  It starts Claude sessions on your account (the whole suite once with a baseline cost about $1 in November 2026). When a feedback log shows Claude doing the wrong thing despite the skill, add a case for it first, then fix the wording until the case passes. Prefer regex graders for anything a pattern can check; keep judged rubrics short, with concrete PASS and FAIL conditions.
 
 - **Concrete over adjectives.** A rule names values, widgets and files ("radius 12 − 8 = 4 for rows in a group card"), not "make it clean".
 - **One source of truth.** Values live in `tokens.md` / the templates; other references point there instead of repeating numbers.

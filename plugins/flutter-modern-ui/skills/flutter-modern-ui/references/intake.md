@@ -59,7 +59,13 @@ Cards (recommended)            Plain rows                     Rich
 
 Add: "Every level keeps motion short (150–450 ms), switches it off when the system asks for reduced motion, and never moves what you're reading."
 
-**6. Direction** (only when there is no design system yet) — "Any brand color or apps whose look you like? Otherwise I'll pick a direction that fits the domain." Options: the six directions in `directions.md`, "match these screenshots", or "you choose".
+**6. The brief and the direction** (only when there is no design system yet) — don't ask "what style do you want?"; propose and let the user correct. Write the five-line brief (`identity.md` › The brief) from what the project shows (its name, data model, strings, store listing), with the direction you'd pick and why:
+
+> **Subject:** the notebook where a shopkeeper tracks who owes him and which checks fall due. **Audience:** one owner, at the counter, quick looks. **Job:** see who to call today. **Feeling:** plain-spoken, trustworthy, unhurried. **Signature:** amounts set like a ledger column. **Direction:** Soft Minimal on warm paper, ink-blue accent.
+>
+> "Is this right? Any brand color, logo or apps whose look you like?"
+
+Options: "yes", corrections, "match these screenshots" (`flutter-design-system` › study-reference-apps), or a brand color and font to keep. What the user fixes always wins.
 
 ## Defaults when nobody answers
 
@@ -72,7 +78,7 @@ State the defaults in one line at the top of the work and carry on:
 | Look | **Don't default silently.** Build the first list screen with cards, show its screenshot and ask before doing the rest. Never fall back to bare `ListTile` rows: they read as unstyled |
 | Emoji | None |
 | Motion | **Ask anyway** (it's quick, and the user may be back before the first screen is done); until then soft, on cards and lists on load, list changes, numbers, buttons and loading. A spec that says "basic" points to none or soft: confirm which |
-| Direction | From the domain (`directions.md` › Choosing quickly) |
+| Brief and direction | Write the brief yourself from the project and state it in one line at the top of the work; the direction from the domain (`directions.md` › Choosing quickly). Never the template's placeholder seed and font unchanged |
 
 ## Acting on the answers
 
@@ -95,4 +101,4 @@ State the defaults in one line at the top of the work and carry on:
 
 **Motion** → record the level and the places in DESIGN.md (*Motion*), set `AppThemeConfig.motion` (`MotionLevel.none`, `.soft` or `.expressive`), and route every screen through one shared piece per place (`flutter-motion` skill): `Entrance` / `AnimatedItems` for cards and lists, `StateSwitcher` for states, `PressScale` (in `AppCard`) and `SubmitButton` for buttons, `AnimatedNumber` / `AppProgressBar` / chart durations for values, theme page transitions for routes. They read the level from the theme (rise, stagger, press, pop, shake); durations come from tokens through `context.motion(...)`, which also scales them by the level. A place the user didn't pick doesn't move, whatever the level.
 
-**Direction** → `directions.md`, then the `flutter-design-system` skill.
+**Brief and direction** → record the brief in DESIGN.md (*Brief*); take the seed, the typeface, the shapes and the home screen's content from it (`identity.md`), the density and depth from the direction (`directions.md`); then the `flutter-design-system` skill.

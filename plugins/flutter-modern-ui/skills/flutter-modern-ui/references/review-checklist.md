@@ -2,6 +2,14 @@
 
 Run before reporting UI work as done, against the code **and the screenshots** (flutter-ui-verify). Each item is pass / fail; fix fails first.
 
+## Identity, flow and words
+- [ ] DESIGN.md has a brief (subject, audience, job, feeling, signature); the seed, the typeface and the shapes follow from it, and none is a template default nobody chose.
+- [ ] Sameness check passed: with the name covered, the screens could not belong to an app in another field. One signature element, in one to three places.
+- [ ] Each screen has a task sentence (who, from where, to do what, where next); the daily task takes two taps or fewer from launch; home answers the user's question with the action beside it.
+- [ ] The primary action sits where the thumb is; nothing the app knows is typed twice; defaults are filled; a failed action loses no input.
+- [ ] Buttons say what happens; one name per thing and one verb per action through the flow; empty and error text says what to do; no placeholder copy ("Submit", "Success", "No data", "Something went wrong").
+- [ ] One thing was taken away from each screen after the screenshots (a border, a tint, an icon, a label that carried nothing).
+
 ## System
 - [ ] Built on the project's existing design system and names; no second system.
 - [ ] No hard-coded colors, font sizes, radii, durations or off-scale spacing in changed widgets.
@@ -17,7 +25,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Secondary text uses `onSurfaceVariant`; primary text `onSurface`.
 - [ ] Spacing inside groups is smaller than between groups.
 - [ ] Edges align: icons, text and cards share the same start line.
-- [ ] At least one signature element of the direction.
+- [ ] The brief's signature element is present where DESIGN.md says, and nowhere else.
 
 ## Shapes
 - [ ] One radius family per screen; nested shapes concentric while the gap < outer radius.

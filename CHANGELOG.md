@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.4.0
+
+A review of the whole plugin against Anthropic's own design and skill-authoring guidance. The engineering side was strong; the design side started every app from the same presets, and there was little on flows, screen types or wording.
+
+### A look that belongs to the app
+- **`references/identity.md`**: before any token, a five-line **brief** (subject, audience and setting, the one job, three feeling words, a signature element from the subject's world), proposed by Claude and corrected by the user. The seed, the typeface, the shapes and what the home screen shows come from it; a **sameness check** redoes every line of the plan that would fit any other app; a list of the defaults that mark generated Flutter apps; "take one thing away" after the screenshots.
+- **directions.md**: a direction is the chassis (density, depth, roundness), not the identity; its seeds and fonts are fallbacks. The template's seed is marked as a placeholder (and is no longer indigo).
+- Intake proposes the brief; DESIGN.md opens with it; the design-system skill builds the signature once as a shared widget; the reviewer agent and the visual review ask "whose app is this?" first.
+
+### UX, screen types and words
+- **`references/ux.md`**: the task per screen and its tap count, a home that answers the user's question, navigation models, defaults and remembered choices, feedback by waiting time, undo over confirm, never losing input, first run, search and filters, gestures with visible twins.
+- **`references/screens.md`**: what each screen type is for, its anatomy and how it goes wrong: home, detail, sign-in, onboarding, settings, profile, search, notifications, paywall and checkout, reading and media.
+- **`references/writing.md`**: buttons that say what happens, one name per thing through the flow, wording per element (titles, labels, validation, empty, error, confirmation), and Arabic conventions (verbal nouns on buttons, the six plural forms, punctuation).
+- The hub's Step 3 plans the task, the screen type and the words; two new non-negotiables (a brief exists; no placeholder copy); eleven new anti-patterns (75 → 86); a new first section in the review checklist.
+
+### Examples: one app, built from its brief
+- The example app has a brief (`example_app.dart`): a studio's invoice book, ink blue-black, ledger lines as its signature.
+- **Home** no longer opens with a greeting over four tiles: it answers "what is there to collect, and who do I chase?" with the total, a ledger breakdown (overdue, due this week, later) and one action, then two tiles and the chart.
+- **`sign_in_screen.dart`**: one capped, scrolling column; a brand mark made from the signature; autofill, show-password, Next and Done; the failed attempt reported inside the form with the fields kept (a harness case of its own).
+- **`settings_screen.dart`**: grouped cards, switches that apply at once, pick-one rows that show their value and open a pick-one sheet, each language in its own script, a destructive action apart with typed confirmation. It is the shell's third tab.
+
+### Evals
+- **`plugins/flutter-modern-ui/evals/`**: nine cases for `claude plugin eval`, one per behaviour the skills must cause, graded by regexes, short rubrics and "was a skill loaded". The first run showed a pasted-widget review answered without loading any skill, so the hub and audit descriptions now claim small requests too.
+
+### Also
+- `AppSize.columnMaxWidth` (420) for sign-in and other single-column pages.
+
 ## 1.3.0
 
 Two rules from the maintainer, and the design contract of an Arabic, Android-only app built with 1.2.

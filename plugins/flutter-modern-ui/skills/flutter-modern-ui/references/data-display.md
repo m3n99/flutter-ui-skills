@@ -4,6 +4,8 @@
 
 Widget: `KpiTile` + `KpiGrid`. Reference: `assets/examples/dashboard_screen.dart`.
 
+- Tiles are for numbers worth a glance, after the screen's answer, not instead of it: a home that is only a grid of numbers gives the user nothing to do (`screens.md` › Home). Lead with the one figure the user came for, set large with its breakdown and its action; put two to four supporting tiles under it.
+
 - Raised tile (`AppCard(raised: true)`, the one shadow exception), tappable when it leads somewhere, padding 16.
 - Top row: badge (36 px emoji badge on the tone's container, or an icon badge), 12 px gap, label in labelMedium / `onSurfaceVariant`, up to 2 lines.
 - 12 px below: the value in headlineSmall + tabular figures, **shrinking to fit** (`FittedBox(fit: BoxFit.scaleDown)`) instead of overflowing: `12,500.50 ₪` doesn't fit a 160 px tile at headline size.
