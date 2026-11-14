@@ -37,6 +37,7 @@ ColorScheme.fromSeed(seedColor: seed, brightness: brightness, dynamicSchemeVaria
 ```
 
 - `tonalSpot`: balanced default. `fidelity`: keeps the seed hue (brands). `vibrant` / `expressive` / `rainbow`: more color. `neutral` / `monochrome`: editorial, grayscale-leaning. `content`: from imagery.
+- **`fidelity` and `content` put the containers at the seed's own tone.** With a saturated seed (red, amber, green) `primaryContainer` is nearly the seed itself: selected chips and "soft" tinted tiles become solid blocks in light mode and glare in dark mode, and every contrast check still passes. `AppTheme` keeps their strong colors and takes the primary and tertiary containers from `tonalSpot`; `ToneColors.fromSeed` does the same for status tones. The contrast test's soft-container check (tone ≥ 80 and chroma ≤ 50 in light mode, tone ≤ 40 in dark) catches hand-picked or overridden containers that slip through. Vivid containers on purpose: set them in `schemeOverride`.
 - Don't hand-pick twenty colors. For a brand-supplied palette, override the few roles that must match in `schemeOverride: (s) => s.copyWith(primary: brand, onPrimary: …)`, then run `contrast_test.dart`.
 - Android 12+ wallpaper colors (`dynamic_color` package) only if the brand allows it.
 
@@ -70,7 +71,7 @@ Material has no success / warning / info roles. `AppPalette` (a `ThemeExtension`
 ## 4. Typography
 
 - **Bundle fonts** in `assets/fonts/` and declare them in `pubspec.yaml`. `google_fonts` is fine for prototypes; for release, bundle the files and set `GoogleFonts.config.allowRuntimeFetching = false`.
-- Set the family once (`AppThemeConfig.fontFamily`); `fontFamilyFallback` when the main font lacks a script.
+- Set the family once (`AppThemeConfig.fontFamily`); `fontFamilyFallback` when the main font lacks a script or a symbol. Check coverage with `../flutter-ui-verify/scripts/check_glyphs.py` (currency signs, separators, ✓): Tajawal, for one, has no `₪`.
 - **Arabic**: a font with real Arabic glyphs (IBM Plex Sans Arabic, Noto Sans Arabic, Cairo, Tajawal, Readex Pro); `AppScript.arabic` (letter-spacing 0, body line height 1.6). Check the weights you use exist (many Arabic families ship 400/500/600/700 only).
 - Check `tnum` support before relying on tabular figures (`tokens.md`).
 
@@ -135,3 +136,4 @@ Allowed per-widget adjustments: `color`, `fontWeight`, `fontFeatures`, `height` 
 - Flutter 3.35 changed `ThemeData.appBarTheme`, `bottomAppBarTheme` and `inputDecorationTheme` to `AppBarThemeData`, `BottomAppBarThemeData` and `InputDecorationThemeData` (`CardThemeData`, `DialogThemeData`, `TabBarThemeData` came earlier).
 - Flutter 3.38: SnackBars with an action no longer auto-dismiss (`persist` defaults to keeping them); the Android default route transition became `PredictiveBackPageTransitionsBuilder` (falls back to `FadeForwardsPageTransitionsBuilder`) and route transitions take 450 ms.
 - `Color.withValues(alpha:)` replaced `withOpacity`; `WidgetState*` replaced `MaterialState*`.
+- **Flutter 3.50 deprecates `package:flutter/material.dart` and `cupertino.dart`** in favor of the `material_ui` and `cupertino_ui` packages (same classes, new library; `dart fix --apply --code=migrate_design_widgets` rewrites the imports). Use whichever the project uses: the copy scripts rewrite the templates' and the harness's imports when `pubspec.yaml` lists `material_ui`, and `app_theme.dart` then needs `cupertino_ui` for `CupertinoPageTransitionsBuilder`. Both `material_ui` and `flutter_localizations` export `GlobalMaterialLocalizations`, so don't import both in one file: with `material_ui`, `localizationsDelegates: GlobalMaterialLocalizations.delegates` covers the Material, Cupertino and Widgets delegates.

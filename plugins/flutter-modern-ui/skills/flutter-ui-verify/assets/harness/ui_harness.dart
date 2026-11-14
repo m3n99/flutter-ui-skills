@@ -6,6 +6,8 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -71,26 +73,55 @@ class UiVariant {
 /// A screen in a given state, built with fake data.
 @immutable
 class UiCase {
-  const UiCase(this.name, this.builder, {this.settle = const Duration(milliseconds: 1200)});
+  const UiCase(this.name, this.builder, {this.settle = const Duration(milliseconds: 1200), this.act});
 
   final String name;
   final WidgetBuilder builder;
 
   /// Time to let entrances, charts and fake loads finish before checking.
   final Duration settle;
+
+  /// Runs after the screen settles, before the checks and the screenshot:
+  /// switch tabs and push a route from the app shell, scroll to the end,
+  /// open a menu. Errors it causes are reported like layout errors.
+  final Future<void> Function(WidgetTester tester)? act;
 }
 
 /// A sheet or dialog, opened from a blank host screen.
 @immutable
 class SheetCase {
-  const SheetCase(this.name, this.open, {this.primary});
+  /// A sheet with a primary action (Save, Apply): it must stay on screen and
+  /// above a 300 px keyboard.
+  const SheetCase(this.name, this.open, {this.primary})
+      : picker = false,
+        options = null;
+
+  /// A pick-one sheet: tapping an option is the action, so there is no
+  /// primary button. Its options must be on screen with real tap targets,
+  /// and tapping one must close the sheet.
+  const SheetCase.picker(this.name, this.open, {this.options})
+      : picker = true,
+        primary = null;
 
   final String name;
   final void Function(BuildContext context) open;
 
   /// The primary action. Defaults to SheetScaffold's primary action key.
   final Finder? primary;
+
+  /// Pick-one sheets only.
+  final bool picker;
+
+  /// The options of a pick-one sheet. Defaults to [sheetOptions].
+  final Finder? options;
 }
+
+/// The options of a pick-one sheet: list tiles (radio tiles included) and
+/// simple-dialog options.
+Finder get sheetOptions => find.byWidgetPredicate(
+      (widget) => widget is ListTile || widget is SimpleDialogOption,
+      description: 'sheet options (ListTile, SimpleDialogOption)',
+    );
 
 /// Everything project-specific: theme, matrix, localization, wrappers.
 @immutable
@@ -114,7 +145,9 @@ class UiConfig {
     this.scaffoldMessengerKey,
     this.navigatorKey,
     this.wrap,
+    this.setUp,
     this.extraContrastPairs,
+    this.softContainers,
   });
 
   /// The app's real theme for a brightness and platform (density).
@@ -145,9 +178,19 @@ class UiConfig {
   /// Wraps the app's content (Navigator), e.g. with providers.
   final Widget Function(Widget child)? wrap;
 
+  /// Runs once before the first case of every test file: register fakes in
+  /// the service locator, answer the channels of plugins that call native
+  /// code on start. See references/harness.md › Faking dependencies.
+  final Future<void> Function()? setUp;
+
   /// Extra (label, foreground, background, minimum ratio) pairs to check,
   /// e.g. status tones from a ThemeExtension.
   final List<(String, Color, Color, double)> Function(ThemeData theme)? extraContrastPairs;
+
+  /// The (label, color) containers that must read as soft tints: light tints
+  /// in light mode, deep tones in dark mode. Default: the scheme's four
+  /// containers. Add theme-extension tones (pills, KPI tiles).
+  final List<(String, Color)> Function(ThemeData theme)? softContainers;
 
   /// Every combination of the lists above.
   Iterable<UiVariant> get matrix sync* {
@@ -240,6 +283,22 @@ Future<void> pumpUi(
   }
 }
 
+/// [pumpUi] for [uiCase], then its [UiCase.act].
+Future<void> pumpCase(WidgetTester tester, UiConfig config, UiVariant variant, UiCase uiCase) async {
+  await pumpUi(tester, config, variant, uiCase.builder, settle: uiCase.settle);
+  final act = uiCase.act;
+  if (act != null) await act(tester);
+}
+
+/// Pumps [frames] frames of [frame] each: lets a tap, a push or a pop
+/// finish its animations.
+Future<void> settleFrames(WidgetTester tester, {int frames = 8, Duration frame = const Duration(milliseconds: 100)}) async {
+  await tester.pump();
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(frame);
+  }
+}
+
 /// Collects every error reported while [body] runs (overflows, build and
 /// layout exceptions) as one line each, with the source location when the
 /// widget was created in lib/ or test/.
@@ -297,6 +356,93 @@ void hideKeyboard(WidgetTester tester) => tester.view.resetViewInsets();
 /// set `debugDisableShadows = false`.
 Future<void> takeShot(String name) async {
   await expectLater(find.byKey(uiShotKey), matchesGoldenFile('screenshots/$name.png'));
+}
+
+/// Writes `test/ui/screenshots/contact_sheets/<title>.png`: the screenshots
+/// [shots] (names passed to [takeShot]) side by side at one height, each
+/// labeled, so light, dark, text scale 1.3, RTL and desktop can be compared
+/// in one image. Shots that weren't written are skipped.
+Future<void> writeContactSheet(WidgetTester tester, String title, List<String> shots) async {
+  final comparator = goldenFileComparator;
+  final base = comparator is LocalFileComparator ? comparator.basedir : Directory.current.uri.resolve('test/ui/');
+  await tester.runAsync(() async {
+    final images = <(String, ui.Image)>[];
+    for (final name in shots) {
+      final file = File.fromUri(base.resolve('screenshots/$name.png'));
+      if (!file.existsSync()) continue;
+      final codec = await ui.instantiateImageCodec(file.readAsBytesSync());
+      images.add((name.contains('__') ? name.split('__').last : name, (await codec.getNextFrame()).image));
+      codec.dispose();
+    }
+    if (images.isEmpty) return;
+
+    const shotHeight = 720.0;
+    const gap = 24.0;
+    const labelHeight = 40.0;
+    final widths = [for (final (_, image) in images) image.width * shotHeight / image.height];
+    final width = widths.fold(gap, (sum, w) => sum + w + gap);
+    const height = labelHeight + shotHeight + gap;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder)..drawColor(const Color(0xFFE6E6E6), ui.BlendMode.src);
+    var x = gap;
+    for (var i = 0; i < images.length; i++) {
+      final (label, image) = images[i];
+      final paragraph = (ui.ParagraphBuilder(ui.ParagraphStyle(fontFamily: 'Roboto', fontSize: 18))
+            ..pushStyle(ui.TextStyle(color: const Color(0xFF202124)))
+            ..addText(label))
+          .build()
+        ..layout(ui.ParagraphConstraints(width: widths[i]));
+      canvas.drawParagraph(paragraph, ui.Offset(x, 10));
+      canvas.drawImageRect(
+        image,
+        ui.Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        ui.Rect.fromLTWH(x, labelHeight, widths[i], shotHeight),
+        ui.Paint()..filterQuality = ui.FilterQuality.medium,
+      );
+      x += widths[i] + gap;
+    }
+    final sheet = await recorder.endRecording().toImage(width.ceil(), height.ceil());
+    final png = await sheet.toByteData(format: ui.ImageByteFormat.png);
+    final out = File.fromUri(base.resolve('screenshots/contact_sheets/$title.png'));
+    out.parent.createSync(recursive: true);
+    out.writeAsBytesSync(png!.buffer.asUint8List());
+    sheet.dispose();
+    for (final (_, image) in images) {
+      image.dispose();
+    }
+  });
+}
+
+/// CIE L*a*b* lightness and chroma of an opaque color. The lightness equals
+/// the HCT tone that ColorScheme.fromSeed works in (0 black, 100 white).
+({double tone, double chroma}) colorLab(Color color) {
+  double linear(double c) => c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
+  double f(double t) => t > 216 / 24389 ? math.pow(t, 1 / 3).toDouble() : (24389 / 27 * t + 16) / 116;
+  final r = linear(color.r);
+  final g = linear(color.g);
+  final b = linear(color.b);
+  final fx = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+  final fy = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
+  final fz = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+  final a = 500 * (fx - fy);
+  final bb = 200 * (fy - fz);
+  return (tone: 116 * fy - 16, chroma: math.sqrt(a * a + bb * bb));
+}
+
+/// Null when [color] reads as a soft container: a light tint in light mode
+/// (tone ≥ 80, chroma ≤ 50), a deep tone in dark mode (tone ≤ 40).
+/// Otherwise what's wrong. Contrast alone can't see this: a container as
+/// strong as its seed passes 4.5:1 with white text and still reads as a
+/// solid block.
+String? softContainerProblem(Color color, Brightness brightness) {
+  final (:tone, :chroma) = colorLab(color);
+  if (brightness == Brightness.light) {
+    if (tone < 80) return 'tone ${tone.round()}: a solid block, not a tint (light mode needs ≥ 80)';
+    if (chroma > 50) return 'chroma ${chroma.round()}: glaring, not a tint (light mode needs ≤ 50)';
+    return null;
+  }
+  return tone > 40 ? 'tone ${tone.round()}: glaring in dark mode (needs ≤ 40)' : null;
 }
 
 /// WCAG contrast ratio between two opaque colors (1 to 21).

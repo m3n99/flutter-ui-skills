@@ -4,6 +4,9 @@
 //   row again, and with Esc.
 // - components.md › Chips: a few single-choice options wrap with their
 //   inline label, and every option stays on screen at 360 px and 1.3.
+// - components.md › Navigation: in an IndexedStack shell, FABs with the
+//   default hero tag throw when a route is pushed; `heroTag: null` doesn't
+//   (and the harness's shell case would catch it).
 
 import 'package:app/examples/record_form_screen.dart';
 import 'package:app/examples/records_screen.dart';
@@ -80,5 +83,36 @@ void main() {
       await _settle(tester);
       expect(find.text('Due in 30 days'), findsOneWidget);
     });
+  });
+
+  testWidgets('shell: default FAB hero tags throw on push, heroTag: null does not', (tester) async {
+    const variant = UiVariant(size: UiSize.phone);
+
+    Widget tab(String label, {required bool untagged}) => Scaffold(
+          body: Center(child: Text(label)),
+          floatingActionButton: untagged
+              ? FloatingActionButton(heroTag: null, onPressed: () {}, child: const Icon(Icons.add_rounded))
+              : FloatingActionButton(onPressed: () {}, child: const Icon(Icons.add_rounded)),
+        );
+
+    Future<List<String>> pushFromShell({required bool untagged}) => collectUiErrors(
+          () => runVariant(tester, variant, () async {
+            await pumpUi(
+              tester,
+              uiConfig,
+              variant,
+              (_) => IndexedStack(children: [tab('Home', untagged: untagged), tab('Records', untagged: untagged)]),
+              settle: Duration.zero,
+            );
+            Navigator.of(tester.element(find.text('Home'))).push(
+              MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Center(child: Text('Next')))),
+            );
+            await settleFrames(tester);
+          }),
+        );
+
+    expect((await pushFromShell(untagged: false)).join('\n'), contains('multiple heroes that share the same tag'));
+    expect(await pushFromShell(untagged: true), isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

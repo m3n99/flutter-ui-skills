@@ -21,7 +21,7 @@ class ShakeOnChange extends StatefulWidget {
 class _ShakeOnChangeState extends State<ShakeOnChange> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 420),
+    duration: AppDurations.shake,
   );
   bool _reduceMotion = false;
 

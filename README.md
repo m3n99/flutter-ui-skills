@@ -17,10 +17,10 @@ One plugin, five skills and a reviewer agent:
 
 | | What it does | Use it when |
 |---|---|---|
-| `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, asks once about platforms / RTL / emoji / motion, then builds on the existing system with 17 focused references | any Flutter UI work |
+| `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, asks once about platforms / RTL / the look / emoji / motion, then builds on the existing system with 17 focused references and lints its own diff | any Flutter UI work |
 | `flutter-design-system` | Creates, extends, repairs or documents the design system: tokens, theme, density, shared components, `DESIGN.md`. Studies existing code (inventory script) or reference screenshots | new apps, inconsistent apps, "make it look like these" |
 | `flutter-motion` | Purposeful animation through a few shared pieces: entrances, `AnimatedItems`, state switches, counters, progress, charts, buttons, transitions, micro-interactions | "add animations", "make it feel alive", janky motion |
-| `flutter-ui-verify` | A `flutter_test` harness: layout matrix, sheet / keyboard / tap-target checks, contrast test, screenshots Claude opens and reviews; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
+| `flutter-ui-verify` | A `flutter_test` harness: layout matrix, sheet / keyboard / tap-target checks, contrast and soft-container test, screenshots and contact sheets Claude opens and reviews, a glyph check for the app's fonts; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
 | `flutter-ui-audit` | Reviews existing screens, reports findings with evidence, fixes them presentation-only, proves it with before/after screenshots | "review / polish / modernize this screen" |
 | `flutter-ui-reviewer` (agent) | Independent visual QA on the screenshots against DESIGN.md | larger passes, so the work isn't grading itself |
 
@@ -32,37 +32,53 @@ plugins/flutter-modern-ui/
     │   ├── SKILL.md
     │   ├── references/      discovery · intake · directions · tokens · theming · layout · adaptive ·
     │   │                    components · forms · sheets-dialogs · data-display · states · messages ·
-    │   │                    rtl-arabic · accessibility · anti-patterns (58) · review-checklist
+    │   │                    rtl-arabic · accessibility · anti-patterns (68) · review-checklist
+    │   ├── scripts/         copy_design_system.py (core / extras kits) · lint_ui.py
     │   └── assets/
     │       ├── design_system/   drop-in Dart: tokens, density, palette, typography, theme, widgets, motion
-    │       └── examples/        dashboard · records list-detail · long form · app shell · printed invoice (PDF)
+    │       └── examples/        dashboard · records list-detail · create / edit form · app shell · printed invoice (PDF)
     ├── flutter-design-system/   SKILL.md · study-existing-app · study-reference-apps ·
     │                            scripts/ui_inventory.sh · templates/DESIGN.md · templates/UI_PASS.md
     ├── flutter-motion/          SKILL.md · principles · recipes (17 surfaces) · testing · packages
     ├── flutter-ui-verify/       SKILL.md · harness · visual-review · golden-pitfalls · printed-documents ·
-    │                            assets/harness/*.dart · assets/pdf/*.dart · scripts/rasterize_pdf.py
+    │                            assets/harness/*.dart · assets/pdf/*.dart ·
+    │                            scripts/copy_harness.py · check_glyphs.py · rasterize_pdf.py
     └── flutter-ui-audit/        SKILL.md
 ```
 
 ### Drop-in design system (`assets/design_system/`)
 
-No third-party packages.
+No third-party packages. Copy it kit by kit from the project root:
+
+```bash
+python3 <flutter-modern-ui>/scripts/copy_design_system.py                 # core kit → lib/core/design_system
+python3 <flutter-modern-ui>/scripts/copy_design_system.py --kit extras    # motion, adaptive shell, KPI tiles
+```
+
+The **core** kit is what every app needs (tokens, theme, palette, cards, pills, empty states, skeletons, sheets and pickers, chips, messages, `Ltr`); the **extras** add motion, `AdaptiveShell` and `KpiTile` when the app animates, runs on tablets or desktop, or has a dashboard. The script keeps files you've changed, writes the barrel, and in `material_ui` projects (Flutter 3.50+) imports `material_ui` / `cupertino_ui`.
 
 - **Tokens**: spacing, radius roles with a concentric-corner helper, elevation, strokes, opacity, sizes, breakpoints and window size classes, motion durations and M3 curves.
 - **`AppThemeConfig`**: seed and scheme variant, font and fallback, **Arabic script** (zero letter-spacing, taller lines), **eye-comfort surfaces** (warm, dimmed, contrast-checked), **filled or outlined inputs**, touch and desktop density.
 - **`AppTheme`**: light and dark, every common component themed, desktop scrollbars and tooltips, checkmarked chips, data tables, predictive-back page transitions.
 - **`AppDensity`**: 48 px touch vs 40 px desktop controls, chosen by platform.
-- **`AppPalette`**: success / warning / info tones (add your domain tones), soft and hover shadows.
-- **Widgets**: `AppCard` (ink, hover, press scale, raised tiles), `StatusPill` (icon required), `IconBadge`, `EmojiBadge`, `SectionHeader`, `EmptyState`, `Shimmer` / `SkeletonBox` / `ShowAfter`, `Ltr`, `showAppSheet` + `SheetScaffold`, `AppChoiceChips` (wrapping, with an optional inline label), `AppMessenger` (one message component, `persist: false`, failure helper, **delete with Undo**), `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`.
+- **`AppPalette`**: success / warning / info tones (add your domain tones): a strong color from the seed and a soft container, even for saturated brand seeds; soft and hover shadows.
+- **Widgets**: `AppCard` (ink, hover, press scale, raised tiles), `StatusPill` (icon required), `IconBadge`, `EmojiBadge`, `SectionHeader`, `EmptyState`, `Shimmer` / `SkeletonBox` / `ShowAfter`, `Ltr`, `showAppSheet` + `SheetScaffold`, `showAppPicker` (pick-one sheet, no footer), `AppChoiceChips` (wrapping, with an optional inline label), `AppMessenger` (one message component, `persist: false`, failure helper, **delete with Undo**), `AdaptiveShell`, `ContentWidth`, `KpiTile` / `KpiGrid`.
 - **Motion**: `Entrance`, `AnimatedItems` (diffing sliver list/grid that keeps item state), `StateSwitcher`, `SubmitButton`, `AnimatedNumber`, `AppProgressBar`, `ShakeOnChange`, `PopOnChange`, `MiniBarChart` + `NiceScale`.
 
 ### Verification harness (`flutter-ui-verify/assets/harness/`)
 
-Copy into `test/ui/`, edit only `ui_cases.dart`, then:
+Copy with `python3 <flutter-ui-verify>/scripts/copy_harness.py` (→ `test/ui/`; it never overwrites your cases), edit only `ui_cases.dart`: every screen in each state, every form in create and edit mode, the app shell with a tab switch and a push, every sheet (`SheetCase.picker` for pick-one sheets), fakes in `setUp`. Then:
 
 ```bash
 flutter test test/ui                                                              # layout matrix, sheets, contrast
-flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true  # screenshots → test/ui/screenshots/
+flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true  # screenshots → test/ui/screenshots/
+```
+
+Each case also gets a contact sheet (`screenshots/contact_sheets/<case>.png`, every variant side by side), so a pass is reviewed a screen at a time. Two scripts cover what tests can't see:
+
+```bash
+python3 <flutter-modern-ui>/scripts/lint_ui.py --diff                                   # raw colors, sizes, spacing, token math, left/right
+python3 <flutter-ui-verify>/scripts/check_glyphs.py --font assets/fonts/MyFont-Regular.ttf lib   # symbols the font lacks (₪, ٫, ✓)
 ```
 
 A layout failure reads:
@@ -87,7 +103,8 @@ test/pdf/out/invoice_ar_longest.pdf (1 page)
 
 ## Requirements
 
-- Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on the current stable release. The skills tell Claude how to adapt to older SDKs.
+- Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on the current stable release, both with the `material_ui` package that `flutter create` adds from 3.50 and with `package:flutter/material.dart`. The skills tell Claude how to adapt to older SDKs.
+- The scripts need Python 3.9+ (`check_glyphs.py` also needs `pip install fonttools`).
 - The printed-document example and its harness need the [`pdf`](https://pub.dev/packages/pdf) package; rasterizing needs Python with PyMuPDF (`pip install pymupdf`) or poppler's `pdftoppm`.
 - The skills themselves work with any Flutter project: in an app with its own design system, Claude maps these patterns onto your names instead of copying the templates.
 
@@ -140,7 +157,7 @@ This app is Arabic-only and ships on Windows and Android. Make the dashboard con
 
 Tips:
 
-- Answer the intake questions (platforms, RTL, emoji, motion) once; they land in `DESIGN.md` and later sessions read them.
+- Answer the intake questions (platforms, RTL, the look, emoji, motion) once; they land in `DESIGN.md` and later sessions read them. The look (cards, plain rows or rich) matters most: "basic" in a spec rarely means plain rows.
 - Commit `DESIGN.md`. It's how the tenth screen ends up looking like the first.
 - The skills change presentation only. Your state management, routing and DI stay as they are.
 
@@ -149,7 +166,7 @@ Tips:
 Issues and PRs welcome, especially real-project feedback: use [`docs/feedback-template.md`](docs/feedback-template.md). Rules for changes are in [CONTRIBUTING.md](CONTRIBUTING.md); CI builds a sandbox app from the templates and runs `flutter analyze`, the UI tests, the PDF checks, the screenshot pass and the page rasterizer on every PR.
 
 ```bash
-bash scripts/sandbox.sh && cd build/sandbox && flutter analyze && flutter test test/ui test/pdf test/ci
+bash scripts/sandbox.sh --material-ui && cd build/sandbox && flutter analyze && flutter test test/ui test/pdf test/ci
 ```
 
 ## License

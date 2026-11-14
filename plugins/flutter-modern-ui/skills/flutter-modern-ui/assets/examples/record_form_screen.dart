@@ -3,8 +3,12 @@
 // - the save bar as the LAST CHILD OF THE BODY COLUMN (not
 //   Scaffold.bottomNavigationBar, which the keyboard covers), so it stays
 //   above the keyboard;
+// - create and edit in one screen: `initial` fills the controllers where
+//   they're created, never in build (filling a controller in build calls
+//   setState during build, and only the pre-filled edit form crashes);
 // - money input stored in minor units, accepting Arabic-Indic and Persian
-//   digits and `.`, `,` or `٫` as the decimal separator; LTR inside RTL;
+//   digits and `.`, `,` or `٫` as the decimal separator; LTR inside RTL,
+//   aligned to the reading start so the digits sit next to the currency;
 // - a warning-level hint (non-blocking) next to blocking validation;
 // - a few single-choice options (payment terms) as a wrapping chip row with
 //   an inline label, never a scrolling one, so all of them stay visible on a
@@ -84,9 +88,12 @@ enum _Terms {
 }
 
 class RecordFormScreen extends StatefulWidget {
-  const RecordFormScreen({super.key, required this.repository});
+  const RecordFormScreen({super.key, required this.repository, this.initial});
 
   final InvoiceRepository repository;
+
+  /// The invoice to edit; null creates a new one.
+  final Invoice? initial;
 
   @override
   State<RecordFormScreen> createState() => _RecordFormScreenState();
@@ -96,11 +103,18 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
   static const int _largeAmountCents = 1000000;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _customer = TextEditingController();
+  // Edit mode fills the controllers here, once, when they're created. A
+  // controller filled in build notifies its field during the build.
+  late final TextEditingController _customer = TextEditingController(text: widget.initial?.customer);
   final TextEditingController _email = TextEditingController();
-  final TextEditingController _amount = TextEditingController();
+  late final TextEditingController _amount = TextEditingController(
+    text: switch (widget.initial?.amountCents) {
+      final int cents => (cents / 100).toStringAsFixed(2),
+      null => null,
+    },
+  );
   final TextEditingController _notes = TextEditingController();
-  DateTime _due = sampleToday.add(const Duration(days: 14));
+  late DateTime _due = widget.initial?.due ?? sampleToday.add(const Duration(days: 14));
   late final TextEditingController _dueText = TextEditingController(text: formatShortDate(_due));
   bool _submitted = false;
   int _failedSubmits = 0;
@@ -119,7 +133,8 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _due,
-      firstDate: sampleToday,
+      // An overdue invoice keeps its past due date pickable.
+      firstDate: _due.isBefore(sampleToday) ? _due : sampleToday,
       lastDate: sampleToday.add(const Duration(days: 365)),
     );
     if (picked == null || !mounted) return;
@@ -140,13 +155,16 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
       return;
     }
     try {
-      final invoice = await widget.repository.create(
-        customer: _customer.text.trim(),
-        amountCents: parseCents(_amount.text) ?? 0,
-        due: _due,
-      );
+      final initial = widget.initial;
+      final customer = _customer.text.trim();
+      final amountCents = parseCents(_amount.text) ?? 0;
+      final invoice = initial == null
+          ? await widget.repository.create(customer: customer, amountCents: amountCents, due: _due)
+          : await widget.repository.update(initial.id, customer: customer, amountCents: amountCents, due: _due);
       if (!mounted) return;
-      AppMessenger.success('Created ${invoice.number} for ${invoice.customer}');
+      AppMessenger.success(
+        initial == null ? 'Created ${invoice.number} for ${invoice.customer}' : 'Saved ${invoice.number}',
+      );
       Navigator.of(context).pop(invoice);
     } catch (failure) {
       AppMessenger.showFailure(
@@ -161,9 +179,14 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
     final colors = context.colors;
     final text = context.textStyles;
     final dueInDays = _due.difference(sampleToday).inDays;
+    final initial = widget.initial;
+    // An LTR field aligns to its own start (the left) even in RTL, which puts
+    // the digits at the far end from the currency: align them to the reading
+    // start instead, which in RTL is the field's end.
+    final amountAlign = Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New invoice')),
+      appBar: AppBar(title: Text(initial == null ? 'New invoice' : 'Edit ${initial.number}')),
       body: LayoutBuilder(
         builder: (context, box) {
           final side = ContentWidth.horizontalPadding(box.maxWidth, maxWidth: AppSize.formMaxWidth);
@@ -232,6 +255,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   textInputAction: TextInputAction.next,
                                   textDirection: TextDirection.ltr,
+                                  textAlign: amountAlign,
                                   inputFormatters: const [MoneyInputFormatter()],
                                   style: text.bodyLarge.tabular,
                                   decoration: InputDecoration(
@@ -282,6 +306,8 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                                 helperText: switch (dueInDays) {
                                   0 => 'Due today',
                                   1 => 'Due tomorrow',
+                                  -1 => 'Was due yesterday',
+                                  < -1 => 'Was due ${-dueInDays} days ago',
                                   _ => 'Due in $dueInDays days',
                                 },
                               ),
@@ -316,7 +342,11 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                 horizontalPadding: side,
                 child: ShakeOnChange(
                   trigger: _failedSubmits,
-                  child: SubmitButton(label: 'Create invoice', icon: Icons.check_rounded, onPressed: _save),
+                  child: SubmitButton(
+                    label: initial == null ? 'Create invoice' : 'Save changes',
+                    icon: Icons.check_rounded,
+                    onPressed: _save,
+                  ),
                 ),
               ),
             ],

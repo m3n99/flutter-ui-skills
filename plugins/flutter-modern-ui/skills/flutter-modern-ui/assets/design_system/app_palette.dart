@@ -13,17 +13,24 @@ class ToneColors {
 
   /// Derives a tone from a fixed hue so it harmonizes with the scheme and
   /// adapts to dark mode.
+  ///
+  /// The strong color comes from the fidelity variant, which keeps the
+  /// seed's hue and chroma. The container comes from tonalSpot: a light tint
+  /// in light mode, a deep tone in dark mode. Fidelity puts its container at
+  /// the seed's own tone, so a saturated seed (red, amber, green) would turn
+  /// pills and tiles into solid blocks, and the contrast test wouldn't notice.
   factory ToneColors.fromSeed(Color seed, Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(
+    final strong = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
     );
+    final soft = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
     return ToneColors(
-      color: scheme.primary,
-      onColor: scheme.onPrimary,
-      container: scheme.primaryContainer,
-      onContainer: scheme.onPrimaryContainer,
+      color: strong.primary,
+      onColor: strong.onPrimary,
+      container: soft.primaryContainer,
+      onContainer: soft.onPrimaryContainer,
     );
   }
 

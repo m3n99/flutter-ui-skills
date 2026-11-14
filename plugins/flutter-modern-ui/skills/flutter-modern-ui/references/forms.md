@@ -30,6 +30,7 @@ Reference: `assets/examples/record_form_screen.dart`.
   - accepts one decimal separator (`.`, `,` or Arabic `٫`) and at most the currency's decimals;
   - drops everything else (`MoneyInputFormatter` in the example).
 - Display: `intl` `NumberFormat.currency(locale:, symbol:)` with thousands separators and the locale's currency position; tabular figures; inside `Ltr` in RTL layouts.
+- **Amount fields in RTL**: the field is LTR (`textDirection: TextDirection.ltr`), so its own `start` is the left even on an RTL screen. The digits then sit at the far end from a currency prefix, or glued to a suffix (`₪2500`). Align them to the reading start: `textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start`, and keep a space in `prefixText` / `suffixText`. Check the font has the currency glyph (`rtl-arabic.md` › Arabic typography).
 - Decide the digit style once (Western `0-9` vs Arabic-Indic) and record it in DESIGN.md; many Arabic apps in the Levant and Gulf use Western digits.
 - Totals and balances that update live: `AnimatedNumber`.
 
@@ -51,6 +52,13 @@ Reference: `assets/examples/record_form_screen.dart`.
 6. `keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`.
 7. Unsaved changes: `PopScope(canPop: !dirty, onPopInvokedWithResult: …)` → "Discard changes?" dialog.
 8. Desktop: Ctrl/⌘+S saves, Esc asks to discard, Tab order follows the visual order.
+
+## Create and edit
+
+- One screen for both: `initial` (null = create), with a title and button that say which ("Edit INV-1041", "Save changes"). `assets/examples/record_form_screen.dart`.
+- **Fill controllers where they're created**, `late final _name = TextEditingController(text: widget.initial?.name)`, or in `initState`. When the data arrives later (a bloc state, a provider), fill them in a listener (`BlocListener`, `ref.listen`, a post-frame callback), **never in `build`**: setting `controller.text` there notifies the field during the build ("setState() or markNeedsBuild() called during build"), and only the pre-filled edit form crashes.
+- Edit mode keeps existing values usable: a past due date stays pickable (`firstDate` no later than the current value), an archived category still shows.
+- Test both: a create case and an edit case for every form (`flutter-ui-verify`).
 
 ## Submit
 

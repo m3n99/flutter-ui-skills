@@ -2,6 +2,8 @@
 
 Open each PNG with the Read tool. Review it like a product designer would, against DESIGN.md and the other screenshots. Name the file in every finding.
 
+Start with the contact sheets (`test/ui/screenshots/contact_sheets/<case>.png`): light, dark, text scale 1.3 in RTL and desktop side by side make inconsistencies jump out (a tile saturated only in dark mode, a label that wraps only at 1.3). Then open single shots for the details below.
+
 ## Per screenshot
 
 1. **One-second test**: what's the primary thing and the primary action? Are they obviously primary (size, weight, position, color)? Is there exactly one filled button?

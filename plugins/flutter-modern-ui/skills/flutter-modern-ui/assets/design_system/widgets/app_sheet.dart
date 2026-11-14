@@ -58,6 +58,8 @@ class _SheetMode extends InheritedWidget {
 /// 3. Footer: sticky (never scrolls), hairline on top, inside the safe area.
 ///    Secondary action at the start, as wide as its label; primary action
 ///    fills the rest. In RTL the primary therefore sits on the left.
+///    Pick-one sheets have no footer: tapping an option is the action
+///    ([showAppPicker]).
 ///
 /// As a bottom sheet the content is lifted above the keyboard; dialogs move
 /// themselves.
@@ -66,9 +68,10 @@ class SheetScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.children,
-    required this.primaryAction,
+    this.primaryAction,
     this.secondaryAction,
     this.showClose = true,
+    this.bodyPadding = const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.xs, AppSpace.lg, AppSpace.lg),
   });
 
   /// Lets tests find the primary action of any sheet.
@@ -77,18 +80,24 @@ class SheetScaffold extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  /// One filled button (FilledButton or SubmitButton).
-  final Widget primaryAction;
+  /// One filled button (FilledButton or SubmitButton). Null for pick-one
+  /// sheets and read-only sheets: no footer then.
+  final Widget? primaryAction;
 
   /// An OutlinedButton or TextButton (Cancel, Clear all, Share).
   final Widget? secondaryAction;
   final bool showClose;
 
+  /// Around the body. Pickers pass less, so their rows reach the edges.
+  final EdgeInsetsGeometry bodyPadding;
+
   @override
   Widget build(BuildContext context) {
     final asDialog = _SheetMode.of(context) ?? context.windowSize != WindowSize.compact;
     final keyboard = asDialog ? 0.0 : MediaQuery.viewInsetsOf(context).bottom;
+    final primary = primaryAction;
     final secondary = secondaryAction;
+    final hasFooter = primary != null || secondary != null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -118,37 +127,82 @@ class SheetScaffold extends StatelessWidget {
             ),
           ),
           Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsetsDirectional.fromSTEB(AppSpace.lg, AppSpace.xs, AppSpace.lg, AppSpace.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: AppSpace.lg,
-                children: children,
-              ),
-            ),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: context.colors.outlineVariant)),
-            ),
             child: SafeArea(
               top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
-                child: Row(
-                  spacing: AppSpace.xs,
-                  children: [
-                    ?secondary,
-                    Expanded(child: KeyedSubtree(key: primaryActionKey, child: primaryAction)),
-                  ],
+              // The footer keeps clear of the home indicator; without one,
+              // the body does.
+              bottom: !hasFooter,
+              child: SingleChildScrollView(
+                padding: bodyPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: AppSpace.lg,
+                  children: children,
                 ),
               ),
             ),
           ),
+          if (hasFooter)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.colors.outlineVariant)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+                  child: Row(
+                    spacing: AppSpace.xs,
+                    children: [
+                      ?secondary,
+                      if (primary != null) Expanded(child: KeyedSubtree(key: primaryActionKey, child: primary)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+/// A pick-one sheet: one tap chooses an option and closes the sheet, so there
+/// is no footer button. The current choice shows a check and the selected
+/// colors (never color alone). Returns null when dismissed.
+///
+/// For a choice inside a form or a filter sheet that's applied later, use
+/// chips or radio tiles in a [SheetScaffold] with a primary action instead.
+Future<T?> showAppPicker<T>({
+  required BuildContext context,
+  required String title,
+  required List<T> options,
+  required String Function(T option) labelOf,
+  T? selected,
+  IconData Function(T option)? iconOf,
+}) {
+  return showAppSheet<T>(
+    context: context,
+    builder: (context) => SheetScaffold(
+      title: title,
+      bodyPadding: const EdgeInsetsDirectional.only(bottom: AppSpace.xs),
+      children: [
+        Column(
+          children: [
+            for (final option in options)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+                leading: iconOf == null ? null : Icon(iconOf(option)),
+                title: Text(labelOf(option)),
+                trailing: option == selected ? const Icon(Icons.check_rounded) : null,
+                selected: option == selected,
+                onTap: () => Navigator.of(context).pop(option),
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 /// A labeled group inside a sheet: label in labelLarge / onSurfaceVariant,

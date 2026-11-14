@@ -23,7 +23,7 @@ class Shimmer extends StatefulWidget {
 class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1400),
+    duration: AppDurations.shimmer,
   )..repeat();
 
   @override
@@ -109,7 +109,7 @@ class SkeletonBox extends StatelessWidget {
 /// Reveals [child] only after [delay], so loads that finish quickly never
 /// flash a skeleton. Space is reserved from the start.
 class ShowAfter extends StatefulWidget {
-  const ShowAfter({super.key, required this.child, this.delay = const Duration(milliseconds: 150)});
+  const ShowAfter({super.key, required this.child, this.delay = AppDurations.skeletonDelay});
 
   final Widget child;
   final Duration delay;

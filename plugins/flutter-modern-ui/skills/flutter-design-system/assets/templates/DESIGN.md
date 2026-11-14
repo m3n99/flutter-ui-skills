@@ -9,6 +9,7 @@ Code: `{lib/core/design_system/}` (import `design_system.dart`). Widgets never u
 - **Direction:** {Soft Minimal / Enterprise Dense / …}{, eye comfort}. {One sentence on the feel.}
 - **Platforms:** {Android (touch), Windows (mouse, desktop density), …}
 - **Languages / direction:** {Arabic only, RTL} · digits: {Western 0-9 / Arabic-Indic}
+- **Look:** {cards / plain rows / rich} — {one card per record with status pill and end-aligned amount; KPI tiles on the dashboard}
 - **Emoji:** {none / KPI tiles only / …}
 - **Motion:** {cards entrance, lists insert/remove, charts, buttons, sheets, skeletons}
 - **Derived from references:** {apps / screenshots, what was kept, what was left out} (optional)
@@ -161,7 +162,7 @@ Delete with Undo: hide at once → commit on close without Undo → release the 
 flutter analyze
 flutter test
 flutter test test/ui                                                        # layout matrix, sheets, contrast
-flutter test test/ui/visual_test.dart --update-goldens --dart-define=VISUAL=true   # screenshots → test/ui/screenshots/
+flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true   # screenshots → test/ui/screenshots/
 flutter test test/pdf                                                       # sample PDFs + block checks → test/pdf/out/
 python3 <flutter-ui-verify>/scripts/rasterize_pdf.py test/pdf/out --text    # then open every page
 ```

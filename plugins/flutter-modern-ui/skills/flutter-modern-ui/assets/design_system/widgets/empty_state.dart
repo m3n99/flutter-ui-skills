@@ -51,7 +51,7 @@ class EmptyState extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl, vertical: AppSpace.xxl),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: AppSize.emptyStateWidth),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -59,7 +59,7 @@ class EmptyState extends StatelessWidget {
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
-                child: Icon(icon, size: 40, color: onTint),
+                child: Icon(icon, size: AppIconSize.emptyState, color: onTint),
               ),
               const SizedBox(height: AppSpace.lg),
               Text(title, style: text.titleLarge, textAlign: TextAlign.center),

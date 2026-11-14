@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
 # Builds a throwaway Flutter app from the plugin's templates, the way a
-# project would use them: design system in lib/design_system, examples in
-# lib/examples, the verify harness in test/ui, the printed-document harness
-# in test/pdf, and a bundled font. The repo's own tests (ci/) go to test/ci.
+# project would get them: the design system (both kits) and the harnesses
+# through the plugin's copy scripts, the examples in lib/examples, and a
+# bundled font. The repo's own tests (ci/) go to test/ci.
 # CI uses it to analyze, test and screenshot the templates; contributors can
 # run it locally before opening a PR.
 #
-#   bash scripts/sandbox.sh [output-dir]       default: build/sandbox
+#   bash scripts/sandbox.sh [--material-ui | --framework-material] [output-dir]
 #   cd build/sandbox && flutter analyze && flutter test test/ui test/pdf test/ci
+#
+# --material-ui         the app depends on material_ui and cupertino_ui (what
+#                       `flutter create` does from Flutter 3.50): the scripts
+#                       rewrite every Material import
+# --framework-material  the app still imports package:flutter/material.dart
+# Default: whatever this Flutter's `flutter create` produces.
 
 set -euo pipefail
+
+MODE=default
+case "${1:-}" in
+  --material-ui) MODE=material_ui; shift ;;
+  --framework-material) MODE=framework; shift ;;
+esac
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$ROOT/build/sandbox}"
@@ -18,16 +30,32 @@ SKILLS="$ROOT/plugins/flutter-modern-ui/skills"
 rm -rf "$OUT"
 flutter create --project-name app --org dev.flutteruiskills --platforms android,windows --no-pub "$OUT" >/dev/null
 rm -rf "$OUT/lib" "$OUT/test"
-mkdir -p "$OUT/lib" "$OUT/test/ui" "$OUT/test/pdf" "$OUT/test/ci" "$OUT/assets/fonts"
+mkdir -p "$OUT/lib" "$OUT/test/ci" "$OUT/assets/fonts"
+cd "$OUT"
 
-cp -R "$SKILLS/flutter-modern-ui/assets/design_system" "$OUT/lib/design_system"
-cp -R "$SKILLS/flutter-modern-ui/assets/examples" "$OUT/lib/examples"
-cp "$SKILLS/flutter-ui-verify/assets/harness/"*.dart "$OUT/test/ui/"
-cp "$SKILLS/flutter-ui-verify/assets/pdf/"*.dart "$OUT/test/pdf/"
-cp "$ROOT/ci/"*.dart "$OUT/test/ci/"
+has_dep() { grep -qE "^  $1:" pubspec.yaml; }
+case "$MODE" in
+  material_ui)
+    has_dep material_ui || flutter pub add material_ui >/dev/null
+    has_dep cupertino_ui || flutter pub add cupertino_ui >/dev/null
+    ;;
+  framework)
+    if has_dep material_ui; then flutter pub remove material_ui >/dev/null; fi
+    ;;
+esac
+# The printed-document example (lib/examples/invoice_pdf.dart) and its
+# harness use the pdf package.
+flutter pub add pdf >/dev/null
+if has_dep material_ui && ! has_dep cupertino_ui; then flutter pub add cupertino_ui >/dev/null; fi
 
-cat > "$OUT/lib/main.dart" <<'DART'
-import 'package:flutter/material.dart';
+python3 "$SKILLS/flutter-modern-ui/scripts/copy_design_system.py" --kit all --to lib/design_system
+cp -R "$SKILLS/flutter-modern-ui/assets/examples" lib/examples
+cp "$ROOT/ci/"*.dart test/ci/
+python3 "$SKILLS/flutter-modern-ui/scripts/copy_design_system.py" --adapt lib/examples test/ci
+python3 "$SKILLS/flutter-ui-verify/scripts/copy_harness.py" --to test/ui --pdf test/pdf --design-system-test
+
+cat > lib/main.dart <<'DART'
+import 'package:flutter/widgets.dart';
 
 import 'examples/example_app.dart';
 
@@ -37,9 +65,9 @@ DART
 # A font with Latin and Arabic glyphs, so screenshots show real text in both directions.
 FONT_BASE="https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic"
 for weight in Regular Medium SemiBold Bold; do
-  curl -fsSL "$FONT_BASE/IBMPlexSansArabic-$weight.ttf" -o "$OUT/assets/fonts/IBMPlexSansArabic-$weight.ttf"
+  curl -fsSL "$FONT_BASE/IBMPlexSansArabic-$weight.ttf" -o "assets/fonts/IBMPlexSansArabic-$weight.ttf"
 done
-cat >> "$OUT/pubspec.yaml" <<'YAML'
+cat >> pubspec.yaml <<'YAML'
   fonts:
     - family: IBM Plex Sans Arabic
       fonts:
@@ -53,12 +81,10 @@ cat >> "$OUT/pubspec.yaml" <<'YAML'
 YAML
 
 # The DIRECTION step a project would do: set the bundled font in the theme config.
-THEME="$OUT/lib/design_system/app_theme.dart"
+THEME="lib/design_system/app_theme.dart"
 sed -i.bak "s/static const AppThemeConfig config = AppThemeConfig();/static const AppThemeConfig config = AppThemeConfig(fontFamily: 'IBM Plex Sans Arabic');/" "$THEME"
 rm -f "$THEME.bak"
 grep -q "AppThemeConfig(fontFamily: 'IBM Plex Sans Arabic')" "$THEME" || { echo "Could not set the font in $THEME" >&2; exit 1; }
 
-# The printed-document example (lib/examples/invoice_pdf.dart) and its
-# harness use the pdf package; `pub add` also runs `pub get`.
-(cd "$OUT" && flutter pub add pdf >/dev/null)
-echo "Sandbox ready: $OUT"
+flutter pub get >/dev/null
+echo "Sandbox ready ($(has_dep material_ui && echo material_ui || echo 'package:flutter/material.dart')): $OUT"

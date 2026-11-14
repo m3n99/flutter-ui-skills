@@ -6,7 +6,8 @@ Applies when the app uses Arabic, Hebrew, Persian/Farsi or Urdu, alone or with L
 
 - **Directional APIs only**: `EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `BorderRadiusDirectional`, `TextAlign.start/end`, `CrossAxisAlignment.start/end`. Never `left` / `right`, `EdgeInsets.only(left:)`, `Alignment.centerLeft`, `TextAlign.left`.
 - Rows, Wraps and ListViews mirror automatically in RTL; don't reverse children by hand.
-- **Icons that point** mirror: back, forward, chevrons, arrows, send, reply, undo/redo, list bullets, "open in new". Material's directional icons (`Icons.arrow_back`, `Icons.chevron_right`) mirror on their own; for custom ones use `Directionality`-aware logic or `Transform.flip(flipX: isRtl)`.
+- **Icons that point** mirror: back, forward, chevrons, arrows, send, reply, undo/redo, list bullets, "open in new". Material's directional icons (`Icons.arrow_back`, `Icons.chevron_left`, `Icons.chevron_right`) mirror on their own (`matchTextDirection` on the `IconData`); for custom ones use `Directionality`-aware logic or `Transform.flip(flipX: isRtl)`.
+- **Don't swap them by direction yourself.** A month switcher uses `Icons.chevron_left` for "previous" and `Icons.chevron_right` for "next" in every language: in RTL they already point the other way. Picking `chevron_right` for "previous" when RTL flips the arrow twice. When unsure, check the `IconData` source for `matchTextDirection: true` (custom icon fonts usually don't set it).
 - **Icons that don't mirror**: logos, media controls (play, fast-forward), checkmarks, clocks, search, settings, charts' value glyphs.
 - **Footer button order**: "start" is on the right, so the secondary button sits right and the primary left (`SheetScaffold` handles it).
 - Progress bars and sliders fill from the right (`AppProgressBar` aligns to `centerStart`).
@@ -17,7 +18,7 @@ Applies when the app uses Arabic, Hebrew, Persian/Farsi or Urdu, alone or with L
 They stay left-to-right inside RTL text.
 
 - In widgets: wrap the smallest widget holding the value in `Ltr` (a `Directionality(ltr)`), or wrap substrings in Unicode isolates with `ltr()` (U+2066 … U+2069): `'تستحق ${ltr('07/12/2026')}'`. Both work in Flutter text.
-- In text fields that hold numbers (amount, phone, IBAN): `textDirection: TextDirection.ltr`.
+- In text fields that hold numbers (amount, phone, IBAN): `textDirection: TextDirection.ltr`. That field's `start` is then the left, even on an RTL screen: an amount sits at the far end from a currency prefix, or glued to a suffix (`₪2500`). Align it to the reading start: `textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start` (`forms.md` › Money).
 - Without this, `0599-123456` can render as `123456-0599` and ranges like `5-10` reorder.
 - Inside `Ltr`, "start" means left again: wrap the value, not the whole row.
 
@@ -28,6 +29,7 @@ They stay left-to-right inside RTL text.
 - Use a font with real Arabic glyphs: IBM Plex Sans Arabic, Noto Sans Arabic, Noto Kufi Arabic, Cairo, Tajawal, Readex Pro; Noto Naskh Arabic / Amiri for editorial reading. Check the weights you use exist.
 - Mixed scripts: pick an Arabic font whose Latin matches (IBM Plex Sans Arabic includes Latin), or set `fontFamilyFallback`.
 - **Tabular digits**: check the font has `tnum` or equal-width digits (IBM Plex Sans Arabic has no `tnum`, but its 0–9 are all the same width).
+- **Glyph coverage, not just letters.** Check the font has every symbol the app shows: currency signs, `٫` `٬` separators, `✓`, arrows. Tajawal has none of `₪ ٫ ٬ ✓`. A missing glyph falls back to some system font (another weight and size) or an empty box, and only a screenshot shows it. Run `python3 ../flutter-ui-verify/scripts/check_glyphs.py --font <each weight's .ttf> --chars "<symbols intl adds at run time>" lib`, then add a font that has them to `fontFamilyFallback` (IBM Plex Sans Arabic has all of these). Printed documents need the same fallback in the PDF theme.
 - No uppercase, no small caps, no italics for emphasis in Arabic; use weight or color.
 - Arabic punctuation: `،` comma, `؛` semicolon, `؟` question mark.
 - Digits: decide Western (0-9) vs Arabic-Indic (٠-٩) once, by audience, and record it in DESIGN.md. `intl` formats per locale; accept both on input (`MoneyInputFormatter` normalizes).
