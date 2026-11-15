@@ -22,15 +22,15 @@ With DESIGN.md's brief beside the screenshots (`flutter-modern-ui` › identity,
 3. **Spacing rhythm**: tighter inside groups than between them? Any gap that isn't on the 4-pt scale? Equal gaps everywhere (flat page)?
 4. **Typography**: how many sizes and weights are visible (more than ~4 sizes is noise)? Secondary text muted? Numbers tabular and aligned in columns?
 5. **Color**: one accent; status shown with icon + label, not color alone; nothing that looks like a raw default (purple tint, grey-50 boxes); dark mode equally intentional.
-6. **Shapes**: one radius family; nested corners concentric; no card in a card; no double borders; shadows only on floating elements / KPI tiles.
+6. **Shapes**: one radius family; nested corners concentric; no card in a card; no double borders; shadows as DESIGN.md says (by default only on floating elements / KPI tiles).
 7. **Density**: comfortable on phones (48 px targets), compact on desktop; nothing cramped or oversized for the platform.
 8. **Truncation and clipping**: important text cut with "…" (names, amounts, button labels)? Anything clipped at text scale 1.3 or 1.6? Labels on two lines that should fit? At 1.6, did paired rows stack instead of squeezing the name?
-9. **Edges**: a header, a button or a bottom bar touching the status bar, the Dynamic Island or the navigation bar, or hidden under them? Everything near an edge needs the safe area plus a little padding.
+9. **Edges**: a header, a button or a bottom bar hidden under the status bar, the Dynamic Island or the navigation bar is a defect. Touching them is against the house rule (the safe area plus a little padding), unless DESIGN.md sets another gap. Look here yourself: the harness's check doesn't see images or painted charts (`harness.md` › What the checks do not see).
 10. **States**: does the skeleton match the content's shape? Empty and error states say what happened and what to do? Loading on every data screen (no lone spinners)?
-11. **RTL** (if applicable): layout mirrored, pointing icons mirrored, numbers / dates / phones still LTR, primary button on the left in footers, charts reading right to left.
+11. **RTL** (if applicable): layout mirrored, pointing icons mirrored, numbers / dates / phones still LTR, primary button on the left in footers, charts reading right to left. Is the Arabic real (plural forms, verbal nouns on buttons, no letter-spacing), or English strings mirrored? Mirrored English proves the layout flips, not that Arabic fits.
 12. **Wide windows**: content capped, no lines of text 1,200 px long, no huge empty areas, navigation rail instead of a stretched bottom bar, visible scrollbars.
 13. **Consistency**: the same component looks the same across screenshots (cards, pills, headers, sheets).
-14. **Signature**: is the brief's signature element where DESIGN.md says it appears, and absent elsewhere?
+14. **Signature**: is the brief's signature element where DESIGN.md says it appears, and absent elsewhere? A KPI row or tinted icon badges are not a signature.
 
 ## Across the set
 

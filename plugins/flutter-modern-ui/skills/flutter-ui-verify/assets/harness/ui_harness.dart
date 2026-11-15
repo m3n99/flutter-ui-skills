@@ -20,6 +20,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// True when run with `--dart-define=VISUAL=true` (screenshot tests).
 const bool kVisualTests = bool.fromEnvironment('VISUAL');
 
+/// True when run with `--dart-define=QUICK=true`: the layout and sheet tests
+/// render [UiConfig.shots] (five variants by default) instead of the whole
+/// matrix. For a change to one widget or one screen; run the whole matrix
+/// before calling a pass done.
+const bool kQuickUi = bool.fromEnvironment('QUICK');
+
 /// Wraps the whole app; screenshots capture this boundary (dialogs and
 /// sheets included).
 final GlobalKey uiShotKey = GlobalKey(debugLabel: 'ui-shot');
@@ -153,6 +159,7 @@ class UiConfig {
       UiVariant(size: UiSize.phone, textScale: 1.6),
       UiVariant(size: UiSize.desktop),
     ],
+    this.only,
     this.systemBars = defaultSystemBars,
     this.systemBarGap = 8,
     this.localizationsDelegates = const <LocalizationsDelegate<dynamic>>[],
@@ -182,8 +189,15 @@ class UiConfig {
   /// Add TextDirection.rtl when the app supports Arabic, Hebrew, Persian or Urdu.
   final List<TextDirection> directions;
 
-  /// The curated set of screenshots per case.
+  /// The curated set of screenshots per case, and the whole matrix of a
+  /// quick run ([kQuickUi]).
   final List<UiVariant> shots;
+
+  /// Keeps only the variants it returns true for. The matrix is every
+  /// combination of the lists above, including ones the app never meets;
+  /// drop them here, e.g. a desktop platform at phone width when the window
+  /// has a minimum size: `(v) => v.isTouch || v.size.width >= 600`.
+  final bool Function(UiVariant variant)? only;
 
   /// The system bars each variant renders under. They reach the app as
   /// MediaQuery padding, like on a device (SafeArea, app bars and navigation
@@ -193,8 +207,12 @@ class UiConfig {
 
   /// The least space between the system bars and text, icons or tap targets:
   /// the little padding on top of the safe area, so nothing touches the
-  /// status bar, the Dynamic Island or the navigation bar. null skips the
-  /// check (the bars are still drawn).
+  /// status bar, the Dynamic Island or the navigation bar.
+  ///
+  /// Content under a bar is a defect on any device. Content inside the safe
+  /// area but closer than this is this plugin's house rule (8 px), reported
+  /// as such: set it to the project's own number, or to 0 to report overlap
+  /// only. null skips the check (the bars are still drawn).
   final double? systemBarGap;
 
   final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;
@@ -223,8 +241,18 @@ class UiConfig {
   /// containers. Add theme-extension tones (pills, KPI tiles).
   final List<(String, Color)> Function(ThemeData theme)? softContainers;
 
-  /// Every combination of the lists above.
+  /// Every combination of the lists above that passes [only]; in a quick run
+  /// ([kQuickUi]), [shots].
   Iterable<UiVariant> get matrix sync* {
+    final keep = only;
+    if (kQuickUi) {
+      yield* shots.where((variant) => keep == null || keep(variant));
+      return;
+    }
+    yield* _fullMatrix.where((variant) => keep == null || keep(variant));
+  }
+
+  Iterable<UiVariant> get _fullMatrix sync* {
     for (final size in sizes) {
       for (final platform in platforms) {
         for (final brightness in brightnesses) {
@@ -281,6 +309,11 @@ Future<void> pumpUi(
   tester.view.padding = barPadding;
   tester.view.viewPadding = barPadding;
   addTearDown(tester.view.reset);
+  // The device's own setting follows the variant, like on a phone in dark
+  // mode: code that reads MediaQuery.platformBrightness (ThemeMode.system, a
+  // "same as the device" row) sees dark in the dark variants.
+  tester.platformDispatcher.platformBrightnessTestValue = variant.brightness;
+  addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpWidget(
@@ -401,6 +434,69 @@ const Key _sheetHostKey = Key('ui-sheet-host');
 /// Blank screen the sheet cases open from.
 Widget sheetHost(BuildContext context) => const Scaffold(body: SizedBox.expand(key: _sheetHostKey));
 
+/// What is wrong with [sheet], open in the current frame, one line each:
+/// - touch platforms: tap targets ≥ 48 px and labeled;
+/// - nothing under or touching the system bars;
+/// - a sheet with a primary action: it's on screen, and still above a
+///   [keyboardHeight] px keyboard;
+/// - a pick-one sheet: its options are on screen, and tapping the first one
+///   closes it.
+Future<List<String>> sheetProblems(
+  WidgetTester tester,
+  UiConfig config,
+  UiVariant variant,
+  SheetCase sheet, {
+  double keyboardHeight = 300,
+}) async {
+  final problems = <String>[];
+  if (variant.isTouch) {
+    for (final guideline in [androidTapTargetGuideline, labeledTapTargetGuideline]) {
+      final handle = tester.ensureSemantics();
+      try {
+        final result = await guideline.evaluate(tester);
+        if (!result.passed) problems.add('${guideline.description}: ${result.reason}');
+      } finally {
+        handle.dispose();
+      }
+    }
+  }
+  problems.addAll(await systemBarProblems(tester, config, variant));
+
+  final height = variant.size.height;
+  if (sheet.picker) {
+    final options = sheet.options ?? sheetOptions;
+    if (options.evaluate().isEmpty) {
+      problems.add('no options found (pass SheetCase.picker(options: ...))');
+      return problems;
+    }
+    final first = tester.getRect(options.first);
+    if (first.top < 0 || first.bottom > height) problems.add('first option off screen: $first');
+    // Tapping an option is the action: the sheet must close.
+    await tester.tap(options.first);
+    await settleFrames(tester);
+    if (options.evaluate().isNotEmpty) problems.add('tapping an option left the sheet open');
+    return problems;
+  }
+
+  final primary = sheet.primary ?? find.byKey(sheetPrimaryActionKey);
+  if (primary.evaluate().length != 1) {
+    problems.add('primary action not found (a pick-one sheet? use SheetCase.picker)');
+    return problems;
+  }
+  final rect = tester.getRect(primary);
+  if (rect.top < 0 || rect.bottom > height) problems.add('primary action off screen: $rect');
+
+  showKeyboard(tester, keyboardHeight);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  final withKeyboard = tester.getRect(primary);
+  if (withKeyboard.bottom > height - keyboardHeight + 0.5) {
+    problems.add('primary action hidden by a ${keyboardHeight.round()} px keyboard: $withKeyboard');
+  }
+  hideKeyboard(tester);
+  return problems;
+}
+
 /// Simulates a [height] px software keyboard. Like on a device, it covers
 /// the navigation bar, so the bottom padding drops to zero while it's up.
 void showKeyboard(WidgetTester tester, double height) {
@@ -508,6 +604,10 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
 
   String distance(double space, String bar) =>
       space < 0 ? '${(-space).round()} px under $bar' : '${space.round()} px from $bar';
+  // Under a bar is a defect anywhere; inside the safe area but closer than
+  // the gap is the house rule, and the line says so.
+  String rule(double space) =>
+      space < 0 ? '' : ' (house rule: ${gap.round()} px clear of the bars, UiConfig.systemBarGap)';
   final statusBar = 'the status bar (${top.round()} px)';
   final navigationBar = 'the navigation bar (${bars.bottom.round()} px)';
 
@@ -525,13 +625,13 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
       atRest.add((
         item.element,
         '$where${_describeBarItem(item.element)} is ${distance(item.rect.top - top, statusBar)}: '
-            'keep it inside SafeArea plus ${gap.round()} px or more',
+            'keep it inside SafeArea plus ${gap.round()} px or more${rule(item.rect.top - top)}',
       ));
     } else if (bars.bottom > 0 && scroll == null && item.rect.bottom > bottom - margin + 0.5) {
       atRest.add((
         item.element,
         '${_describeBarItem(item.element)} is ${distance(bottom - item.rect.bottom, navigationBar)}: '
-            'SafeArea(top: false) around it, plus ${gap.round()} px or more',
+            'SafeArea(top: false) around it, plus ${gap.round()} px or more${rule(bottom - item.rect.bottom)}',
       ));
     }
   }
@@ -548,7 +648,9 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
       if (element is StatefulElement && element.state is ScrollableState) element.state as ScrollableState,
   ];
   for (final state in scrollables) {
-    if (!state.mounted || axisDirectionToAxis(state.widget.axisDirection) != Axis.vertical) continue;
+    // Reverse lists (chat) end at the top: not checked. See
+    // references/harness.md › What the system-bar check does not see.
+    if (!state.mounted || state.widget.axisDirection != AxisDirection.down) continue;
     if (_insideTextField(state.context)) continue;
     final viewport = _globalRect(state.context);
     if (viewport == null) continue;
@@ -556,10 +658,24 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
     if (!reachesBar && !fabs.any(viewport.overlaps)) continue;
     final position = state.position;
     if (!position.hasContentDimensions || !position.hasPixels) continue;
+    // An endless list has no end to check.
+    if (!position.maxScrollExtent.isFinite) continue;
     final start = position.pixels;
-    for (var i = 0; i < 5 && position.pixels < position.maxScrollExtent - 0.5; i++) {
+    // A lazy list estimates its extent, so each jump can reveal more of it.
+    var jumps = 0;
+    for (; jumps < _maxEndJumps && position.pixels < position.maxScrollExtent - 0.5; jumps++) {
+      if (!position.maxScrollExtent.isFinite) break;
       position.jumpTo(position.maxScrollExtent);
       await tester.pump();
+    }
+    if (position.pixels < position.maxScrollExtent - 0.5) {
+      // Never reached the end (a very long or endless list): saying nothing
+      // about its last rows beats guessing.
+      if (state.mounted && position.maxScrollExtent.isFinite) {
+        position.jumpTo(start);
+        await tester.pump();
+      }
+      continue;
     }
     await settleFrames(tester, frames: 4);
     final atEnd = <(Element, String)>[];
@@ -570,7 +686,7 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
           item.element,
           'at the end of the scroll, ${_describeBarItem(item.element)} is '
               '${distance(bottom - item.rect.bottom, navigationBar)}: end the list with the bottom inset '
-              '(MediaQuery.paddingOf(context).bottom) plus 24 px',
+              '(MediaQuery.paddingOf(context).bottom) plus 24 px${rule(bottom - item.rect.bottom)}',
         ));
       } else if (fabs.any((fab) => fab.overlaps(item.rect))) {
         atEnd.add((
@@ -589,6 +705,9 @@ Future<List<String>> systemBarProblems(WidgetTester tester, UiConfig config, UiV
   }
   return lines.toList();
 }
+
+/// How many jumps to the end of a lazy list before giving up on it.
+const int _maxEndJumps = 20;
 
 /// One line per flagged thing, with its source line: a tap target that's
 /// flagged covers its own label and icon. Call it while the elements are
@@ -655,7 +774,9 @@ bool _isBarContent(Widget widget) => switch (widget) {
       _ => false,
     };
 
-/// Material components that keep their own content clear of the system bars.
+/// Material and Cupertino components that keep their own content clear of
+/// the system bars. The Cupertino ones go by name, so the harness needs no
+/// Cupertino import (a separate package from Flutter 3.50).
 bool _padsForSystemBars(Widget widget) =>
     widget is AppBar ||
     widget is NavigationBar ||
@@ -663,7 +784,10 @@ bool _padsForSystemBars(Widget widget) =>
     widget is BottomAppBar ||
     widget is NavigationRail ||
     widget is SnackBar ||
-    widget is MaterialBanner;
+    widget is MaterialBanner ||
+    _cupertinoBars.contains(widget.runtimeType.toString());
+
+const Set<String> _cupertinoBars = {'CupertinoNavigationBar', 'CupertinoSliverNavigationBar', 'CupertinoTabBar'};
 
 bool _insideTextField(BuildContext context) {
   var inside = false;

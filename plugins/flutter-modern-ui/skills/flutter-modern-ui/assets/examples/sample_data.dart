@@ -47,6 +47,8 @@ class Invoice {
     required this.amountCents,
     required this.due,
     required this.status,
+    this.email = '',
+    this.notes = '',
   });
 
   final int id;
@@ -57,6 +59,12 @@ class Invoice {
   final int amountCents;
   final DateTime due;
   final InvoiceStatus status;
+
+  /// Where the invoice is sent; empty when the customer has none.
+  final String email;
+
+  /// Printed in the invoice's notes box.
+  final String notes;
 
   bool get isOpen => status != InvoiceStatus.paid && status != InvoiceStatus.draft;
 }
@@ -99,6 +107,12 @@ class InvoiceRepository {
 
   int _nextId = 1043;
 
+  /// Counts the changes made to the invoices and notifies on each, so
+  /// screens that show them (the home screen, the list, settings) stay in
+  /// step with each other. In a real app this is the store's stream or the
+  /// state layer.
+  final ValueNotifier<int> changes = ValueNotifier<int>(0);
+
   final List<Invoice> _invoices = [
     Invoice(id: 1042, number: 'INV-1042', customer: 'Blue Harbor Café', amountCents: 84200, due: DateTime(2026, 11, 10), status: InvoiceStatus.dueSoon),
     Invoice(id: 1041, number: 'INV-1041', customer: 'Kinetic Labs', amountCents: 1250000, due: DateTime(2026, 11, 2), status: InvoiceStatus.overdue),
@@ -127,12 +141,51 @@ class InvoiceRepository {
     return List<Invoice>.unmodifiable(_invoices);
   }
 
+  /// How many invoices there are, for texts that name the number.
+  int get count => _invoices.length;
+
   Future<void> delete(int id) async {
     await Future<void>.delayed(latency ~/ 2);
     _invoices.removeWhere((invoice) => invoice.id == id);
+    changes.value++;
   }
 
-  Future<Invoice> update(int id, {required String customer, required int amountCents, required DateTime due}) async {
+  /// Removes every invoice and returns how many there were.
+  Future<int> deleteAll() async {
+    await Future<void>.delayed(latency ~/ 2);
+    final removed = _invoices.length;
+    _invoices.clear();
+    changes.value++;
+    return removed;
+  }
+
+  Future<Invoice> markPaid(int id) async {
+    await Future<void>.delayed(latency ~/ 2);
+    final index = _invoices.indexWhere((invoice) => invoice.id == id);
+    final old = _invoices[index];
+    final invoice = Invoice(
+      id: id,
+      number: old.number,
+      customer: old.customer,
+      amountCents: old.amountCents,
+      due: old.due,
+      status: InvoiceStatus.paid,
+      email: old.email,
+      notes: old.notes,
+    );
+    _invoices[index] = invoice;
+    changes.value++;
+    return invoice;
+  }
+
+  Future<Invoice> update(
+    int id, {
+    required String customer,
+    required int amountCents,
+    required DateTime due,
+    String email = '',
+    String notes = '',
+  }) async {
     await Future<void>.delayed(latency);
     final index = _invoices.indexWhere((invoice) => invoice.id == id);
     final old = _invoices[index];
@@ -143,12 +196,21 @@ class InvoiceRepository {
       amountCents: amountCents,
       due: due,
       status: old.status,
+      email: email,
+      notes: notes,
     );
     _invoices[index] = invoice;
+    changes.value++;
     return invoice;
   }
 
-  Future<Invoice> create({required String customer, required int amountCents, required DateTime due}) async {
+  Future<Invoice> create({
+    required String customer,
+    required int amountCents,
+    required DateTime due,
+    String email = '',
+    String notes = '',
+  }) async {
     await Future<void>.delayed(latency);
     final id = _nextId++;
     final invoice = Invoice(
@@ -158,8 +220,11 @@ class InvoiceRepository {
       amountCents: amountCents,
       due: due,
       status: InvoiceStatus.sent,
+      email: email,
+      notes: notes,
     );
     _invoices.insert(0, invoice);
+    changes.value++;
     return invoice;
   }
 }

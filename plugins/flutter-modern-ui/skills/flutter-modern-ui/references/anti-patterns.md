@@ -57,7 +57,7 @@ Things that make Flutter UI look default, dated, inconsistent or machine-generat
 | 34 | Status shown by color alone (red text for overdue) | inaccessible, ambiguous | `StatusPill` with icon + label from one status mapping |
 | 35 | Selected chips only tinted | invisible to color-blind users | check mark + fill (theme) |
 | 36 | `colorScheme.error` for business states (overdue, unpaid) | errors and states blur | domain tones in `AppPalette` |
-| 37 | Floating labels + underline inputs | dated | label above, filled or outlined fields |
+| 37 | Underline inputs; labels as sibling text with no link to the field | dated; screen readers announce an unnamed field | filled or outlined fields; `LabeledField` (label above, tied to the field), or the project's floating labels |
 | 38 | Filled inputs on low-contrast warm surfaces | field edges vanish | `InputStyle.outlined` with `outline` at rest |
 | 39 | Each sheet with its own layout, buttons in random order | inconsistent | `SheetScaffold`: header, scroll body, sticky footer; secondary start, primary end |
 | 40 | Footer buttons split 1 : 2 or 1 : 1 | long labels truncate (esp. Arabic) | secondary as wide as its label, primary fills |
@@ -130,4 +130,4 @@ Things that make Flutter UI look default, dated, inconsistent or machine-generat
 
 ## Smell test
 
-If a screenshot could be any app, it's not done. Look for at least one **signature element** of the chosen direction: an expressive header, a hero or KPI row, a distinctive shape language, tinted icon badges, confident typography.
+If a screenshot could be any app, it's not done. Look for the **signature element the brief names** (`identity.md` › Find the signature), in the places DESIGN.md lists and nowhere else. A KPI row, a gradient hero or tinted icon badges are not a signature: they are on `identity.md`'s list of defaults that show up whatever the subject.

@@ -44,13 +44,13 @@ AppCard(
 
 ## Badges
 
-- `IconBadge`: icon in a 12 % tinted circle; the fastest way to make rows look designed.
+- `IconBadge`: icon in a 12 % tinted circle. Use it where the icon tells rows apart (a list that mixes kinds of records, a status at a glance, a settings group). In front of every row of one kind it carries no information and is one of the tells of a generated app (`identity.md` › defaults, number 7): leave it out.
 - `EmojiBadge`: emoji on a tinted rounded square (36 px, 20 px emoji, `TextScaler.noScaling`). Only when the user asked for emoji (intake). Keep the text label; exclude the emoji from semantics.
 
 ## Lists
 
 - Grouped list: one `AppCard(padding: EdgeInsets.zero)` with `ListTile`s separated by `Divider(height: 1, indent: 72)` (indent aligns with the text, not the icon), or a group card with inset rows.
-- `ListTile`: leading `IconBadge`, title titleMedium, subtitle muted bodySmall, trailing chevron (`Icons.chevron_right_rounded`, mirrors in RTL) or a value.
+- `ListTile`: a leading `IconBadge` when rows differ in kind (see Badges), title titleMedium, subtitle muted bodySmall, trailing chevron (`Icons.chevron_right_rounded`, mirrors in RTL) or a value.
 - Animated lists: `AnimatedItems` (insert/remove animate, state kept by id). `flutter-motion` skill.
 - Swipe actions: `Dismissible` with a rounded `errorContainer` background and an icon; destructive swipes go through the Undo flow (`messages.md`). Don't combine `Dismissible` with `AnimatedItems` removal for the same row (double animation): use a delete button or menu there.
 - Section headers: `SectionHeader(title:, subtitle:, leading:, trailing:, actionLabel: 'See all', onAction:)`.
@@ -67,7 +67,7 @@ AppCard(
 
 - With icons: `FilledButton.icon(icon:, label:)`.
 - Saving: `SubmitButton` keeps its width, shows a spinner, ignores a second press.
-- Avoid `ElevatedButton` (shadowed, dated) unless the project standardized on it.
+- House default: no `ElevatedButton` (its shadow competes with flat cards). A project that standardized on it keeps it; record that in DESIGN.md.
 - Never two filled buttons side by side with equal weight.
 
 ## Chips

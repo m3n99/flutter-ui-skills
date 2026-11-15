@@ -1,6 +1,6 @@
 ---
 description: "A save button flush against the bottom edge. The skill should catch the missing safe area and padding."
-tags: [layout, smoke]
+tags: [layout, smoke, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

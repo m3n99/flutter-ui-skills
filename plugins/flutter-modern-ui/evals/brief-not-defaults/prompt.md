@@ -1,6 +1,6 @@
 ---
 description: "With every axis free, the skill should decide from the subject, not from the template defaults."
-tags: [identity]
+tags: [identity, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

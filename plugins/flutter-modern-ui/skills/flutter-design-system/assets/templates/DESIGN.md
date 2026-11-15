@@ -30,6 +30,7 @@ Who this app is, in five lines. Every later choice answers to them (`flutter-mod
 ### Deliberate deviations from the plugin defaults
 - {e.g. warm hand-picked palette instead of fromSeed surfaces, checked ≥ 4.5:1}
 - {e.g. 40 px controls on Windows}
+- {e.g. Material floating labels instead of labels above fields; elevated cards; 4 px instead of 8 px clear of the system bars (`UiConfig.systemBarGap: 4`)}
 
 ## 1. Tokens
 
@@ -130,7 +131,7 @@ Chips 8 / 8; selected = fill + check; equal heights.
 
 ## 5. Motion
 
-Level: **{soft}** (`MotionLevel.{soft}`), asked before the first screen. Places: {cards and lists on load, list changes, numbers, buttons, loading}. Places not listed don't move.
+Level: **{soft}** (`MotionLevel.{soft}`), {chosen by the user before the first screen / a default taken in an unattended run, to confirm}. Places: {cards and lists on load, list changes, numbers, buttons, loading}. Places not listed don't move.
 
 | What | Duration | Curve | {Soft} |
 |---|---|---|---|

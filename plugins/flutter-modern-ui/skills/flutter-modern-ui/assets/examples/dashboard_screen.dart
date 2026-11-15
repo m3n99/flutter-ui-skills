@@ -3,8 +3,12 @@
 // - a home that answers the owner's daily question, "what do I still have to
 //   collect, and who do I chase today?", with the one action beside the
 //   answer, instead of a greeting over a grid of numbers;
-// - the app's signature: ledger lines (label at the start, tabular amount at
-//   the end, ruled between), used in this card and as the sign-in mark only;
+// - the app's signature, ledger lines (ledger.dart), in the "To collect"
+//   card;
+// - real Arabic in right-to-left (home_strings.dart): plural forms, verbal
+//   nouns on the button, month names, not English mirrored;
+// - nothing tappable that does nothing: the tile, "See all" and the rows
+//   call back to the shell, and are plain when no callback is given;
 // - loading (skeleton shaped like the content), error (what failed + retry)
 //   and content, switched with StateSwitcher;
 // - KPI tiles for what's worth a glance (raised tiles, equal heights, values
@@ -19,14 +23,23 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/design_system.dart';
+import 'home_strings.dart';
+import 'ledger.dart';
 import 'sample_data.dart';
 
 enum _Load { loading, error, ready }
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, required this.repository});
+  const DashboardScreen({super.key, required this.repository, this.onSeeInvoices, this.onOpenInvoice});
 
   final InvoiceRepository repository;
+
+  /// Opens the invoice list (the "Open invoices" tile, "See all"). Without
+  /// it they are plain, not dead buttons.
+  final VoidCallback? onSeeInvoices;
+
+  /// Opens one invoice (a "Due soon" row).
+  final ValueChanged<Invoice>? onOpenInvoice;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -39,7 +52,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    widget.repository.changes.addListener(_refresh);
     _load();
+  }
+
+  @override
+  void dispose() {
+    widget.repository.changes.removeListener(_refresh);
+    super.dispose();
+  }
+
+  /// An invoice changed on another screen: reload quietly.
+  void _refresh() {
+    if (mounted && _status == _Load.ready) _load(showSkeleton: false);
   }
 
   Future<void> _load({bool showSkeleton = true}) async {
@@ -59,6 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = HomeStrings.of(context);
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -67,14 +94,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _Load.loading => const _DashboardSkeleton(key: ValueKey('loading')),
             _Load.error => EmptyState.error(
                 key: const ValueKey('error'),
-                title: "Couldn't load your dashboard",
-                message: 'Check your connection and try again.',
+                title: strings.loadFailedTitle,
+                message: strings.loadFailedMessage,
+                actionLabel: strings.retry,
                 onRetry: _load,
               ),
             _Load.ready => _DashboardContent(
                 key: const ValueKey('ready'),
                 invoices: _invoices,
                 onRefresh: () => _load(showSkeleton: false),
+                onSeeInvoices: widget.onSeeInvoices,
+                onOpenInvoice: widget.onOpenInvoice,
               ),
           },
         ),
@@ -84,13 +114,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({super.key, required this.invoices, required this.onRefresh});
+  const _DashboardContent({
+    super.key,
+    required this.invoices,
+    required this.onRefresh,
+    required this.onSeeInvoices,
+    required this.onOpenInvoice,
+  });
 
   final List<Invoice> invoices;
   final Future<void> Function() onRefresh;
+  final VoidCallback? onSeeInvoices;
+  final ValueChanged<Invoice>? onOpenInvoice;
 
   @override
   Widget build(BuildContext context) {
+    final strings = HomeStrings.of(context);
     final open = invoices.where((i) => i.isOpen).toList();
     final overdue = invoices.where((i) => i.status == InvoiceStatus.overdue).toList();
     final dueSoon = invoices.where((i) => i.status == InvoiceStatus.dueSoon).toList();
@@ -110,7 +149,7 @@ class _DashboardContent extends StatelessWidget {
             later: later,
             // The message uses the button's words and names the thing.
             onRemind: () => AppMessenger.success(
-              overdue.length == 1 ? 'Sent a reminder to ${overdue.single.customer}' : 'Sent ${overdue.length} reminders',
+              overdue.length == 1 ? strings.sentReminderTo(overdue.single.customer) : strings.sentReminders(overdue.length),
             ),
           );
           final tiles = KpiGrid(
@@ -119,21 +158,17 @@ class _DashboardContent extends StatelessWidget {
                 icon: Icons.payments_outlined,
                 tone: StatusTone.success,
                 colorValue: true,
-                label: 'Collected in November',
+                label: strings.collectedThisMonth,
                 value: AnimatedNumber(value: collected / 100, format: (v) => formatMoney((v * 100).round())),
-                caption: '+20% vs October',
+                caption: strings.comparedWithLastMonth,
               ),
               KpiTile(
                 icon: Icons.description_outlined,
                 tone: StatusTone.info,
-                label: 'Open invoices',
+                label: strings.openInvoices,
                 value: Text('${open.length}'),
-                caption: switch (drafts) {
-                  0 => null,
-                  1 => '1 draft not sent yet',
-                  _ => '$drafts drafts not sent yet',
-                },
-                onTap: () {},
+                caption: strings.draftsNotSent(drafts),
+                onTap: onSeeInvoices,
               ),
             ],
           );
@@ -141,7 +176,7 @@ class _DashboardContent extends StatelessWidget {
             slivers: [
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.md, side, 0),
-                sliver: SliverToBoxAdapter(child: Text('Overview', style: context.textStyles.headlineSmall)),
+                sliver: SliverToBoxAdapter(child: Text(strings.title, style: context.textStyles.headlineSmall)),
               ),
               SliverPadding(
                 padding: EdgeInsetsDirectional.fromSTEB(side, AppSpace.md, side, context.listEndPadding()),
@@ -161,22 +196,26 @@ class _DashboardContent extends StatelessWidget {
                       tiles,
                     ],
                     const SizedBox(height: AppSpace.lg),
-                    const SectionHeader(title: 'Collected per month', subtitle: 'Last 6 months'),
+                    SectionHeader(title: strings.collectedPerMonth, subtitle: strings.lastSixMonths),
                     const SizedBox(height: AppSpace.sm),
                     AppCard(
                       child: MiniBarChart(
                         values: [for (final c in InvoiceRepository.collectedByMonth) c / 100],
-                        labels: InvoiceRepository.monthLabels,
+                        labels: strings.chartMonths,
                         shortLabels: InvoiceRepository.monthNumbers,
                         color: context.palette.success.color,
                         formatTick: (v) => v >= 1000 ? '${(v / 1000).round()}k' : v.round().toString(),
-                        semanticLabel: 'Collected per month, June to November, highest in November.',
+                        semanticLabel: strings.chartDescription,
                       ),
                     ),
                     const SizedBox(height: AppSpace.lg),
-                    SectionHeader(title: 'Due soon', actionLabel: 'See all', onAction: () {}),
+                    SectionHeader(
+                      title: strings.dueSoon,
+                      actionLabel: onSeeInvoices == null ? null : strings.seeAll,
+                      onAction: onSeeInvoices,
+                    ),
                     const SizedBox(height: AppSpace.sm),
-                    _DueSoonGroup(invoices: [...dueSoon, ...overdue]),
+                    _DueSoonGroup(invoices: [...dueSoon, ...overdue], onOpen: onOpenInvoice),
                   ],
                 ),
               ),
@@ -200,10 +239,9 @@ class _ToCollectCard extends StatelessWidget {
 
   static int _sum(List<Invoice> invoices) => invoices.fold<int>(0, (sum, i) => sum + i.amountCents);
 
-  static String _count(List<Invoice> invoices) => invoices.length == 1 ? '1 invoice' : '${invoices.length} invoices';
-
   @override
   Widget build(BuildContext context) {
+    final strings = HomeStrings.of(context);
     final colors = context.colors;
     final text = context.textStyles;
     final total = _sum(overdue) + _sum(dueSoon) + _sum(later);
@@ -212,7 +250,7 @@ class _ToCollectCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('To collect', style: text.titleSmall?.copyWith(color: colors.onSurfaceVariant)),
+          Text(strings.toCollect, style: text.titleSmall?.copyWith(color: colors.onSurfaceVariant)),
           const SizedBox(height: AppSpace.xxs),
           // The one big number on the screen.
           FittedBox(
@@ -227,28 +265,30 @@ class _ToCollectCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.sm),
-          _LedgerLine(
-            icon: Icons.error_outline_rounded,
-            tone: overdue.isEmpty ? StatusTone.neutral : StatusTone.danger,
-            label: 'Overdue',
-            detail: _count(overdue),
-            amountCents: _sum(overdue),
-          ),
-          const Divider(),
-          _LedgerLine(
-            icon: Icons.schedule_rounded,
-            tone: dueSoon.isEmpty ? StatusTone.neutral : StatusTone.warning,
-            label: 'Due this week',
-            detail: _count(dueSoon),
-            amountCents: _sum(dueSoon),
-          ),
-          const Divider(),
-          _LedgerLine(
-            icon: Icons.event_outlined,
-            tone: StatusTone.neutral,
-            label: 'Later',
-            detail: _count(later),
-            amountCents: _sum(later),
+          // The signature: what makes up the total, as ledger lines.
+          Ledger(
+            lines: [
+              LedgerLine(
+                icon: Icons.error_outline_rounded,
+                tone: overdue.isEmpty ? StatusTone.neutral : StatusTone.danger,
+                label: strings.overdue,
+                detail: strings.invoices(overdue.length),
+                value: formatMoney(_sum(overdue)),
+              ),
+              LedgerLine(
+                icon: Icons.schedule_rounded,
+                tone: dueSoon.isEmpty ? StatusTone.neutral : StatusTone.warning,
+                label: strings.dueThisWeek,
+                detail: strings.invoices(dueSoon.length),
+                value: formatMoney(_sum(dueSoon)),
+              ),
+              LedgerLine(
+                icon: Icons.event_outlined,
+                label: strings.later,
+                detail: strings.invoices(later.length),
+                value: formatMoney(_sum(later)),
+              ),
+            ],
           ),
           if (overdue.isNotEmpty) ...[
             const SizedBox(height: AppSpace.md),
@@ -257,11 +297,7 @@ class _ToCollectCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onRemind,
                 icon: const Icon(Icons.send_rounded),
-                label: Text(
-                  overdue.length == 1 ? 'Send 1 reminder' : 'Send ${overdue.length} reminders',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                label: Text(strings.sendReminders(overdue.length), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ),
           ],
@@ -271,73 +307,26 @@ class _ToCollectCard extends StatelessWidget {
   }
 }
 
-/// The app's signature, a line of a ledger: what it is at the start, its
-/// amount in tabular figures at the end, a rule between lines. The status is
-/// an icon and words, never the color alone.
-class _LedgerLine extends StatelessWidget {
-  const _LedgerLine({
-    required this.icon,
-    required this.tone,
-    required this.label,
-    required this.detail,
-    required this.amountCents,
-  });
-
-  final IconData icon;
-  final StatusTone tone;
-  final String label;
-  final String detail;
-  final int amountCents;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final text = context.textStyles;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-      child: Row(
-        spacing: AppSpace.sm,
-        children: [
-          Icon(icon, size: context.iconSize(AppIconSize.dense), color: tone.strongOf(context)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: text.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                Text(
-                  detail,
-                  style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Ltr(child: Text(formatMoney(amountCents), style: text.titleMedium.tabular)),
-        ],
-      ),
-    );
-  }
-}
-
 /// Rows sit 8 px inside a 16 px card, so their ink radius is 16 − 8 = 8.
 class _DueSoonGroup extends StatelessWidget {
-  const _DueSoonGroup({required this.invoices});
+  const _DueSoonGroup({required this.invoices, required this.onOpen});
 
   final List<Invoice> invoices;
+  final ValueChanged<Invoice>? onOpen;
 
   @override
   Widget build(BuildContext context) {
+    final strings = HomeStrings.of(context);
     if (invoices.isEmpty) {
-      return const AppCard(
+      return AppCard(
         child: EmptyState(
           icon: Icons.event_available_rounded,
-          title: 'Nothing due this week',
-          message: 'Invoices due in the next 7 days show up here.',
+          title: strings.nothingDueTitle,
+          message: strings.nothingDueMessage,
         ),
       );
     }
+    final onOpen = this.onOpen;
 
     const inset = AppSpace.xs;
     final rowRadius = BorderRadius.circular(AppRadius.concentric(AppRadius.card, inset));
@@ -345,6 +334,10 @@ class _DueSoonGroup extends StatelessWidget {
     // Big fonts or a small phone: the amount and the pill move under the
     // details instead of squeezing the name.
     final narrow = context.isNarrow;
+
+    // The status in the screen's language: one icon, one tone, one label.
+    StatusPill pill(Invoice invoice) =>
+        StatusPill(label: strings.status(invoice.status), icon: invoice.status.icon, tone: invoice.status.tone);
 
     return AppCard(
       padding: const EdgeInsets.all(inset),
@@ -354,13 +347,13 @@ class _DueSoonGroup extends StatelessWidget {
           for (final invoice in invoices)
             InkWell(
               borderRadius: rowRadius,
-              onTap: () {},
+              // No callback: a plain row, not a tap that does nothing.
+              onTap: onOpen == null ? null : () => onOpen(invoice),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
                 child: Row(
                   spacing: AppSpace.sm,
                   children: [
-                    IconBadge(icon: invoice.status.icon, color: invoice.status.tone.strongOf(context)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,12 +370,12 @@ class _DueSoonGroup extends StatelessWidget {
                             runSpacing: AppSpace.xxs,
                             children: [
                               MetaItem(icon: Icons.tag_rounded, text: invoice.number, ltr: true),
-                              MetaItem(icon: Icons.event_outlined, text: 'Due ${formatShortDate(invoice.due)}'),
+                              MetaItem(icon: Icons.event_outlined, text: strings.due(invoice.due)),
                             ],
                           ),
                           if (narrow) ...[
                             Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
-                            invoice.status.pill,
+                            pill(invoice),
                           ],
                         ],
                       ),
@@ -393,7 +386,7 @@ class _DueSoonGroup extends StatelessWidget {
                         spacing: AppSpace.xxs,
                         children: [
                           Ltr(child: Text(formatMoney(invoice.amountCents), style: text.titleSmall.tabular)),
-                          invoice.status.pill,
+                          pill(invoice),
                         ],
                       ),
                   ],

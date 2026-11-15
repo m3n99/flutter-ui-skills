@@ -11,11 +11,14 @@
 //              when billing.
 //   Job        know what there is to collect and who to chase today.
 //   Feeling    exact, calm, businesslike.
-//   Signature  ledger lines: the label at the start, the amount in tabular
-//              figures at the end, ruled between (the home card, the
-//              sign-in mark).
+//   Signature  ledger lines: the label at the start, the figure in tabular
+//              numerals at the end, ruled between. One shared widget
+//              (ledger.dart), in three places: the home card, an invoice's
+//              details, the sign-in mark.
 //   Color      ink blue-black as the seed (fidelity), one accent, status
 //              tones for money states.
+//   Languages  English and Arabic. The home screen carries real Arabic
+//              (home_strings.dart); Arabic text takes AppScript.arabic.
 // So the home screen opens on "To collect" with the reminder action, not on
 // a greeting over a grid of numbers.
 //
@@ -49,13 +52,40 @@ class _ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Design system example',
+      title: 'Daybook',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(config: widget.config),
       darkTheme: AppTheme.dark(config: widget.config),
       themeMode: ThemeMode.system,
       scaffoldMessengerKey: AppMessenger.key,
+      // A bilingual app rebuilds its theme for the script it shows
+      // (references/theming.md): Arabic takes zero letter-spacing and taller
+      // lines. The reading direction stands for the locale here.
+      builder: (context, child) => ArabicTypeInRtl(config: widget.config, child: child ?? const SizedBox.shrink()),
       home: ExampleShell(repository: _repository),
+    );
+  }
+}
+
+/// Gives its subtree the Arabic type scale (AppScript.arabic) when the
+/// reading direction is right-to-left, and leaves it alone otherwise.
+class ArabicTypeInRtl extends StatelessWidget {
+  const ArabicTypeInRtl({super.key, required this.child, this.config = AppTheme.config});
+
+  final Widget child;
+  final AppThemeConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    if (Directionality.of(context) != TextDirection.rtl) return child;
+    final theme = Theme.of(context);
+    return Theme(
+      data: AppTheme.build(
+        theme.brightness,
+        platform: theme.platform,
+        config: config.copyWith(script: AppScript.arabic),
+      ),
+      child: child,
     );
   }
 }
@@ -71,7 +101,18 @@ class ExampleShell extends StatefulWidget {
 }
 
 class _ExampleShellState extends State<ExampleShell> {
+  static const int _invoicesTab = 1;
+
   int _index = 0;
+
+  /// The home screen asks the Invoices tab to open an invoice through this.
+  final ValueNotifier<int?> _openInvoice = ValueNotifier<int?>(null);
+
+  @override
+  void dispose() {
+    _openInvoice.dispose();
+    super.dispose();
+  }
 
   static const List<AppDestination> _destinations = [
     AppDestination(icon: Icons.space_dashboard_outlined, selectedIcon: Icons.space_dashboard_rounded, label: 'Home'),
@@ -88,9 +129,16 @@ class _ExampleShellState extends State<ExampleShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          DashboardScreen(repository: widget.repository),
-          RecordsScreen(repository: widget.repository),
-          const SettingsScreen(),
+          DashboardScreen(
+            repository: widget.repository,
+            onSeeInvoices: () => setState(() => _index = _invoicesTab),
+            onOpenInvoice: (invoice) {
+              setState(() => _index = _invoicesTab);
+              _openInvoice.value = invoice.id;
+            },
+          ),
+          RecordsScreen(repository: widget.repository, openRequest: _openInvoice),
+          SettingsScreen(repository: widget.repository),
         ],
       ),
     );

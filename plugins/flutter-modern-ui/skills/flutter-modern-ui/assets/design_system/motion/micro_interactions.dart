@@ -44,6 +44,9 @@ class _ShakeOnChangeState extends State<ShakeOnChange> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     _reduceMotion = context.reduceMotion;
+    // Scaled by the motion level, like every other duration; a shake that is
+    // already running keeps the duration it started with.
+    if (!_reduceMotion) _controller.duration = context.motion(AppDurations.shake);
     final distance = widget.distance ?? context.appMotion.shakeDistance;
     return AnimatedBuilder(
       animation: _controller,
@@ -89,6 +92,7 @@ class _PopOnChangeState extends State<PopOnChange> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     _reduceMotion = context.reduceMotion;
+    if (!_reduceMotion) _controller.duration = context.motion(AppDurations.slow);
     final peak = context.appMotion.popScale;
     final scale = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 1, end: peak).chain(CurveTween(curve: Curves.easeOut)), weight: 40),

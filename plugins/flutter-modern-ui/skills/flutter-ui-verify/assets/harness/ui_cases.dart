@@ -40,6 +40,11 @@ final UiConfig uiConfig = UiConfig(
   platforms: const [TargetPlatform.android, TargetPlatform.windows],
   directions: const [TextDirection.ltr, TextDirection.rtl],
   scaffoldMessengerKey: AppMessenger.key,
+  // The example is bilingual: right-to-left, its home screen is in Arabic,
+  // and Arabic text takes AppScript.arabic (zero letter-spacing, taller
+  // lines). A project with one script sets it in AppTheme.config and needs
+  // no wrap.
+  wrap: (child) => ArabicTypeInRtl(child: child),
   shots: const [
     UiVariant(size: UiSize.phone),
     UiVariant(size: UiSize.phone, brightness: Brightness.dark),
@@ -111,7 +116,7 @@ final List<UiCase> uiCases = [
   UiCase('invoice_form', (_) => RecordFormScreen(repository: _instant())),
   UiCase('invoice_form_edit', (_) => RecordFormScreen(repository: _instant(), initial: _editing)),
   UiCase('shell', (_) => ExampleShell(repository: _instant()), act: _pushFromShell),
-  UiCase('settings', (_) => const SettingsScreen()),
+  UiCase('settings', (_) => SettingsScreen(repository: _instant())),
   UiCase(
     'sign_in',
     (_) => SignInScreen(onSignIn: (email, password) async {}, onForgotPassword: () {}, onCreateAccount: () {}),

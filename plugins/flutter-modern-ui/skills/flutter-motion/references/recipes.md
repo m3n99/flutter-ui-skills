@@ -40,10 +40,10 @@ MouseRegion(
 ## 3. Entrance (first load, new sort)
 
 ```dart
-Entrance(index: i, child: card) // fade + 8 % slide up, 40 ms stagger, first 8 only, plays once
+Entrance(index: i, child: card) // fade + a short rise, once; how far and whether rows stagger come from the motion level
 ```
 
-Inside lists, `AnimatedItems` applies it automatically, only to items built in the first frame, so rows scrolled into view later don't animate. Don't replay it on refresh.
+The numbers live in one place, `AppMotion` (`principles.md` › Motion levels): soft rises 4 % with no stagger, expressive 12 % with 40 ms between the first 8. Inside lists, `AnimatedItems` applies it automatically, only to items built in the first frame, so rows scrolled into view later don't animate. Don't replay it on refresh.
 
 ## 4. Lists: insert, remove, reorder
 

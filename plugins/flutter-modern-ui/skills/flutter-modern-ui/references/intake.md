@@ -25,7 +25,7 @@ Cards (recommended)            Plain rows                     Rich
 ```
 
 - **Cards**: one flat card per record (tonal fill, hairline border), status pill, amount aligned at the end; `assets/examples/records_screen.dart`.
-- **Plain rows**: divider-separated `ListTile`s, denser, neutral surfaces; for data-heavy back-office screens. Still themed: `IconBadge` leading, muted subtitles, status pills.
+- **Plain rows**: divider-separated `ListTile`s, denser, neutral surfaces; for data-heavy back-office screens. Still themed: muted subtitles, status pills, a leading `IconBadge` where rows are of different kinds.
 - **Rich**: cards plus icon badges, tinted KPI tiles, charts and more motion; `assets/examples/dashboard_screen.dart`.
 
 **4. Emoji** — "Would you like emoji in the UI?"
@@ -34,7 +34,7 @@ Cards (recommended)            Plain rows                     Rich
 - on section headers too
 - on empty states and success messages too
 
-**5. Motion: how much, and where** — always asked **before the first screen is built**, in two parts, with the examples below so the user picks from something concrete. Ask even when the spec or the customer already hinted at motion ("keep it basic", "make it feel alive"): the hint becomes the recommended option, not the answer, because "basic" may still mean a calm fade and "alive" rarely means bouncing everything.
+**5. Motion: how much, and where** — asked **before the first screen is built**, in two parts, with the examples below so the user picks from something concrete. Skip it only when it is answered: DESIGN.md › Motion records the level and the places, or the request states both ("soft, on lists and buttons only"). A hint is not an answer: when the spec or the customer says "keep it basic" or "make it feel alive", still ask, with the hint as the recommended option, because "basic" may still mean a calm fade and "alive" rarely means bouncing everything.
 
 *a. "How much motion do you want?"*
 
@@ -77,7 +77,7 @@ State the defaults in one line at the top of the work and carry on:
 | RTL | Yes if any ARB / l10n file is `ar`, `he`, `fa` or `ur`; otherwise no |
 | Look | **Don't default silently.** Build the first list screen with cards, show its screenshot and ask before doing the rest. Never fall back to bare `ListTile` rows: they read as unstyled |
 | Emoji | None |
-| Motion | **Ask anyway** (it's quick, and the user may be back before the first screen is done); until then soft, on cards and lists on load, list changes, numbers, buttons and loading. A spec that says "basic" points to none or soft: confirm which |
+| Motion | Soft, on cards and lists on load, list changes, numbers, buttons and loading; recorded in DESIGN.md as a default to confirm. When the user is only away for a moment, ask as well and carry on meanwhile; in an unattended run there is nobody to ask, so the line in the report is the question. A spec that says "basic" points to none or soft: say which you took |
 | Brief and direction | Write the brief yourself from the project and state it in one line at the top of the work; the direction from the domain (`directions.md` › Choosing quickly). Never the template's placeholder seed and font unchanged |
 
 ## Acting on the answers
@@ -87,7 +87,7 @@ State the defaults in one line at the top of the work and carry on:
 - Desktop too → density by `TargetPlatform` (`AppDensity.forPlatform`), `references/adaptive.md`; test at 1366 and 1920 px.
 - Web → treat as pointer on desktop browsers; check hover and keyboard focus.
 
-**Look** → record it in DESIGN.md (*Look*). Cards: `AppCard` per record, `references/components.md` › Cards. Plain rows: a grouped list in one card or full-bleed rows with `Divider(indent:)`, still with `IconBadge`s, pills and muted subtitles. Rich: add `KpiTile`s, charts and entrances, `references/data-display.md`. The reviewer checks screens against this answer.
+**Look** → record it in DESIGN.md (*Look*). Cards: `AppCard` per record, `references/components.md` › Cards. Plain rows: a grouped list in one card or full-bleed rows with `Divider(indent:)`, still with pills and muted subtitles (`IconBadge`s when rows differ in kind, `components.md` › Badges). Rich: add `KpiTile`s, charts and entrances, `references/data-display.md`. The reviewer checks screens against this answer.
 
 **RTL** → `references/rtl-arabic.md` from the first widget: directional APIs, `Ltr` for numbers, `AppScript.arabic` (zero tracking, taller line heights), mirrored charts, Arabic plural forms. Mixed LTR + RTL apps test both directions.
 

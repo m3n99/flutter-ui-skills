@@ -1,6 +1,6 @@
 ---
 description: "A SnackBar from a modal sheet opens behind it. The error belongs inside the sheet."
-tags: [sheets]
+tags: [sheets, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

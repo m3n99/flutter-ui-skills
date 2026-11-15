@@ -127,11 +127,13 @@ class _SubmitButtonState extends State<SubmitButton> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // The label stays in the tree (invisible) so the width never jumps
-            // and screen readers keep the button's name.
+            // The label stays in the tree (invisible) so the width never
+            // jumps. Opacity 0 drops a child's semantics unless told
+            // otherwise, and a busy button must still say its name.
             AnimatedOpacity(
               opacity: phase == _Phase.idle ? 1 : 0,
               duration: context.motion(AppDurations.fast),
+              alwaysIncludeSemantics: true,
               child: label,
             ),
             AnimatedSwitcher(

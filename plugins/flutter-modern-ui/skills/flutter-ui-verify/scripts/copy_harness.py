@@ -11,6 +11,9 @@ again updates them. The files you edit (ui_cases.dart, pdf_cases.dart) are
 only copied when missing; then replace their `package:app/...` imports and
 cases with the project's own.
 
+Each folder gets a `.flutter-modern-ui.json` naming the plugin version the
+harness came from, so a later session can tell whether to run this again.
+
 When pubspec.yaml depends on material_ui (Flutter 3.50+), Material and
 Cupertino imports are rewritten to package:material_ui / package:cupertino_ui.
 
@@ -18,6 +21,7 @@ Exit codes: 0 fine, 1 error.
 """
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -30,6 +34,9 @@ UI_EDITED = "ui_cases.dart"
 DESIGN_SYSTEM_TEST = "design_system_test.dart"
 PDF_FILES = ["pdf_harness.dart", "pdf_test.dart"]
 PDF_EDITED = "pdf_cases.dart"
+
+PLUGIN_JSON = Path(__file__).resolve().parents[3] / ".claude-plugin" / "plugin.json"
+STAMP = ".flutter-modern-ui.json"
 
 IMPORT_REWRITES = {
     "package:flutter/material.dart": "package:material_ui/material_ui.dart",
@@ -56,6 +63,18 @@ def dependencies(pubspec):
     return names
 
 
+def plugin_version():
+    try:
+        return json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return "unknown"
+
+
+def write_stamp(target, names):
+    stamp = {"plugin": "flutter-modern-ui", "version": plugin_version(), "files": sorted(names)}
+    (target / STAMP).write_text(json.dumps(stamp, indent=2) + "\n", encoding="utf-8")
+
+
 def copy(source_dir, target, names, edited, force_edited=False):
     target.mkdir(parents=True, exist_ok=True)
     written, skipped = [], []
@@ -69,6 +88,7 @@ def copy(source_dir, target, names, edited, force_edited=False):
         else:
             shutil.copyfile(source_dir / edited, dest)
             written.append(dest)
+    write_stamp(target, names)
     return written, skipped
 
 
@@ -110,7 +130,7 @@ def main():
         skipped += pdf_skipped
 
     changed = adapt_imports(written, deps)
-    print(f"Wrote {len(written)} file(s).")
+    print(f"Wrote {len(written)} file(s) (flutter-modern-ui {plugin_version()}).")
     for path in skipped:
         print(f"Kept your {path} (--force-cases overwrites it).")
     if changed:

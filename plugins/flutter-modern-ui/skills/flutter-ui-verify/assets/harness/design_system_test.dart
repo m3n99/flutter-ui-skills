@@ -1,7 +1,7 @@
 // Behaviour tests for the plugin's shared widgets and theme. Copy this file
 // only when the project uses them (AnimatedItems, AppMessenger.deleteWithUndo,
-// SubmitButton, AppChoiceChips, ToneColors, AppTheme, the motion level,
-// context.isNarrow / listEndPadding, SheetScaffold.error).
+// SubmitButton, Shimmer, AppChoiceChips, ToneColors, AppTheme, the motion
+// level, context.isNarrow / listEndPadding, SheetScaffold.error).
 //
 //   flutter test test/ui/design_system_test.dart
 
@@ -146,6 +146,71 @@ void main() {
     expect(committed, [2]);
   });
 
+  testWidgets('deleteWithUndo: a failed refresh is not reported as a failed delete; a closed screen still commits', (tester) async {
+    final pending = PendingDeletes<int>();
+    final committed = <int>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        scaffoldMessengerKey: AppMessenger.key,
+        home: const Scaffold(body: SizedBox.expand()),
+      ),
+    );
+
+    final deleted = AppMessenger.deleteWithUndo<int>(
+      pending: pending,
+      key: 1,
+      message: 'Deleted row 1',
+      commit: () async => committed.add(1),
+      reload: () async => throw StateError('offline'),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    // The screen closes during the Undo window and disposes its list.
+    pending.dispose();
+    await tester.pump(const Duration(seconds: 7));
+    await tester.pump(const Duration(seconds: 1));
+    await deleted;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(committed, [1], reason: 'the confirmed delete runs although the screen is gone');
+    expect(find.textContaining("couldn't refresh"), findsOneWidget);
+    expect(find.textContaining("Couldn't delete"), findsNothing);
+
+    // Let the message close, so no timer is left pending.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('Shimmer: no frames scheduled under reduced motion, animating otherwise', (tester) async {
+    // One theme for every pump: a new ThemeData would start MaterialApp's own
+    // theme cross-fade, which is a ticker too.
+    final theme = AppTheme.light();
+    Widget app({required bool reduceMotion}) => MaterialApp(
+          theme: theme,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+            child: child!,
+          ),
+          home: const Scaffold(body: Shimmer(child: SkeletonBox(height: AppSize.touchTarget))),
+        );
+
+    await tester.pumpWidget(app(reduceMotion: true));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, 0, reason: 'a static skeleton must not keep a ticker running');
+
+    await tester.pumpWidget(app(reduceMotion: false));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, greaterThan(0), reason: 'the shimmer sweeps when motion is allowed');
+
+    await tester.pumpWidget(app(reduceMotion: true));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, 0, reason: 'turning reduced motion on stops the ticker');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('SubmitButton shows progress and submits once', (tester) async {
     final completer = Completer<void>();
     var calls = 0;
@@ -170,6 +235,12 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    // The label is invisible while busy, but the button still has its name.
+    final semantics = tester.ensureSemantics();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.bySemanticsLabel(RegExp('Save')), findsWidgets, reason: 'a busy SubmitButton keeps its name for screen readers');
+    semantics.dispose();
 
     await tester.tap(find.byType(SubmitButton), warnIfMissed: false);
     await tester.pump();
