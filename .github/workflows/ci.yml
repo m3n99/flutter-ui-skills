@@ -177,6 +177,24 @@ jobs:
         working-directory: build/sandbox
         run: flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true
 
+      - name: TEMP print contact sheets
+        if: ${{ !cancelled() && matrix.material == 'material_ui' }}
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          import base64, io, pathlib
+          from PIL import Image
+          root = pathlib.Path("build/sandbox/test/ui/screenshots/contact_sheets")
+          for name in ["dashboard", "invoices", "invoices_selected", "settings", "sign_in", "invoice_form_edit"]:
+              image = Image.open(root / f"{name}.png").convert("RGB")
+              image.thumbnail((2400, 2400))
+              buffer = io.BytesIO()
+              image.save(buffer, "JPEG", quality=62)
+              print(f"@@BEGIN {name}")
+              print(base64.b64encode(buffer.getvalue()).decode())
+              print(f"@@END {name}")
+          PY
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
