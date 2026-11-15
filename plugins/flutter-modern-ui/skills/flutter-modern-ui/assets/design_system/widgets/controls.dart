@@ -80,6 +80,34 @@ class AppChoiceChips<T> extends StatelessWidget {
   }
 }
 
+/// A label above its field (or picker row), read as one thing by screen
+/// readers: "Email, text field", not a stray "Email" followed by an unnamed
+/// field. The label is plain text, so it never floats or shrinks.
+///
+/// The house default. A project that uses Material's floating labels
+/// (`InputDecoration.labelText`) says so in DESIGN.md and skips this.
+class LabeledField extends StatelessWidget {
+  const LabeledField({super.key, required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // The visible label is hidden from screen readers and given to the field
+    // instead. Not MergeSemantics: a field with a button inside it (show
+    // password, clear) would merge two different taps into one.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: AppSpace.xs,
+      children: [
+        ExcludeSemantics(child: Text(label, style: context.textStyles.titleSmall)),
+        Semantics(label: label, child: child),
+      ],
+    );
+  }
+}
+
 /// Small circular progress for buttons and inline loading.
 class AppSpinner extends StatelessWidget {
   const AppSpinner({super.key, this.size = AppSize.spinner, this.color});

@@ -1,5 +1,6 @@
 // Reference composition: a long form. Shows:
-// - sections as cards, labels above fields, helper and error text;
+// - sections as cards, labels above fields and tied to them for screen
+//   readers (LabeledField), helper and error text;
 // - the SaveBar as the LAST CHILD OF THE BODY COLUMN (not
 //   Scaffold.bottomNavigationBar, which the keyboard covers), so it stays
 //   above the keyboard, and inside the safe area plus 12 px, so the button
@@ -8,8 +9,11 @@
 //   they're created, never in build (filling a controller in build calls
 //   setState during build, and only the pre-filled edit form crashes);
 // - money input stored in minor units, accepting Arabic-Indic and Persian
-//   digits and `.`, `,` or `٫` as the decimal separator; LTR inside RTL,
+//   digits, `.`, `,` or `٫` as the decimal separator, and a pasted amount
+//   with thousands separators (`12,480.50`, `1.234,56`); LTR inside RTL,
 //   aligned to the reading start so the digits sit next to the currency;
+// - every field the user fills is saved: nothing is validated and then
+//   thrown away;
 // - a warning-level hint (non-blocking) next to blocking validation;
 // - a few single-choice options (payment terms) as a wrapping chip row with
 //   an inline label, never a scrolling one, so all of them stay visible on a
@@ -27,40 +31,77 @@ import '../design_system/design_system.dart';
 import 'invoice_pdf.dart' show InvoicePdfBudget;
 import 'sample_data.dart';
 
-/// Normalizes Arabic-Indic (٠-٩) and Persian (۰-۹) digits to 0-9, accepts one
-/// decimal separator (`.`, `,` or `٫`, stored as `.`) and at most 2 decimals.
+/// Turns what was typed or pasted into a plain amount: digits, at most one
+/// `.`, at most 2 decimals.
+///
+/// - Arabic-Indic (٠-٩) and Persian (۰-۹) digits become 0-9.
+/// - `.`, `,` and `٫` can each be the decimal separator, so "12,5" typed on a
+///   keyboard whose decimal key is a comma is 12.5.
+/// - A pasted amount keeps its value: in "12,480.50" and "1.234,56" the last
+///   separator is the decimal one and the others group thousands; in
+///   "1,234,567" (one kind, repeated) and in "12,480" (a comma followed by
+///   exactly three digits) they all group thousands. `٬` always does.
+/// - Everything else (currency signs, spaces, letters) is dropped.
 class MoneyInputFormatter extends TextInputFormatter {
   const MoneyInputFormatter();
 
   static const String _arabicIndic = '٠١٢٣٤٥٦٧٨٩';
   static const String _persian = '۰۱۲۳۴۵۶۷۸۹';
+  static const String _separators = '.,٫';
 
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  /// The amount in [input] as plain text: "12,480.50" → "12480.50".
+  static String normalize(String input) {
+    // Digits and separators only, digits as 0-9.
+    final kept = StringBuffer();
+    for (final unit in input.split('')) {
+      final arabic = _arabicIndic.indexOf(unit);
+      final persian = _persian.indexOf(unit);
+      if (arabic >= 0) {
+        kept.write(arabic);
+      } else if (persian >= 0) {
+        kept.write(persian);
+      } else if (_separators.contains(unit) || (unit.compareTo('0') >= 0 && unit.compareTo('9') <= 0)) {
+        kept.write(unit);
+      }
+    }
+    final text = kept.toString();
+
+    // Which separator, if any, is the decimal one.
+    final positions = [
+      for (var i = 0; i < text.length; i++)
+        if (_separators.contains(text[i])) i,
+    ];
+    var decimalAt = positions.isEmpty ? -1 : positions.last;
+    if (positions.length > 1 && positions.every((i) => text[i] == text[positions.first])) {
+      // "1,234,567": one kind, repeated, groups thousands.
+      decimalAt = -1;
+    } else if (positions.length == 1 && text[decimalAt] == ',') {
+      // "12,480": a comma, one to three digits before it (not a leading 0)
+      // and exactly three after. Typing never gets here: the field already
+      // holds "12." after the comma, and a third decimal is dropped below.
+      final after = text.length - decimalAt - 1;
+      if (after == 3 && decimalAt >= 1 && decimalAt <= 3 && text[0] != '0') decimalAt = -1;
+    }
+
     final buffer = StringBuffer();
-    var separator = false;
     var decimals = 0;
-    for (final unit in newValue.text.split('')) {
-      var c = unit;
-      final arabic = _arabicIndic.indexOf(c);
-      if (arabic >= 0) c = '$arabic';
-      final persian = _persian.indexOf(c);
-      if (persian >= 0) c = '$persian';
-
-      if (c == '.' || c == ',' || c == '٫') {
-        if (!separator) {
-          separator = true;
-          buffer.write('.');
-        }
-      } else if (c.codeUnitAt(0) >= 0x30 && c.codeUnitAt(0) <= 0x39) {
-        if (separator) {
+    for (var i = 0; i < text.length; i++) {
+      if (i == decimalAt) {
+        buffer.write('.');
+      } else if (!_separators.contains(text[i])) {
+        if (decimalAt >= 0 && i > decimalAt) {
           if (decimals == 2) continue;
           decimals++;
         }
-        buffer.write(c);
+        buffer.write(text[i]);
       }
     }
-    final text = buffer.toString();
+    return buffer.toString();
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = normalize(newValue.text);
     return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
   }
 }
@@ -107,14 +148,14 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
   // Edit mode fills the controllers here, once, when they're created. A
   // controller filled in build notifies its field during the build.
   late final TextEditingController _customer = TextEditingController(text: widget.initial?.customer);
-  final TextEditingController _email = TextEditingController();
+  late final TextEditingController _email = TextEditingController(text: widget.initial?.email);
   late final TextEditingController _amount = TextEditingController(
     text: switch (widget.initial?.amountCents) {
       final int cents => (cents / 100).toStringAsFixed(2),
       null => null,
     },
   );
-  final TextEditingController _notes = TextEditingController();
+  late final TextEditingController _notes = TextEditingController(text: widget.initial?.notes);
   late DateTime _due = widget.initial?.due ?? sampleToday.add(const Duration(days: 14));
   late final TextEditingController _dueText = TextEditingController(text: formatShortDate(_due));
   bool _submitted = false;
@@ -159,9 +200,24 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
       final initial = widget.initial;
       final customer = _customer.text.trim();
       final amountCents = parseCents(_amount.text) ?? 0;
+      final email = _email.text.trim();
+      final notes = _notes.text.trim();
       final invoice = initial == null
-          ? await widget.repository.create(customer: customer, amountCents: amountCents, due: _due)
-          : await widget.repository.update(initial.id, customer: customer, amountCents: amountCents, due: _due);
+          ? await widget.repository.create(
+              customer: customer,
+              amountCents: amountCents,
+              due: _due,
+              email: email,
+              notes: notes,
+            )
+          : await widget.repository.update(
+              initial.id,
+              customer: customer,
+              amountCents: amountCents,
+              due: _due,
+              email: email,
+              notes: notes,
+            );
       if (!mounted) return;
       AppMessenger.success(
         initial == null ? 'Created ${invoice.number} for ${invoice.customer}' : 'Saved ${invoice.number}',
@@ -208,7 +264,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                       _FormSection(
                         title: 'Customer',
                         children: [
-                          _LabeledField(
+                          LabeledField(
                             label: 'Bill to',
                             child: TextFormField(
                               controller: _customer,
@@ -220,7 +276,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                                   value == null || value.trim().isEmpty ? 'Enter who the invoice is for.' : null,
                             ),
                           ),
-                          _LabeledField(
+                          LabeledField(
                             // Optional fields say so in the label; required
                             // ones carry no mark.
                             label: 'Email (optional)',
@@ -247,7 +303,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                       _FormSection(
                         title: 'Amount',
                         children: [
-                          _LabeledField(
+                          LabeledField(
                             label: 'Total',
                             child: ValueListenableBuilder<TextEditingValue>(
                               valueListenable: _amount,
@@ -294,7 +350,7 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
                             labelOf: (terms) => terms.label,
                             onToggle: (terms) => _setDue(sampleToday.add(Duration(days: terms.days))),
                           ),
-                          _LabeledField(
+                          LabeledField(
                             label: 'Due date',
                             child: TextFormField(
                               controller: _dueText,
@@ -377,26 +433,6 @@ class _FormSection extends StatelessWidget {
           ...children,
         ],
       ),
-    );
-  }
-}
-
-/// Label above the field: floating labels read as dated in most modern UIs.
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: AppSpace.xs,
-      children: [
-        Text(label, style: context.textStyles.titleSmall),
-        child,
-      ],
     );
   }
 }

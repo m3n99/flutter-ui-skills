@@ -219,9 +219,9 @@ class _Gridlines extends StatelessWidget {
       builder: (context, box) => Stack(
         children: [
           for (final tick in ticks)
-            Positioned(
-              left: 0,
-              right: 0,
+            PositionedDirectional(
+              start: 0,
+              end: 0,
               top: (box.maxHeight * (1 - tick / max) - AppStroke.hairline / 2).clamp(0.0, box.maxHeight - AppStroke.hairline),
               child: Container(height: AppStroke.hairline, color: color),
             ),

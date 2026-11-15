@@ -1,5 +1,5 @@
 ---
 type: regex
-pattern: 'few[\s\S]*many|many[\s\S]*few'
+pattern: '^(?=[\s\S]*\bfew\b)(?=[\s\S]*\bmany\b)(?=[\s\S]*\btwo\b)'
 flags: i
 ---

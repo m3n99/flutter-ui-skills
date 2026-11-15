@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  # Pinned, so a new stable can't break the build without a change here. To
+  # move it: change the number, run CI, look at the screenshots. The
+  # material_ui leg needs 3.50 or later. The fonts are pinned in
+  # scripts/fetch_fonts.sh.
+  FLUTTER_VERSION: 3.50.0
+
 jobs:
   plugin:
     name: Plugin manifests and skills
@@ -43,20 +50,34 @@ jobs:
           [ ! -f /tmp/missing ] || status=1
           exit $status
 
+      - name: The reviewer agent and the visual-review guide list the same checks
+        run: |
+          names() { grep -oE '^[0-9]+\. \*\*[^*]+\*\*' "$1"; }
+          agent=$(names plugins/flutter-modern-ui/agents/flutter-ui-reviewer.md)
+          guide=$(sed -n '/^## Per screenshot/,/^## Across the set/p' plugins/flutter-modern-ui/skills/flutter-ui-verify/references/visual-review.md | grep -oE '^[0-9]+\. \*\*[^*]+\*\*')
+          [ "$agent" = "$guide" ] || { echo "::error::the two review lists differ"; diff <(echo "$agent") <(echo "$guide"); exit 1; }
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Examples and widgets follow the non-negotiables (lint_ui.py)
+      - name: The lint finds what it says it finds (ci/lint_selftest.py)
+        run: python ci/lint_selftest.py
+
+      - name: Examples and widgets follow the rules a grep can see (lint_ui.py)
         run: python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/lint_ui.py plugins/flutter-modern-ui/skills/flutter-modern-ui/assets
+
+      - name: Plugin and marketplace versions match, and the changelog has the version
+        run: |
+          version=$(jq -r .version plugins/flutter-modern-ui/.claude-plugin/plugin.json)
+          listed=$(jq -r '.plugins[] | select(.name == "flutter-modern-ui") | .version' .claude-plugin/marketplace.json)
+          [ "$version" = "$listed" ] || { echo "::error::plugin.json says $version, marketplace.json says $listed"; exit 1; }
+          grep -q "^## \[\?$version" CHANGELOG.md || { echo "::error::CHANGELOG.md has no entry for $version"; exit 1; }
 
       - name: The examples' fonts cover every character they show (check_glyphs.py)
         run: |
           python -m pip install --quiet fonttools
-          mkdir -p build/fonts
-          for weight in Regular Bold; do
-            curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-$weight.ttf" -o "build/fonts/IBMPlexSansArabic-$weight.ttf"
-          done
+          bash scripts/fetch_fonts.sh build/fonts Regular Bold
           python plugins/flutter-modern-ui/skills/flutter-ui-verify/scripts/check_glyphs.py \
             --font build/fonts/IBMPlexSansArabic-Regular.ttf --font build/fonts/IBMPlexSansArabic-Bold.ttf \
             plugins/flutter-modern-ui/skills/flutter-modern-ui/assets
@@ -65,6 +86,33 @@ jobs:
         run: |
           for script in plugins/flutter-modern-ui/skills/*/scripts/*.py; do python "$script" --help > /dev/null; done
           python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/copy_design_system.py --list
+
+      - name: The copy scripts stamp, report and update (status, diff, update)
+        run: |
+          copy=plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/copy_design_system.py
+          mkdir -p build/copytest && cd build/copytest
+          printf 'name: app\ndependencies:\n  flutter:\n    sdk: flutter\n' > pubspec.yaml
+          python "../../$copy" --kit all
+          jq -e '.version and (.files | length == 27)' lib/core/design_system/.flutter-modern-ui.json
+          # A file the plugin changed and the user didn't: --update takes it.
+          # A file the user edited: left alone.
+          python - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path("lib/core/design_system")
+          stamp = json.loads((root / ".flutter-modern-ui.json").read_text())
+          (root / "widgets/ltr.dart").write_text("// an older template\n")
+          stamp["files"]["widgets/ltr.dart"]["sha256"] = hashlib.sha256(b"// an older template\n").hexdigest()
+          (root / ".flutter-modern-ui.json").write_text(json.dumps(stamp))
+          with (root / "tokens.dart").open("a") as f:
+              f.write("// the project's own token\n")
+          PY
+          python "../../$copy" --status | tee status.txt
+          grep -q "widgets/ltr.dart: changed in the plugin" status.txt
+          grep -q "tokens.dart: edited by you" status.txt
+          python "../../$copy" --update
+          grep -q "class Ltr" lib/core/design_system/widgets/ltr.dart
+          grep -q "the project's own token" lib/core/design_system/tokens.dart
+          python "../../$copy" --diff tokens.dart | grep -q "the project's own token"
 
   templates:
     # material_ui: what `flutter create` makes from Flutter 3.50 (the copy
@@ -82,6 +130,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - run: flutter --version

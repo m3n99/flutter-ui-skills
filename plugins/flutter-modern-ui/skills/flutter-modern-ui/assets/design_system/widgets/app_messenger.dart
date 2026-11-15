@@ -71,6 +71,13 @@ abstract final class AppMessenger {
   /// [commit] must delete by explicit id, never "the currently open item":
   /// that can change during the Undo window. Keys are always released, so a
   /// database that reuses ids never hides a new item by mistake.
+  ///
+  /// The two failures say different things: when [commit] fails the item is
+  /// back ([failureMessage]); when [commit] worked and [reload] failed, the
+  /// item is gone and only the list is stale ([reloadFailureMessage]).
+  ///
+  /// The screen may close during the Undo window: [commit] still runs (the
+  /// user confirmed the delete), and [pending] may already be disposed.
   static Future<void> deleteWithUndo<K>({
     required PendingDeletes<K> pending,
     required K key,
@@ -79,6 +86,7 @@ abstract final class AppMessenger {
     Future<void> Function()? reload,
     String undoLabel = 'Undo',
     String failureMessage = "Couldn't delete it. It's back in the list; try again.",
+    String reloadFailureMessage = "Deleted, but the list couldn't refresh. Pull down to refresh it.",
   }) async {
     pending.hide(key);
     final controller = _show(message, _Kind.success, actionLabel: undoLabel, onAction: () {});
@@ -90,11 +98,15 @@ abstract final class AppMessenger {
     }
     try {
       await commit();
-      await reload?.call();
     } catch (failure) {
       pending.release(key);
       showFailure(failure, whatFailed: failureMessage);
       return;
+    }
+    try {
+      await reload?.call();
+    } catch (failure) {
+      showFailure(failure, whatFailed: reloadFailureMessage);
     }
     pending.release(key);
   }
@@ -146,8 +158,12 @@ abstract final class AppMessenger {
 
 /// Keys of items hidden while their delete waits for Undo. Lists filter with
 /// [visible] and rebuild when this notifies (ListenableBuilder).
+///
+/// Safe to use after [dispose]: a delete can finish after its screen closed,
+/// and then there is nobody left to notify.
 class PendingDeletes<K> extends ChangeNotifier {
   final Set<K> _keys = <K>{};
+  bool _disposed = false;
 
   bool contains(K key) => _keys.contains(key);
 
@@ -155,10 +171,16 @@ class PendingDeletes<K> extends ChangeNotifier {
       [for (final item in items) if (!_keys.contains(keyOf(item))) item];
 
   void hide(K key) {
-    if (_keys.add(key)) notifyListeners();
+    if (_keys.add(key) && !_disposed) notifyListeners();
   }
 
   void release(K key) {
-    if (_keys.remove(key)) notifyListeners();
+    if (_keys.remove(key) && !_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

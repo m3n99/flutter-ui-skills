@@ -1,6 +1,6 @@
 ---
 description: "The project has a design system. New UI uses its names and adds no second system or raw values."
-tags: [system, smoke]
+tags: [system, smoke, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

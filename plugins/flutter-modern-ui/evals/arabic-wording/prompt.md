@@ -1,6 +1,6 @@
 ---
 description: "Arabic buttons use verbal nouns; counts use all the plural categories."
-tags: [writing, rtl]
+tags: [writing, rtl, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

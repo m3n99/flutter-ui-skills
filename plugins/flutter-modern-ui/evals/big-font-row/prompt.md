@@ -1,6 +1,6 @@
 ---
 description: "Paired rows should stack when the screen is narrow for its text, not clamp the user's font."
-tags: [layout, accessibility]
+tags: [layout, accessibility, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

@@ -94,7 +94,7 @@ DESIGN.md › *Brief* holds the five lines, the named palette, the typeface, and
 
 - **Color:** ink blue-black `#1F2A44` as the seed (`fidelity`), warm paper surfaces (`eyeComfort`), check-green for settled, stamp-red for returned and overdue, pencil grey for details. No second accent.
 - **Type:** IBM Plex Sans Arabic for its figures; amounts in tabular figures; the one big number on the home screen is "due this week" in `displaySmall`.
-- **Shape:** radius 10 / 8, paper-like rather than bubbly. One card per customer; inside it, checks are ruled rows, not cards.
+- **Shape:** card radius 12, controls 8 (`AppRadius.md` / `sm`, one step under the template's 16 / 12), paper-like rather than bubbly. One card per customer; inside it, checks are ruled rows, not cards.
 - **Home:** today's due and overdue list with a call button on each row, not a KPI grid.
 - **Signature:** every total sits under a hairline at the end edge, like a ledger; settled rows carry a small rotated "paid" stamp. Used on the customer card and the month summary only.
 - **Sameness check:** the first draft had an indigo seed, a KPI grid and a greeting header. All three would fit any app, so the seed became ink, the grid became "who to call today", and the greeting went.

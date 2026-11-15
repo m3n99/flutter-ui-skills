@@ -1,6 +1,6 @@
 ---
 description: "Placeholder copy should become words that say what happens, name the thing and say what to do."
-tags: [writing]
+tags: [writing, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

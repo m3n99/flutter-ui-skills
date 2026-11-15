@@ -13,6 +13,8 @@
 7. **Verify by looking**: render every screen across sizes, text scales, themes, platforms and directions, catch overflows with the source line, then open the screenshots and review them like a designer. Printed documents too: sample PDFs, checks for blocks that `pdf` drops or covers without an error, and every page rasterized and reviewed.
 8. **Record** the decisions so the next session stays consistent.
 
+The process is sized to the request. A question ("how should this button be worded?") gets an answer from the relevant reference. One widget gets a build, a lint of the diff and a render of its screen. A screen gets the plan and the full check. Only a first pass or a new app gets every step, and questions already answered in `DESIGN.md` or in the request (motion included) aren't asked again.
+
 ## What's inside
 
 One plugin, five skills and a reviewer agent:
@@ -29,7 +31,7 @@ One plugin, five skills and a reviewer agent:
 ```
 plugins/flutter-modern-ui/
 ├── agents/flutter-ui-reviewer.md
-├── evals/                   9 eval cases for `claude plugin eval` (what the skills must make Claude do)
+├── evals/                   17 eval cases for `claude plugin eval` (what the skills must make Claude do, and when they must stay out)
 └── skills/
     ├── flutter-modern-ui/
     │   ├── SKILL.md
@@ -37,11 +39,12 @@ plugins/flutter-modern-ui/
     │   │                    tokens · theming · layout · adaptive · components · forms · sheets-dialogs ·
     │   │                    data-display · states · messages · rtl-arabic · accessibility ·
     │   │                    anti-patterns (86) · review-checklist
-    │   ├── scripts/         copy_design_system.py (core / extras kits) · lint_ui.py
+    │   ├── scripts/         copy_design_system.py (core / extras kits, --status / --diff / --update) · lint_ui.py
     │   └── assets/
     │       ├── design_system/   drop-in Dart: tokens, density, palette, typography, theme, widgets, motion
-    │       └── examples/        one app built from its own brief: home · records list-detail · create / edit form ·
-    │                            sign-in · settings · app shell · printed invoice (PDF)
+    │       └── examples/        one app built from its own brief: home (English and Arabic) · records list-detail ·
+    │                            create / edit form · sign-in · settings · app shell · its signature as one
+    │                            shared widget · printed invoice (PDF)
     ├── flutter-design-system/   SKILL.md · study-existing-app · study-reference-apps ·
     │                            scripts/ui_inventory.sh · templates/DESIGN.md · templates/UI_PASS.md
     ├── flutter-motion/          SKILL.md · principles · recipes (17 surfaces) · testing · packages
@@ -66,7 +69,11 @@ No third-party packages. Copy it kit by kit from the project root:
 ```bash
 python3 <flutter-modern-ui>/scripts/copy_design_system.py                 # core kit → lib/core/design_system
 python3 <flutter-modern-ui>/scripts/copy_design_system.py --kit extras    # motion, adaptive shell, KPI tiles
+python3 <flutter-modern-ui>/scripts/copy_design_system.py --status        # later: what the plugin changed since you copied
+python3 <flutter-modern-ui>/scripts/copy_design_system.py --update        # take the fixes to files you haven't edited
 ```
+
+The copy is yours to edit, so it is never overwritten silently. Each copy records the plugin version and a hash per file in `.flutter-modern-ui.json`; `--status` tells your edits from the plugin's changes, `--diff` shows a file against the current template, and `--update` only touches files you left alone.
 
 The **core** kit is what every app needs (tokens, theme, motion level, palette, cards, pills, `MetaItem`, empty states, skeletons, sheets and pickers, chips, `SaveBar`, messages, `Ltr`); the **extras** add motion, `AdaptiveShell` and `KpiTile` when the app animates, runs on tablets or desktop, or has a dashboard. The script keeps files you've changed, writes the barrel, and in `material_ui` projects (Flutter 3.50+) imports `material_ui` / `cupertino_ui`.
 
@@ -93,6 +100,12 @@ Phones and tablets render under the system bars a device draws (status bar with 
 ```
 [360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): SafeArea(top: false) around it, plus 8 px or more  ← lib/features/bills/bill_form.dart:120
 ```
+
+Content under a bar is a defect anywhere; content inside the safe area but closer than 8 px is this plugin's house rule, labeled as such in the failure line, and `UiConfig.systemBarGap` changes it.
+
+While iterating, render less: `--plain-name "layout: <case>"` for one screen, or `--dart-define=QUICK=true` for every screen in five variants instead of the whole matrix. Run the whole matrix before calling a pass done.
+
+**What a green run doesn't tell you.** The system-bar check sees text and tap targets, not images or painted charts; the contrast test checks theme color pairs, not pixels; the lint matches patterns and can't follow a value through a variable. `flutter-ui-verify/references/harness.md` › *What the checks do not see* and the docstring of `lint_ui.py` list the gaps. That is why the last step is always opening the screenshots.
 
 Each case also gets a contact sheet (`screenshots/contact_sheets/<case>.png`, every variant side by side), so a pass is reviewed a screen at a time. Two scripts cover what tests can't see:
 
@@ -123,7 +136,7 @@ test/pdf/out/invoice_ar_longest.pdf (1 page)
 
 ## Requirements
 
-- Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on the current stable release, both with the `material_ui` package that `flutter create` adds from 3.50 and with `package:flutter/material.dart`. The skills tell Claude how to adapt to older SDKs.
+- Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on a pinned release (3.50.0 now; `FLUTTER_VERSION` in `.github/workflows/ci.yml`), both with the `material_ui` package that `flutter create` adds from 3.50 and with `package:flutter/material.dart`. The skills tell Claude how to adapt to older SDKs.
 - The scripts need Python 3.9+ (`check_glyphs.py` also needs `pip install fonttools`).
 - The printed-document example and its harness need the [`pdf`](https://pub.dev/packages/pdf) package; rasterizing needs Python with PyMuPDF (`pip install pymupdf`) or poppler's `pdftoppm`.
 - The skills themselves work with any Flutter project: in an app with its own design system, Claude maps these patterns onto your names instead of copying the templates.
@@ -181,6 +194,13 @@ Tips:
 - Answer the intake questions (platforms, RTL, the look, emoji, motion) once; they land in `DESIGN.md` and later sessions read them. The look (cards, plain rows or rich) matters most: "basic" in a spec rarely means plain rows. For motion you pick a level (none, soft or expressive) and the places, each shown with a small example.
 - Commit `DESIGN.md`. It's how the tenth screen ends up looking like the first.
 - The skills change presentation only. Your state management, routing and DI stay as they are.
+
+## What this repo has and hasn't shown
+
+- **Shown:** the templates compile, pass their own harness in both Material modes and are linted by their own linter on every PR; the harness's checks have tests for what they must catch and what they must leave alone; each rule in the changelog traces to an entry in a feedback log from a real app.
+- **Field base:** two Arabic apps on Android and Windows. iOS and Cupertino, web, go_router and Riverpod have snippets and a few tests, not field use.
+- **Not shown yet:** a published with-and-without-plugin eval baseline. The suite is in `plugins/flutter-modern-ui/evals/` and `CONTRIBUTING.md` says how to run and record it; results aren't committed until someone has run them.
+- **The design layer** (identity, UX, screen types, wording) is newer than the engineering layer and has had less use. Treat its advice as defaults to argue with; `DESIGN.md` overrides it.
 
 ## Contributing
 

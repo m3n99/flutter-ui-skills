@@ -6,19 +6,38 @@
     python3 lint_ui.py --diff               # only lines changed since HEAD (plus new files)
     python3 lint_ui.py --diff origin/main   # only lines this branch changed
 
+    python3 lint_ui.py --tokens Gaps Corners   # the project's own token classes
+    python3 lint_ui.py --skip 'lib/ui/colors.dart'   # one more token file
+
 Flags raw colors, font sizes, spacing, sizes, radii, opacities and durations,
 token arithmetic (`AppSpace.xs + 2`), and left/right APIs where start/end
-exist. It reads one line at a time, so it misses what spans lines; it's a
-cheap first pass before the review, not a replacement for it.
+exist. A call is read whole, so a raw value on its own line inside
+`EdgeInsets.only(` or `Icon(` is found.
 
-The files that define the tokens and the theme (tokens, theme, palette,
-typography, density) and generated files are skipped. Silence a deliberate
-exception with a trailing `// lint-ui: ok` (say why) on the line.
+What it does not see (the review and the screenshots do):
+- a value behind a nested call: in `Container(padding: EdgeInsets.all(x),
+  width: 40)` the scan of `Container(` stops at the first `)`;
+- values passed through variables, constants or helper functions;
+- raw numbers in places it has no rule for (`Offset`, `Transform`,
+  `BoxConstraints.tightFor`, custom painters);
+- token arithmetic on a class whose name gives no hint that it holds tokens:
+  it knows `App*` and names containing Space, Gap, Pad, Inset, Radius,
+  Corner, Size, Dimen or Stroke; name others with --tokens.
+A clean run means none of the patterns below matched, not that the screen
+follows the design system.
+
+Skipped: the files that define the tokens and the theme, by exact name
+(`tokens.dart`, `app_theme.dart`, `color_palette.dart`: the name ends with
+tokens, theme, palette, typography or density), generated files, and
+anything matching --skip. `theme_picker_screen.dart` is a screen and is
+linted. Silence a deliberate exception with a trailing `// lint-ui: ok`
+(say why) on the line of the value.
 
 Exit codes: 0 clean, 1 findings, 2 error.
 """
 
 import argparse
+import fnmatch
 import re
 import subprocess
 import sys
@@ -36,7 +55,6 @@ RULES = [
     ),
     ("raw-size", r"\b(?:SizedBox|Container|Icon)\([^)]*?\b(?:width|height|size):\s*[1-9]", "raw size: use a token (AppSize, AppSpace, AppIcon)"),
     ("raw-size", r"\b(?:max|min)(?:Width|Height):\s*[1-9]", "raw constraint: use a token (AppSize)"),
-    ("token-math", r"\bApp(?:Space|Radius|Size|Stroke)\.\w+\s*[-+]\s*\d", "token ± number: use the next token step, or add a token"),
     ("raw-radius", r"\b(?:BorderRadius|Radius)\.circular\(\s*[1-9]", "raw radius: use AppRadius"),
     ("raw-opacity", r"\.withValues\(\s*alpha:\s*(?:0?\.\d+|1\.0\b)", "raw opacity: use AppOpacity"),
     ("raw-opacity", r"\.withOpacity\(", "withOpacity is deprecated: withValues(alpha: AppOpacity...)"),
@@ -49,28 +67,106 @@ RULES = [
 ]
 COMPILED = [(rule, re.compile(pattern), message) for rule, pattern, message in RULES]
 
-SKIP_NAME = re.compile(r"(tokens|theme|palette|typography|density)[^/]*\.dart$|\.(g|freezed|gr|mocks)\.dart$")
+# Token classes by name: the templates' App* classes, and names that say what
+# they hold (Gaps, Insets, Corners, Dimens). --tokens adds the rest.
+TOKEN_HINT = r"App[A-Z]\w*|(?:[A-Z]\w*)?(?:Space|Spacing|Gap|Pad|Inset|Radius|Radii|Corner|Size|Dimen|Stroke)\w*"
+TOKEN_MATH_MESSAGE = "token ± number: use the next token step, or add a token"
+
+# Token and theme files: the name ends with one of these words.
+SKIP_NAME = re.compile(r"(?:^|[/_])(?:tokens|theme|palette|typography|density)\.dart$|\.(g|freezed|gr|mocks)\.dart$")
 SUPPRESS = "lint-ui: ok"
 
 
-def skipped(path):
-    return bool(SKIP_NAME.search(path.as_posix()))
+def token_math_rule(extra=()):
+    names = "|".join([TOKEN_HINT, *(re.escape(name) for name in extra)])
+    return ("token-math", re.compile(rf"\b(?:{names})\.\w+\s*[-+]\s*\d"), TOKEN_MATH_MESSAGE)
 
 
-def lint_line(path, number, line):
-    stripped = line.strip()
-    if not stripped or stripped.startswith(("//", "*", "/*")) or SUPPRESS in line:
-        return []
-    return [(path, number, rule, message, stripped) for rule, pattern, message in COMPILED if pattern.search(line)]
+def skipped(path, extra=()):
+    name = path.as_posix()
+    return bool(SKIP_NAME.search(name)) or any(fnmatch.fnmatch(name, pattern) for pattern in extra)
 
 
-def lint_files(paths):
+def blank_comments(text):
+    """The text with comments replaced by spaces (line numbers and columns
+    stay), so a rule never matches inside one and a `)` in a comment never
+    ends a call. Strings are kept: a `//` inside quotes is not a comment."""
+    out = []
+    i, n = 0, len(text)
+    quote = None
+    while i < n:
+        c = text[i]
+        if quote:
+            out.append(c)
+            if c == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == quote or c == "\n":
+                quote = None
+            i += 1
+        elif c in "'\"":
+            quote = c
+            out.append(c)
+            i += 1
+        elif text.startswith("//", i):
+            end = text.find("\n", i)
+            end = n if end < 0 else end
+            out.append(" " * (end - i))
+            i = end
+        elif text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            end = n if end < 0 else end + 2
+            out.append("".join(ch if ch == "\n" else " " for ch in text[i:end]))
+            i = end
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
+def lint_text(path, text, rules, only_lines=None):
+    """Findings in one file. A match is reported on the line where it ends:
+    the line of the raw value. [only_lines] keeps the findings on those lines
+    (--diff)."""
+    lines = text.splitlines()
+    code = blank_comments(text)
+    starts = [0]
+    for line in code.splitlines(keepends=True):
+        starts.append(starts[-1] + len(line))
+
+    def line_of(offset):
+        low, high = 0, len(starts) - 1
+        while low < high:
+            mid = (low + high + 1) // 2
+            if starts[mid] <= offset:
+                low = mid
+            else:
+                high = mid - 1
+        return low + 1
+
+    seen, findings = set(), []
+    for rule, pattern, message in rules:
+        for match in pattern.finditer(code):
+            number = line_of(max(match.start(), match.end() - 1))
+            if number > len(lines) or (number, rule) in seen:
+                continue
+            first = line_of(match.start())
+            if any(SUPPRESS in lines[n - 1] for n in range(first, number + 1)):
+                continue
+            if only_lines is not None and number not in only_lines:
+                continue
+            seen.add((number, rule))
+            findings.append((path, number, rule, message, lines[number - 1].strip()))
+    return sorted(findings, key=lambda finding: finding[1])
+
+
+def lint_files(paths, rules, skip=()):
     findings = []
     for path in paths:
-        if skipped(path):
+        if skipped(path, skip):
             continue
-        for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1):
-            findings += lint_line(path, number, line)
+        findings += lint_text(path, path.read_text(encoding="utf-8", errors="replace"), rules)
     return findings
 
 
@@ -89,8 +185,10 @@ def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
 
 
-def lint_diff(base):
-    findings = []
+def lint_diff(base, rules, skip=()):
+    """Findings on the lines changed since [base]. Each changed file is read
+    whole from the working tree, so a call that spans lines is still seen."""
+    changed = {}
     path = None
     number = 0
     for line in git("diff", "-U0", base, "--", "*.dart").splitlines():
@@ -101,21 +199,33 @@ def lint_diff(base):
             match = re.search(r"\+(\d+)", line)
             number = int(match.group(1)) if match else 0
         elif line.startswith("+") and path is not None:
-            if not skipped(path):
-                findings += lint_line(path, number, line[1:])
+            changed.setdefault(path, set()).add(number)
             number += 1
+    root = Path(git("rev-parse", "--show-toplevel").strip())
+    findings = []
+    for path, numbers in changed.items():
+        file = root / path
+        if skipped(path, skip) or not file.is_file():
+            continue
+        findings += lint_text(path, file.read_text(encoding="utf-8", errors="replace"), rules, only_lines=numbers)
     untracked = [Path(name) for name in git("ls-files", "--others", "--exclude-standard", "--", "*.dart").splitlines()]
-    return findings + lint_files(untracked)
+    return findings + lint_files(untracked, rules, skip)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Grep-level check of the UI non-negotiables.")
     parser.add_argument("paths", nargs="*", help="files or folders (default: lib)")
     parser.add_argument("--diff", nargs="?", const="HEAD", metavar="BASE", help="only lines changed since BASE (default HEAD)")
+    parser.add_argument("--tokens", nargs="+", default=[], metavar="CLASS", help="the project's token classes, for the token ± number rule (App* and names like Gaps, Insets, Corners are known)")
+    parser.add_argument("--skip", action="append", default=[], metavar="GLOB", help="also skip files matching this path glob (repeatable)")
     args = parser.parse_args()
+    rules = [*COMPILED, token_math_rule(args.tokens)]
 
     try:
-        findings = lint_diff(args.diff) if args.diff else lint_files(dart_files(args.paths or ["lib"]))
+        if args.diff:
+            findings = lint_diff(args.diff, rules, args.skip)
+        else:
+            findings = lint_files(dart_files(args.paths or ["lib"]), rules, args.skip)
     except (subprocess.CalledProcessError, FileNotFoundError) as error:
         print(f"git failed: {error}", file=sys.stderr)
         return 2

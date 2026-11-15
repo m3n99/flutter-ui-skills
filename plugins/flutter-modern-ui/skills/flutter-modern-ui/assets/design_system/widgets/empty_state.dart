@@ -56,8 +56,8 @@ class EmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 88,
-                height: 88,
+                width: AppSize.emptyStateBadge,
+                height: AppSize.emptyStateBadge,
                 decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
                 child: Icon(icon, size: AppIconSize.emptyState, color: onTint),
               ),

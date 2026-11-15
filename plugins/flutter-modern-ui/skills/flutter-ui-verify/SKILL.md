@@ -19,7 +19,17 @@ The harness lives in `assets/harness/` and runs on plain `flutter_test`: no devi
 | `visual_test.dart` | `test/ui/` | screenshots and one contact sheet per case to `test/ui/screenshots/` (only with `VISUAL`) |
 | `design_system_test.dart` | `test/ui/` | behaviour of the shared widgets and tones (only if the project uses them) |
 
-Copy them with `python3 <this skill>/scripts/copy_harness.py`, run from the project root (`--pdf` adds the PDF harness, `--design-system-test` the shared-widget tests). It never overwrites your `ui_cases.dart`, and in `material_ui` projects (Flutter 3.50+) it rewrites the Material imports.
+Copy them with `python3 <this skill>/scripts/copy_harness.py`, run from the project root (`--pdf` adds the PDF harness, `--design-system-test` the shared-widget tests). It never overwrites your `ui_cases.dart`, in `material_ui` projects (Flutter 3.50+) it rewrites the Material imports, and it records the plugin version it came from in `test/ui/.flutter-modern-ui.json`: when that is older than the plugin, run it again to update the harness.
+
+## Size the run to the change
+
+| The change | Run |
+|---|---|
+| One widget or one screen, while iterating | `flutter analyze`, that screen's case over the whole matrix (`--plain-name "layout: <case>"`) or every case with `--dart-define=QUICK=true`, then its contact sheet |
+| A pass over several screens, a theme or token change, a first pass | everything below |
+| Before saying UI work is done | the whole matrix at least once, and the screenshots opened |
+
+The checks are narrower than "the UI works": `references/harness.md` › What the checks do not see lists what each one misses. Report what ran, not "verified".
 
 ## Workflow
 
@@ -70,4 +80,4 @@ A fixed `pw.Page` drops what doesn't fit without an error (the test stays green)
 - Deterministic: fixed "today", no network images (assets or placeholders), no timers left pending.
 - Screenshots are for looking, not pixel-diffing; don't commit them as golden baselines unless the team wants golden tests (font rendering differs between OSes).
 - Emoji show as boxes in `flutter_test` (no emoji font); platform views (maps, web views) render empty. Judge those on a device.
-- A failing layout test is a bug in the UI, not in the test: fix the layout, don't loosen the matrix. Trim the matrix only to platforms or directions the app doesn't ship.
+- A failing layout test is a bug in the UI, not in the test: fix the layout, don't loosen the matrix. Trim the matrix only to platforms, directions or size-and-platform combinations (`only`) the app doesn't ship. The one line that is a house rule rather than a defect is the system-bar gap, and it is labeled as such.

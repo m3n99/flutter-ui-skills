@@ -81,8 +81,9 @@ class StatusPill extends StatelessWidget {
   }
 }
 
-/// Icon inside a softly tinted circle: the quickest way to make list rows
-/// look designed.
+/// Icon inside a softly tinted circle. For rows that differ in kind or in
+/// status, where the icon tells them apart; in front of every row of one
+/// kind it says nothing (references/components.md › Badges).
 class IconBadge extends StatelessWidget {
   const IconBadge({super.key, required this.icon, this.color, this.size = AppSize.iconBadge});
 

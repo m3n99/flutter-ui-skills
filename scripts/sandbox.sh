@@ -14,6 +14,8 @@
 #                       rewrite every Material import
 # --framework-material  the app still imports package:flutter/material.dart
 # Default: whatever this Flutter's `flutter create` produces.
+#
+# CI runs it on the Flutter version pinned in .github/workflows/ci.yml.
 
 set -euo pipefail
 
@@ -62,11 +64,9 @@ import 'examples/example_app.dart';
 void main() => runApp(const ExampleApp());
 DART
 
-# A font with Latin and Arabic glyphs, so screenshots show real text in both directions.
-FONT_BASE="https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansarabic"
-for weight in Regular Medium SemiBold Bold; do
-  curl -fsSL "$FONT_BASE/IBMPlexSansArabic-$weight.ttf" -o "assets/fonts/IBMPlexSansArabic-$weight.ttf"
-done
+# A font with Latin and Arabic glyphs, so screenshots show real text in both
+# directions (pinned in scripts/fetch_fonts.sh).
+bash "$ROOT/scripts/fetch_fonts.sh" assets/fonts
 cat >> pubspec.yaml <<'YAML'
   fonts:
     - family: IBM Plex Sans Arabic

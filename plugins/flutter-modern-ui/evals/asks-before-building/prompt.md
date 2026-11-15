@@ -1,6 +1,6 @@
 ---
 description: "A new app with a spec that says basic. The skill should ask about the look and the motion level, with examples, and propose a brief, before writing a screen."
-tags: [intake, smoke]
+tags: [intake, smoke, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

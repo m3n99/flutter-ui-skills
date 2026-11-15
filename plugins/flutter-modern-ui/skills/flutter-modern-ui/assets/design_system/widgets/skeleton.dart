@@ -6,8 +6,9 @@ import '../context_ext.dart';
 import '../tokens.dart';
 
 /// Animated shimmer over skeleton shapes. No external package.
-/// Static when the platform asks for reduced motion; the sweep follows the
-/// reading direction.
+/// Static when the platform asks for reduced motion or the motion level is
+/// none: the ticker stops too, so a static skeleton schedules no frames. The
+/// sweep follows the reading direction.
 ///
 /// Tests: the shimmer repeats forever, so use `pump(duration)` instead of
 /// `pumpAndSettle()` while a skeleton is on screen.
@@ -24,7 +25,18 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: AppDurations.shimmer,
-  )..repeat();
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Runs again when reduced motion or the motion level changes.
+    if (context.reduceMotion) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
 
   @override
   void dispose() {

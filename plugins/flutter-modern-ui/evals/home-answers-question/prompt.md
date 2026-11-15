@@ -1,6 +1,6 @@
 ---
 description: "The home screen should lead with the answer to the user's daily question and its action, not a greeting or a grid of numbers."
-tags: [ux, smoke]
+tags: [ux, smoke, reply]
 max_turns: 20
 timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]

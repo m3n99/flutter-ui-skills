@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.5.0
+
+From an outside assessment of 1.4.0 (2026-11-15). It rated the harness and the Flutter knowledge highly and named three weaknesses: a process with no small size, a design layer its own example didn't live up to, and checks that claimed more than they covered. This release takes its eight recommendations in order.
+
+### A process sized to the request
+- **The hub opens with "Size the work first"**: a question gets an answer from the relevant reference; one widget gets a build, a lint of the diff and a render of its screen; a screen gets the plan and the full check; only a first pass gets every step. Step 0 is no longer "never skip" for a wording question, and the baseline run is for screen-sized changes.
+- **Motion is asked unless it is answered.** DESIGN.md › Motion, or a request that states the level and the places, is an answer and isn't asked again. A hint ("basic", "lively") still isn't. An unattended run takes soft, says so and records it as a default to confirm, instead of asking nobody.
+- **The hub's description** names what the skill is for and what it is not for (Flutter work with no interface), in place of "ANY … however small".
+- **A quick run**: `--dart-define=QUICK=true` renders the five shot variants per case instead of the whole matrix; `UiConfig.only` drops combinations the app never meets. `flutter-ui-verify` has a *Size the run* table.
+
+### Template defects
+- **`MoneyInputFormatter`** treated the first comma as the decimal separator: pasting `12,480.50`, the format the app displays, gave `12.48`. It now keeps the value of pasted amounts (`12,480.50`, `1.234,56`, `1,234,567`) and still takes `12,5` as 12.5.
+- **`Shimmer`** kept its ticker running under reduced motion and at `MotionLevel.none`; it stops now.
+- **Sign-in**: Done on the keyboard called the auth function outside `SubmitButton`'s guard, so the button and the keyboard could each start an attempt. One guard covers both.
+- **`SubmitButton`** lost its name for screen readers while busy (opacity 0 drops semantics); it keeps it.
+- **`deleteWithUndo`**: a failed refresh after a successful delete was reported as a failed delete; it has its own message. `PendingDeletes` is safe to use after the screen that owned it has closed.
+- **`LabeledField`** (core kit): a label above its field, tied to it for screen readers. The examples used a sibling `Text`.
+- `ShakeOnChange` and `PopOnChange` take their durations through `context.motion` like everything else.
+- Two raw values the linter had been missing in the templates (`EmptyState`'s 88 px circle, a `Positioned(left:, right:)`).
+
+### Checks that say what they cover
+- **`lint_ui.py`** reads a call whole, so a raw value on its own line is found; skips token files by exact name, so `theme_picker_screen.dart` is linted; catches token arithmetic on a project's own classes (`Gaps.s8 + 3`, `--tokens`); `--skip` for other token files. Its docstring lists what it can't see. `ci/lint_selftest.py` tests it.
+- **System bars**: under a bar is a defect; inside the safe area but closer than the gap is the house rule, and the failure line now says so (`systemBarGap: 0` reports overlap only). Cupertino bars are exempt like Material ones. An endless list is skipped, not asserted on; reverse lists are skipped; long lazy lists get 20 jumps.
+- **Dark variants** set the device brightness as well as the theme. **Sheets** are checked in every direction, and the checks moved into the harness (`sheetProblems`) so they can be tested.
+- **`harness.md` › What the checks do not see** lists the gaps of the system-bar check, the matrix, the sheet test and the contrast test.
+- **Repo tests** (`ci/harness_test.dart`) show the harness failing on an overflow (with its source line), a stuck picker, a missing primary action and a button under the keyboard.
+
+### The example earns its claims
+- **The signature is one shared widget** (`examples/ledger.dart`: `Ledger`, `LedgerLine`, `LedgerMark`) in three named places: the home card, an invoice's details, the sign-in mark.
+- **Real Arabic on the home screen** (`home_strings.dart`): the dual and the other plural forms, verbal nouns on the button, Levantine month names, and the Arabic type scale in right-to-left. The RTL screenshots were English mirrored.
+- **Delete moved off the cards** into a row menu; it was the most prominent control on every card.
+- **Nothing tappable does nothing**: "Mark as paid" marks the invoice; the "Open invoices" tile, "See all" and the due-soon rows open the Invoices tab; the form saves the email and the notes it validates; settings names the real number of invoices and its "Delete all" deletes them; a change on one tab reaches the others.
+- The due-soon rows lost their icon badges (a tinted circle in front of rows of one kind is on `identity.md`'s list of defaults).
+
+### Drift and taste
+- `recipes.md` gave entrance values no motion level has; the numbers now live in `AppMotion` only.
+- The smell test, the reviewer and `components.md` no longer recommend what `identity.md` lists as tells (KPI rows and icon badges as a "signature", badges on every row). `identity.md`'s example radius is on the token scale.
+- The hub's rules mark three **house defaults** (flat cards, the 8 px on top of the safe area, the brief's form); `DESIGN.md` overrides them. Floating labels and `ElevatedButton` are described as defaults, not as "dated".
+- The reviewer agent and `visual-review.md` list the same fourteen checks; CI compares them.
+
+### Evals
+- Eight new cases (17 in all): two that must load no skill (a React question, a build failure), a one-line question that must not start the intake, a stated motion level that must not be asked again, one each for the verify, motion and audit skills, and one that writes a screen into a fixture project and grades the file.
+- Each `skill-fired` grader names the skill the request should load, where it used to accept any of the five. Two order-dependent regexes are order-independent.
+- **Not done here:** the new cases have not been run (a run bills Claude sessions), and no with-and-without baseline is published yet. `CONTRIBUTING.md` says how to run and record one.
+
+### Copies that can be updated
+- `copy_design_system.py` records the plugin version and a hash per file (`.flutter-modern-ui.json`). `--status` tells your edits from the plugin's changes, `--diff` shows a file against the current template, `--update` takes the fixes to files you haven't edited. The harness copy records its version too.
+
+### CI
+- Flutter is pinned (3.50.0) and the fonts come from a pinned commit of google/fonts (`scripts/fetch_fonts.sh`). New steps: the lint self-test, the copy script's status and update, matching versions in the two manifests and the changelog, the two review lists in step.
+
 ## 1.4.0
 
 A review of the whole plugin against Anthropic's own design and skill-authoring guidance. The engineering side was strong; the design side started every app from the same presets, and there was little on flows, screen types or wording.

@@ -1,6 +1,6 @@
 ---
 name: flutter-motion
-description: Add or review purposeful animation in Flutter apps — card entrances, list insert/remove/reorder, page and tab transitions, hero/container transforms, button progress and success, counters, progress bars and charts that move from old to new values, sheets, skeleton shimmer, micro-interactions, scroll effects, desktop hover. Use when the user asks for animations, transitions, "make it feel alive/smooth", or when motion feels janky, missing or overdone. Asks how much motion (none, soft or expressive) and where before building, with a small example of each.
+description: Add or review purposeful animation in Flutter apps — card entrances, list insert/remove/reorder, page and tab transitions, hero/container transforms, button progress and success, counters, progress bars and charts that move from old to new values, sheets, skeleton shimmer, micro-interactions, scroll effects, desktop hover. Use when the user asks for animations, transitions, "make it feel alive/smooth", or when motion feels janky, missing or overdone. Asks how much motion (none, soft or expressive) and where before building, with a small example of each, unless DESIGN.md or the request already says.
 ---
 
 # Flutter Motion
@@ -11,7 +11,7 @@ Shared pieces live in the design system (`../flutter-modern-ui/assets/design_sys
 
 ## Workflow
 
-1. **Ask how much and where, before building.** Unless DESIGN.md already records it, ask the two-part question in `../flutter-modern-ui/references/intake.md` › Motion: the level (**none**, **soft**, **expressive**) with its small example, and the places, each with its soft and expressive version. Ask even when the spec or the customer hinted at motion; offer the hint as the recommended option. Record the answer in DESIGN.md (*Motion*) and set `AppThemeConfig.motion`. If nobody can answer yet: soft, on cards and lists on load, list changes, numbers, buttons and loading, and say so.
+1. **Ask how much and where, before building, unless it is answered.** Answered means DESIGN.md › Motion records the level and the places, or the request states both; then use it and don't ask again. Otherwise ask the two-part question in `../flutter-modern-ui/references/intake.md` › Motion: the level (**none**, **soft**, **expressive**) with its small example, and the places, each with its soft and expressive version. A hint from the spec or the customer ("basic", "lively") is not an answer: offer it as the recommended option. Record the answer in DESIGN.md (*Motion*) and set `AppThemeConfig.motion`. If nobody is there to answer (an unattended run): soft, on cards and lists on load, list changes, numbers, buttons and loading; say so, and record it as a default to confirm.
 2. **Inventory what exists**: `rg -n "AnimationController|Animated[A-Z]\w+\(|Hero\(|PageRouteBuilder|TweenAnimationBuilder|flutter_animate|Lottie|Rive" lib`. Reuse existing helpers; remove one-off duplicates when touching them.
 3. **Pick one recipe per surface** from `references/recipes.md` and route every screen through it:
 

@@ -9,7 +9,8 @@
 // - each language written in its own script;
 // - narrow screens (big fonts, small phones): the current value moves under
 //   the title instead of squeezing it;
-// - typed confirmation for the one action that can't be undone;
+// - typed confirmation for the one action that can't be undone, naming how
+//   many invoices it removes (the real count, from the repository);
 // - rows inside a card use the concentric radius; the page is capped at form
 //   width on wide windows and ends clear of the navigation bar.
 //
@@ -18,6 +19,7 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/design_system.dart';
+import 'sample_data.dart';
 
 enum _Terms {
   onReceipt('Due on receipt'),
@@ -61,8 +63,13 @@ extension on ThemeMode {
       };
 }
 
+/// "1 invoice", "12 invoices": a count always sits next to its noun.
+String _invoices(int count) => count == 1 ? '1 invoice' : '$count invoices';
+
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, required this.repository});
+
+  final InvoiceRepository repository;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -75,6 +82,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _overdueReminders = false;
   ThemeMode _theme = ThemeMode.system;
   _Language _language = _Language.english;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.repository.changes.addListener(_recount);
+  }
+
+  @override
+  void dispose() {
+    widget.repository.changes.removeListener(_recount);
+    super.dispose();
+  }
+
+  /// The texts that name the number of invoices follow the data.
+  void _recount() {
+    if (mounted) setState(() {});
+  }
 
   Future<void> _pick<T>({
     required String title,
@@ -97,13 +121,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _deleteAll() async {
-    final confirmed = await showDialog<bool>(context: context, builder: (context) => const _DeleteAllDialog());
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => _DeleteAllDialog(count: widget.repository.count),
+    );
     if (confirmed != true || !mounted) return;
-    AppMessenger.success('Deleted all invoices');
+    try {
+      final removed = await widget.repository.deleteAll();
+      AppMessenger.success('Deleted ${_invoices(removed)}');
+    } catch (failure) {
+      AppMessenger.showFailure(failure, whatFailed: "Couldn't delete the invoices. Nothing was removed; try again.");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final count = widget.repository.count;
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -210,7 +244,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: Icons.download_outlined,
                             title: 'Export invoices',
                             subtitle: 'A spreadsheet of every invoice and payment',
-                            onTap: () => AppMessenger.success('Exported 12 invoices to Downloads'),
+                            // Nothing to export: the row is off, not a tap
+                            // that reports an empty file.
+                            onTap: count == 0 ? null : () => AppMessenger.success('Exported ${_invoices(count)} to Downloads'),
                           ),
                         ],
                       ),
@@ -222,9 +258,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _ActionRow(
                             icon: Icons.delete_forever_outlined,
                             title: 'Delete all invoices',
-                            subtitle: "Removes every invoice from this device. Can't be undone.",
+                            subtitle: count == 0
+                                ? 'There are no invoices on this device.'
+                                : "Removes ${_invoices(count)} from this device. Can't be undone.",
                             destructive: true,
-                            onTap: _deleteAll,
+                            onTap: count == 0 ? null : _deleteAll,
                           ),
                         ],
                       ),
@@ -359,7 +397,9 @@ class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+
+  /// Null turns the row off (nothing to act on).
+  final VoidCallback? onTap;
   final bool destructive;
 
   @override
@@ -369,6 +409,7 @@ class _ActionRow extends StatelessWidget {
     return ListTile(
       shape: _rowShape(),
       contentPadding: _rowPadding,
+      enabled: onTap != null,
       iconColor: color,
       textColor: color,
       leading: Icon(icon),
@@ -382,7 +423,9 @@ class _ActionRow extends StatelessWidget {
 /// Deleting everything can't be undone, so the button stays off until the
 /// word is typed (references/forms.md › Settings pages).
 class _DeleteAllDialog extends StatefulWidget {
-  const _DeleteAllDialog();
+  const _DeleteAllDialog({required this.count});
+
+  final int count;
 
   @override
   State<_DeleteAllDialog> createState() => _DeleteAllDialogState();
@@ -416,7 +459,7 @@ class _DeleteAllDialogState extends State<_DeleteAllDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: AppSpace.md,
         children: [
-          const Text("This removes 12 invoices and their payments from this device. It can't be undone."),
+          Text("This removes ${_invoices(widget.count)} and their payments from this device. It can't be undone."),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: AppSpace.xs,

@@ -4,7 +4,7 @@ Reference: `assets/examples/record_form_screen.dart`.
 
 ## Field anatomy
 
-- **Label above the field** (titleSmall), field below, helper or error text under it. Floating labels read as dated in most modern designs.
+- **Label above the field** (titleSmall), field below, helper or error text under it: `LabeledField`, which also ties the label to the field for screen readers (a sibling `Text` is read as a stray word, and the field as unnamed). This is the house default; a project on Material's floating labels (`InputDecoration.labelText`) keeps them and says so in DESIGN.md.
 - **Optional fields say so in the label**: "Email (optional)", «البريد (اختياري)»; required fields carry no mark. One helper (`optional(label)`) keeps the wording the same everywhere.
 - Field gap 16, section gap 16–24 (sections as `AppCard`s with a titleMedium heading, or `SheetSection`s inside sheets).
 - Always set `keyboardType`, `textInputAction` (next / done / search), `autofillHints`, `textCapitalization` for names and sentences, and `obscureText` + a visibility toggle for passwords.
@@ -29,7 +29,8 @@ Reference: `assets/examples/record_form_screen.dart`.
 - Input: `keyboardType: TextInputType.numberWithOptions(decimal: true)`, an input formatter that:
   - normalizes Arabic-Indic `٠١٢٣٤٥٦٧٨٩` and Persian `۰۱۲۳۴۵۶۷۸۹` digits to `0-9`;
   - accepts one decimal separator (`.`, `,` or Arabic `٫`) and at most the currency's decimals;
-  - drops everything else (`MoneyInputFormatter` in the example).
+  - keeps the value of a pasted amount: in `12,480.50` and `1.234,56` the last separator is the decimal one and the others group thousands. Treating the first comma as the decimal turns the app's own `12,480.50` into `12.48`;
+  - drops everything else (`MoneyInputFormatter` in the example, with its cases in the repo's tests).
 - Display: `intl` `NumberFormat.currency(locale:, symbol:)` with thousands separators and the locale's currency position; tabular figures; inside `Ltr` in RTL layouts.
 - **Several currencies are never added up.** Totals show one line per currency ("₪ 12,400 · $ 3,150"), each formatted on its own; a single number would be wrong for every currency in it.
 - **Amount fields in RTL**: the field is LTR (`textDirection: TextDirection.ltr`), so its own `start` is the left even on an RTL screen. The digits then sit at the far end from a currency prefix, or glued to a suffix (`₪2500`). Align them to the reading start: `textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start`, and keep a space in `prefixText` / `suffixText`. Check the font has the currency glyph (`rtl-arabic.md` › Arabic typography).

@@ -32,7 +32,8 @@ final UiConfig uiConfig = UiConfig(
   scaffoldMessengerKey: AppMessenger.key,        // or the project's messenger key
   navigatorKey: navigatorKey,                    // if routes use a global key
   // systemBars: defaultSystemBars,              // the default; (_) => EdgeInsets.zero turns them off
-  // systemBarGap: 8,                            // null: draw the bars, skip the check
+  // systemBarGap: 8,                            // the house rule; 0: overlap only; null: skip the check
+  // only: (v) => v.isTouch || v.size.width >= 600,   // drop combinations the app never meets
 );
 ```
 
@@ -46,7 +47,9 @@ Phones and tablets render under the system bars a real device draws over the app
 - scroll views at their start: the status bar;
 - every scroll view that reaches the navigation bar or a FAB, scrolled to its end: its last rows must clear the bar by 8 px, and the FAB.
 
-App bars, `NavigationBar`, `NavigationRail` and `BottomAppBar` pad themselves, so for them only overlap counts. One problem showing in many variants is reported once: `[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): SafeArea(top: false) around it, plus 8 px or more  ← lib/features/bills/bill_form.dart:120`.
+App bars, `NavigationBar`, `NavigationRail`, `BottomAppBar` and the Cupertino bars (`CupertinoNavigationBar`, `CupertinoSliverNavigationBar`, `CupertinoTabBar`) pad themselves, so for them only overlap counts.
+
+**Two different findings.** Content *under* a bar ("12 px under the status bar") is a defect on every device. Content inside the safe area but closer than `systemBarGap` ("0 px from the navigation bar … (house rule: 8 px clear of the bars, UiConfig.systemBarGap)") is this plugin's rule, and the line says so: a plain `ListView` directly inside `SafeArea` fails it though nothing is covered. A project that wants a different margin sets `systemBarGap` to its own number, or to 0 to report overlap only, and records that in DESIGN.md. One problem showing in many variants is reported once: `[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): SafeArea(top: false) around it, plus 8 px or more  ← lib/features/bills/bill_form.dart:120`.
 
 ### Fake data, by architecture
 
@@ -148,6 +151,27 @@ SheetCase.picker('currency', (context) => showCurrencyPicker(context, current: '
 
 `primary` defaults to `SheetScaffold`'s primary action key; pass a finder for sheets that don't use it. Pick-one sheets, where tapping an option is the action, have no primary button: `SheetCase.picker` checks that the options are on screen with real tap targets and that a tap closes the sheet (`options:` takes a finder when they aren't `ListTile`s). No sheets at all: leave `sheetCases` empty.
 
+## What the checks do not see
+
+A green run means these checks found nothing. It doesn't mean the screen is right; that is what the screenshots are for.
+
+**The system-bar check**
+- It looks at text, text fields, ink wells and tap gesture detectors. Images, painted charts (`CustomPaint`) and decoration are invisible to it: a photo or a chart under the status bar passes. Look at the top and bottom of every phone screenshot.
+- Anything taller than half the screen is skipped (a page-sized tap area would otherwise always be "under" both bars), so a full-height tappable is not checked.
+- The end-of-scroll check covers vertical lists that scroll downward. Reverse lists (chat) and endless lists are skipped. A lazy list gets up to 20 jumps to reach its end; a list longer than that is skipped rather than guessed at, so give it a short fake list in its case.
+- Nested shrink-wrapped lists are judged by their own scroll view, not the outer one that actually scrolls.
+
+**The layout matrix**
+- It is every combination of the lists in `uiConfig`, including ones the app may never meet (Android at 1366 px, Windows at 360 px). `only` drops them.
+- It renders the first frame after settling, plus whatever `act` does. A state you didn't make a case for (the error state, edit mode, a long name) isn't tested.
+- Platform views (maps, web views) render empty, and emoji render as boxes.
+
+**The sheet test** renders light theme only (the screenshots add dark); every direction, platform and text scale in `uiConfig`.
+
+**The contrast test** checks the theme's color pairs, not pixels. Text over an image or a gradient, a one-off color in a widget, or a status tone used on a surface it wasn't paired with is not seen. Dark variants set both the theme and the device brightness (`MediaQuery.platformBrightness`).
+
+**The harness itself** reads widget creation locations from debug output and finds Roboto in the SDK's cache. Neither is a public contract: after a Flutter upgrade, a failure line without its `← lib/…` suffix or boxes instead of text in the bars means the harness needs an update, not the app.
+
 ## Running
 
 ```bash
@@ -158,7 +182,14 @@ flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens 
 
 Screenshots land in `test/ui/screenshots/<case>__<variant>.png`, with one contact sheet per case and per sheet in `test/ui/screenshots/contact_sheets/` (every shot variant side by side, labeled). Review the contact sheets first; open single shots for detail.
 
-The default matrix is 3 sizes × 3 text scales (1.0, 1.3 and 1.6: Android's big fonts, iOS's larger sizes, large display sizes) × 2 themes × platforms × directions per case; it runs in seconds per case because time is fake. Trim only what the app doesn't ship.
+The default matrix is 3 sizes × 3 text scales (1.0, 1.3 and 1.6: Android's big fonts, iOS's larger sizes, large display sizes) × 2 themes × platforms × directions per case: 72 renders for a two-platform, two-direction app, a few seconds per case because time is fake. A 30-screen app takes minutes, so size the run to the change:
+
+```bash
+flutter test test/ui/layout_smoke_test.dart --plain-name "layout: records"            # one screen, whole matrix
+flutter test test/ui/layout_smoke_test.dart test/ui/sheets_test.dart --dart-define=QUICK=true   # every screen, the shot variants only
+```
+
+`QUICK` renders `uiConfig.shots` (five variants by default: light, dark, text scale 1.3 and 1.6, desktop) instead of the matrix. Use it while iterating on one widget or one screen; run the whole matrix before calling a pass done, and in CI. Trim the matrix itself only to what the app doesn't ship.
 
 ## Reading failures
 

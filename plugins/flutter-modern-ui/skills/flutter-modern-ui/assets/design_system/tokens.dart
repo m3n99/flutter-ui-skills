@@ -135,8 +135,10 @@ abstract final class AppSize {
   /// Floating SnackBar width on pointer (desktop) platforms.
   static const double messageWidth = 420;
 
-  /// Empty states: title and message wrap at this width.
+  /// Empty states: title and message wrap at this width; the tinted circle
+  /// behind the icon.
   static const double emptyStateWidth = 360;
+  static const double emptyStateBadge = 88;
 
   /// One narrow column: sign-in, onboarding, a short standalone form.
   static const double columnMaxWidth = 420;

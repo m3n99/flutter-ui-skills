@@ -6,8 +6,14 @@
 //   chooses and closes, with no Apply button;
 // - AnimatedItems: filters and search animate rows out and in, new records
 //   grow in at the top, a new sort replays the staggered entrance;
-// - delete: confirm dialog → row hides at once → message with Undo →
-//   committed only when the message closes without Undo;
+// - delete: in the row's ⋮ menu and at the foot of the details, never the
+//   easiest thing to hit on a card (references/ux.md); then confirm dialog →
+//   row hides at once → message with Undo → committed only when the message
+//   closes without Undo;
+// - the details as ledger lines, the app's signature (ledger.dart), and
+//   "Mark as paid" as a button that does it and can't be pressed twice;
+// - opening an invoice from another tab (`openRequest`): the pane on wide
+//   windows, a pushed page on phones;
 // - list-detail from 840 px (selected row + detail pane that cross-fades),
 //   push to a detail page on phones; the pane always has a way back to the
 //   empty state: a ✕ in its header, clicking the open row again, and Esc as
@@ -27,6 +33,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design_system/design_system.dart';
+import 'ledger.dart';
 import 'record_form_screen.dart';
 import 'sample_data.dart';
 
@@ -152,13 +159,18 @@ class _FilterSheetState extends State<_FilterSheet> {
 enum _Load { loading, error, ready }
 
 class RecordsScreen extends StatefulWidget {
-  const RecordsScreen({super.key, required this.repository, this.initialSelectedId});
+  const RecordsScreen({super.key, required this.repository, this.initialSelectedId, this.openRequest});
 
   final InvoiceRepository repository;
 
   /// Opens with this record in the detail pane (wide windows): deep links,
   /// and the screenshot of the pane.
   final int? initialSelectedId;
+
+  /// Lets another screen open an invoice here (the home screen's "Due soon"
+  /// rows): set its value to the invoice's id. The detail pane shows it on
+  /// wide windows, a pushed page on phones, and the value goes back to null.
+  final ValueNotifier<int?>? openRequest;
 
   @override
   State<RecordsScreen> createState() => _RecordsScreenState();
@@ -177,18 +189,45 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void initState() {
     super.initState();
     _search.addListener(() => setState(() {}));
+    widget.openRequest?.addListener(_handleOpenRequest);
+    widget.repository.changes.addListener(_refresh);
     _load();
   }
 
   @override
+  void didUpdateWidget(RecordsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.openRequest != widget.openRequest) {
+      oldWidget.openRequest?.removeListener(_handleOpenRequest);
+      widget.openRequest?.addListener(_handleOpenRequest);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.openRequest?.removeListener(_handleOpenRequest);
+    widget.repository.changes.removeListener(_refresh);
     _pending.dispose();
     _search.dispose();
     _listDetailFocus.dispose();
     super.dispose();
   }
 
-  Future<void> _load({bool quiet = false}) async {
+  /// An invoice changed, here or on another screen: reload quietly.
+  void _refresh() {
+    if (mounted && _status == _Load.ready) _load(quiet: true);
+  }
+
+  Future<void>? _quietLoad;
+
+  /// Quiet reloads asked for while one is running share it: a change made
+  /// here notifies [_refresh] and is usually followed by its own reload.
+  Future<void> _load({bool quiet = false}) {
+    if (!quiet) return _fetch(quiet: false);
+    return _quietLoad ??= _fetch(quiet: true).whenComplete(() => _quietLoad = null);
+  }
+
+  Future<void> _fetch({required bool quiet}) async {
     if (!quiet && _status != _Load.loading) setState(() => _status = _Load.loading);
     try {
       final invoices = await widget.repository.load();
@@ -197,6 +236,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
         _all = invoices;
         _status = _Load.ready;
       });
+      // A request that arrived before the first load finished.
+      _handleOpenRequest();
     } catch (failure) {
       if (!mounted) return;
       if (quiet) {
@@ -204,6 +245,23 @@ class _RecordsScreenState extends State<RecordsScreen> {
       } else {
         setState(() => _status = _Load.error);
       }
+    }
+  }
+
+  /// Opens the invoice another screen asked for, once the list is loaded.
+  void _handleOpenRequest() {
+    final request = widget.openRequest;
+    final id = request?.value;
+    if (request == null || id == null || !mounted || _status != _Load.ready) return;
+    request.value = null;
+    for (final invoice in _all) {
+      if (invoice.id != id) continue;
+      if (context.windowSize.atLeast(WindowSize.expanded)) {
+        setState(() => _selectedId = id);
+      } else {
+        _open(invoice, wide: false);
+      }
+      return;
     }
   }
 
@@ -255,6 +313,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
             invoice: invoice,
             onEdit: () => _edit(invoice, popRoute: true),
             onDelete: () => _delete(invoice, popRoute: true),
+            onMarkPaid: () => _markPaid(invoice, popRoute: true),
           ),
         ),
       ),
@@ -262,6 +321,20 @@ class _RecordsScreenState extends State<RecordsScreen> {
   }
 
   void _closeDetail() => setState(() => _selectedId = null);
+
+  Future<void> _markPaid(Invoice invoice, {bool popRoute = false}) async {
+    try {
+      await widget.repository.markPaid(invoice.id);
+    } catch (failure) {
+      AppMessenger.showFailure(failure, whatFailed: "Couldn't mark ${invoice.number} as paid. Try again.");
+      return;
+    }
+    if (!mounted) return;
+    // A pushed detail page still shows the old status: back to the list.
+    if (popRoute) Navigator.of(context).pop();
+    AppMessenger.success('Marked ${invoice.number} as paid');
+    await _load(quiet: true);
+  }
 
   Future<void> _delete(Invoice invoice, {bool popRoute = false}) async {
     final colors = context.colors;
@@ -345,6 +418,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                                 invoice: selected,
                                 onEdit: () => _edit(selected),
                                 onDelete: () => _delete(selected),
+                                onMarkPaid: () => _markPaid(selected),
                                 onClose: _closeDetail,
                               ),
                       ),
@@ -436,6 +510,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     invoice: invoice,
                     selected: wide && invoice.id == _selectedId,
                     onTap: () => _open(invoice, wide: wide),
+                    onEdit: () => _edit(invoice),
                     onDelete: () => _delete(invoice),
                   ),
                 ),
@@ -471,12 +546,21 @@ class _RecordsScreenState extends State<RecordsScreen> {
   }
 }
 
+enum _CardAction { edit, delete }
+
 class _InvoiceCard extends StatelessWidget {
-  const _InvoiceCard({required this.invoice, required this.selected, required this.onTap, required this.onDelete});
+  const _InvoiceCard({
+    required this.invoice,
+    required this.selected,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Invoice invoice;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -528,14 +612,56 @@ class _InvoiceCard extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              tooltip: 'Delete ${invoice.number}',
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline_rounded),
+            // Tapping the card opens it; what else can be done to it sits in
+            // a menu. A trash can on every card would make the destructive
+            // action the easiest one to hit.
+            PopupMenuButton<_CardAction>(
+              tooltip: 'More for ${invoice.number}',
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (action) {
+                switch (action) {
+                  case _CardAction.edit:
+                    onEdit();
+                  case _CardAction.delete:
+                    onDelete();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _CardAction.edit,
+                  child: _MenuRow(icon: Icons.edit_outlined, label: 'Edit'),
+                ),
+                PopupMenuItem(
+                  value: _CardAction.delete,
+                  child: _MenuRow(icon: Icons.delete_outline_rounded, label: 'Delete', color: colors.error),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({required this.icon, required this.label, this.color});
+
+  final IconData icon;
+  final String label;
+
+  /// The error color for a destructive item; the icon and the word carry
+  /// the meaning, the color only underlines it.
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: AppSpace.sm,
+      children: [
+        Icon(icon, size: AppIconSize.dense, color: color),
+        Text(label, style: context.textStyles.bodyLarge?.copyWith(color: color)),
+      ],
     );
   }
 }
@@ -546,12 +672,14 @@ class _DetailPane extends StatelessWidget {
     required this.invoice,
     required this.onEdit,
     required this.onDelete,
+    required this.onMarkPaid,
     this.onClose,
   });
 
   final Invoice invoice;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final Future<void> Function() onMarkPaid;
 
   /// The embedded pane's ✕. A pushed detail page has the app bar's back
   /// button instead, so it passes nothing.
@@ -561,16 +689,6 @@ class _DetailPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final text = context.textStyles;
-
-    Widget row(String label, Widget value) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-          child: Row(
-            children: [
-              Expanded(child: Text(label, style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant))),
-              value,
-            ],
-          ),
-        );
 
     // The header stays put while the details scroll, so the ✕ is always in
     // reach.
@@ -621,18 +739,25 @@ class _DetailPane extends StatelessWidget {
               ),
               const SizedBox(height: AppSpace.xs),
               Align(alignment: AlignmentDirectional.centerStart, child: invoice.status.pill),
+              if (invoice.email.isNotEmpty) ...[
+                const SizedBox(height: AppSpace.xs),
+                MetaItem(icon: Icons.mail_outline_rounded, text: invoice.email, ltr: true),
+              ],
               const SizedBox(height: AppSpace.lg),
+              // The signature again: the invoice's own lines. The status is
+              // the pill above, so it isn't repeated here.
               AppCard(
-                child: Column(
-                  children: [
-                    row('Due date', Ltr(child: Text(formatShortDate(invoice.due), style: text.titleSmall.tabular))),
-                    const Divider(),
-                    row('Status', Text(invoice.status.label, style: text.titleSmall)),
-                    const Divider(),
-                    row('Number', Ltr(child: Text(invoice.number, style: text.titleSmall.tabular))),
+                child: Ledger(
+                  lines: [
+                    LedgerLine(label: 'Number', value: invoice.number),
+                    LedgerLine(label: 'Due date', value: formatShortDate(invoice.due)),
                   ],
                 ),
               ),
+              if (invoice.notes.isNotEmpty) ...[
+                const SizedBox(height: AppSpace.md),
+                Text(invoice.notes, style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
+              ],
               const SizedBox(height: AppSpace.lg),
               Row(
                 spacing: AppSpace.xs,
@@ -643,10 +768,10 @@ class _DetailPane extends StatelessWidget {
                     label: const Text('Delete'),
                   ),
                   Expanded(
-                    child: FilledButton.icon(
-                      onPressed: invoice.status == InvoiceStatus.paid ? null : () {},
-                      icon: const Icon(Icons.check_rounded),
-                      label: const Text('Mark as paid'),
+                    child: SubmitButton(
+                      label: 'Mark as paid',
+                      icon: Icons.check_rounded,
+                      onPressed: invoice.status == InvoiceStatus.paid ? null : onMarkPaid,
                     ),
                   ),
                 ],
