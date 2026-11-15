@@ -185,8 +185,11 @@ void main() {
   });
 
   testWidgets('Shimmer: no frames scheduled under reduced motion, animating otherwise', (tester) async {
+    // One theme for every pump: a new ThemeData would start MaterialApp's own
+    // theme cross-fade, which is a ticker too.
+    final theme = AppTheme.light();
     Widget app({required bool reduceMotion}) => MaterialApp(
-          theme: AppTheme.light(),
+          theme: theme,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
             child: child!,

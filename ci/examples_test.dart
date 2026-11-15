@@ -129,7 +129,8 @@ void main() {
       await _settle(tester);
 
       expect(tester.widget<SubmitButton>(find.byType(SubmitButton)).onPressed, isNotNull);
-      await tester.tap(find.text('Mark as paid'));
+      // The label shares a Text.rich with its icon, so find the button.
+      await tester.tap(find.byType(SubmitButton));
       for (var i = 0; i < 3; i++) {
         await _settle(tester);
       }
