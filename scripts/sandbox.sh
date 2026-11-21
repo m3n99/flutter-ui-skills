@@ -53,6 +53,8 @@ if has_dep material_ui && ! has_dep cupertino_ui; then flutter pub add cupertino
 python3 "$SKILLS/flutter-modern-ui/scripts/copy_design_system.py" --kit all --to lib/design_system
 cp -R "$SKILLS/flutter-modern-ui/assets/examples" lib/examples
 cp "$ROOT/ci/"*.dart test/ci/
+# The curated palettes, as Dart, for ci/palettes_test.dart.
+python3 "$ROOT/ci/palette_cases.py" > test/ci/curated_palettes.dart
 python3 "$SKILLS/flutter-modern-ui/scripts/copy_design_system.py" --adapt lib/examples test/ci
 python3 "$SKILLS/flutter-ui-verify/scripts/copy_harness.py" --to test/ui --pdf test/pdf --design-system-test
 

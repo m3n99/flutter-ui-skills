@@ -7,7 +7,7 @@ Things that make Flutter UI look default, dated, inconsistent or machine-generat
 | # | Anti-pattern | Why it hurts | Fix |
 |---|---|---|---|
 | 1 | No brief: tokens chosen before anyone wrote what the app is, for whom, and what it must make easy | every choice falls back to a default | five lines in DESIGN.md first (identity.md) |
-| 2 | The template's seed and font left as shipped, or `Colors.deepPurple` / indigo and Inter / Roboto with no reason | the app looks like every generated app | seed and typeface from the brand or the subject; the sameness check |
+| 2 | The template's seed and font left as shipped, or `Colors.deepPurple` / indigo and Inter / Roboto with no reason | the app looks like every generated app | seed and typeface from the brand or the subject; with no brand color, a palette found on real sources and checked (`color.md`); the sameness check. Five equal colors from a poster palette spread over the screen is the opposite mistake: two neutrals, one main color, at most one accent |
 | 3 | A greeting, an avatar and a bell over a 2 × 2 grid of numbers, whatever the app is | a home that answers nothing and leads nowhere | home shows the answer to the user's daily question with the action beside it (ux.md, screens.md) |
 | 4 | No signature, or decoration everywhere (gradients, tints and icons on every row) | nothing is memorable when everything is dressed up | one signature from the subject's world in one to three places; the rest quiet |
 | 5 | The most frequent task three or more taps deep, or its action in the app bar | daily friction | a shortcut on the home screen or the row; the primary action in the thumb zone |

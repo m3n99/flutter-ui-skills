@@ -2,7 +2,7 @@
 
 Pick one direction per app and apply it everywhere. Mixing directions (glass cards next to flat enterprise tables) is what makes an app feel unfinished. A direction is a set of token values: set them in `AppTheme.config` (`AppThemeConfig`), `AppRadius.card` / `AppRadius.control`, `AppSpace.screen` and `AppDensity`.
 
-**A direction is the chassis, not the identity.** It settles density, depth, roundness and liveliness. What makes the app recognizably itself (its colors, its typeface, its one signature element) comes from the brief in `identity.md`, written first. The seeds and fonts in the tables below are fallbacks for a brief that leaves them open, and the first thing the sameness check questions: two apps on the same direction should still not look alike.
+**A direction is the chassis, not the identity.** It settles density, depth, roundness and liveliness. What makes the app recognizably itself (its colors, its typeface, its one signature element) comes from the brief in `identity.md`, written first. The seeds in the tables below are hue families that suit the direction, not colors to use: with no brand color, the palette comes from a search of real sources (`color.md`). The fonts are fallbacks for a brief that leaves them open. Both are the first thing the sameness check questions: two apps on the same direction should still not look alike.
 
 Each table lists every value the templates need, so the theme never contradicts the direction.
 
@@ -13,7 +13,7 @@ Each table lists every value the templates need, so the theme never contradicts 
 
 | Token | Value |
 |---|---|
-| Seed / variant | the brand color or one from the subject (`identity.md`); fallbacks: teal `#0F766E`, ink `#1F2A44`, forest `#166534` · `tonalSpot` (`fidelity` for exact brand hue) |
+| Seed / variant | the brand color, or a palette found for the brief (`color.md`); hue families that suit: teal, ink, forest · `tonalSpot` (`fidelity` for exact brand hue) |
 | Font | chosen from the brief's feeling (`identity.md` › Type); fallbacks: Manrope, Plus Jakarta Sans, Figtree · Arabic: IBM Plex Sans Arabic |
 | Radius | card 16 · control 12 · sheet 24 |
 | Control height | touch 48–52 · desktop 40 |
@@ -143,6 +143,6 @@ For apps used for hours (ledgers, admin, reading, field tools): `AppThemeConfig(
 - Kids, learning, habits → Playful.
 - Long working sessions → add Eye comfort.
 
-If the app already has a brand color, keep it as the seed with `DynamicSchemeVariant.fidelity`. If the user shared reference apps, derive the direction from them (`flutter-design-system` skill › study-reference-apps). Either way, write the brief (`identity.md`) before setting tokens: the direction narrows the choices, the brief makes them.
+If the app already has a brand color, keep it as the seed with `DynamicSchemeVariant.fidelity`. If it has none, the seeds in each direction above are hue families, not answers: find a palette for the brief (`color.md`). If the user shared reference apps, derive the direction from them (`flutter-design-system` skill › study-reference-apps). Either way, write the brief (`identity.md`) before setting tokens: the direction narrows the choices, the brief makes them.
 
 When a direction changes radius or density, update the tokens, not individual widgets: a 16 px card in an Enterprise Dense app is a token bug, not a screen bug.

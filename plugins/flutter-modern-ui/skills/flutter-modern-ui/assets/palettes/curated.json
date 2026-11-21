@@ -1,0 +1,397 @@
+{
+  "about": "Fallback palettes written for this plugin, for when the palette sites can't be reached. Each has the five UI roles and passes palette.py's checks with no adjustment (CI). Search the real sources first (references/color.md).",
+  "palettes": [
+    {
+      "name": "Ledger ink",
+      "tags": [
+        "finance",
+        "accounting",
+        "trustworthy",
+        "calm",
+        "formal",
+        "arabic"
+      ],
+      "why": "ledgers, invoices, debts: ink on paper with a brass accent",
+      "roles": {
+        "ink": "#1F2A44",
+        "paper": "#F7F5EF",
+        "primary": "#1F4E79",
+        "secondary": "#D9E4EC",
+        "accent": "#9A6B1F"
+      }
+    },
+    {
+      "name": "Clinic mint",
+      "tags": [
+        "health",
+        "clinic",
+        "calm",
+        "clean",
+        "care"
+      ],
+      "why": "clinics, appointments, care: calm teal, a warm accent for people",
+      "roles": {
+        "ink": "#17302B",
+        "paper": "#F4F8F6",
+        "primary": "#0F766E",
+        "secondary": "#D6EDE8",
+        "accent": "#B5563B"
+      }
+    },
+    {
+      "name": "Saffron table",
+      "tags": [
+        "food",
+        "restaurant",
+        "delivery",
+        "warm",
+        "appetizing"
+      ],
+      "why": "menus and orders: paprika with an herb green",
+      "roles": {
+        "ink": "#2B1D14",
+        "paper": "#FFF8F0",
+        "primary": "#A63D0F",
+        "secondary": "#F6E3C6",
+        "accent": "#2F6B4F"
+      }
+    },
+    {
+      "name": "Chalkboard",
+      "tags": [
+        "education",
+        "kids",
+        "school",
+        "playful",
+        "friendly"
+      ],
+      "why": "lessons and classes: chalk blue with crayon orange",
+      "roles": {
+        "ink": "#22223B",
+        "paper": "#FFFBF2",
+        "primary": "#3A5BA0",
+        "secondary": "#FFE3A3",
+        "accent": "#C2481F"
+      }
+    },
+    {
+      "name": "Focus slate",
+      "tags": [
+        "productivity",
+        "tasks",
+        "saas",
+        "focused",
+        "neutral"
+      ],
+      "why": "tasks and notes: quiet slate, one amber highlight",
+      "roles": {
+        "ink": "#1E2329",
+        "paper": "#F6F7F9",
+        "primary": "#36597D",
+        "secondary": "#E3E8EE",
+        "accent": "#A86A0C"
+      }
+    },
+    {
+      "name": "Sprint",
+      "tags": [
+        "fitness",
+        "sports",
+        "energetic",
+        "bold"
+      ],
+      "why": "workouts and progress: burnt orange with a fresh green",
+      "roles": {
+        "ink": "#1B1B1E",
+        "paper": "#FAFAF7",
+        "primary": "#B8400B",
+        "secondary": "#FFE8D9",
+        "accent": "#0E7C5A"
+      }
+    },
+    {
+      "name": "Harbor",
+      "tags": [
+        "travel",
+        "booking",
+        "airy",
+        "fresh"
+      ],
+      "why": "trips and bookings: sea blue with a sunset orange",
+      "roles": {
+        "ink": "#102A43",
+        "paper": "#F5F9FC",
+        "primary": "#0B6E99",
+        "secondary": "#D7ECF5",
+        "accent": "#B85F12"
+      }
+    },
+    {
+      "name": "Atelier",
+      "tags": [
+        "fashion",
+        "beauty",
+        "elegant",
+        "boutique"
+      ],
+      "why": "boutiques and studios: plum with antique gold",
+      "roles": {
+        "ink": "#2A2226",
+        "paper": "#FBF7F5",
+        "primary": "#8E4162",
+        "secondary": "#F1DCE3",
+        "accent": "#8A6A35"
+      }
+    },
+    {
+      "name": "Terracotta home",
+      "tags": [
+        "realestate",
+        "home",
+        "interior",
+        "earthy",
+        "warm"
+      ],
+      "why": "homes and listings: terracotta with olive",
+      "roles": {
+        "ink": "#2D2420",
+        "paper": "#F8F4EE",
+        "primary": "#9C4A2F",
+        "secondary": "#EADBCB",
+        "accent": "#5B7553"
+      }
+    },
+    {
+      "name": "Route",
+      "tags": [
+        "logistics",
+        "delivery",
+        "fleet",
+        "efficient",
+        "bold"
+      ],
+      "why": "shipments and drivers: route blue with signal yellow",
+      "roles": {
+        "ink": "#14171C",
+        "paper": "#F5F6F4",
+        "primary": "#0B5394",
+        "secondary": "#DCE6F0",
+        "accent": "#8A6500"
+      }
+    },
+    {
+      "name": "Broadsheet",
+      "tags": [
+        "news",
+        "reading",
+        "editorial",
+        "magazine"
+      ],
+      "why": "articles and reading: sepia ink, one red mark",
+      "roles": {
+        "ink": "#1A1A1A",
+        "paper": "#F7F3EA",
+        "primary": "#5B4636",
+        "secondary": "#ECE4D4",
+        "accent": "#B3261E"
+      }
+    },
+    {
+      "name": "Olive grove",
+      "tags": [
+        "agriculture",
+        "farm",
+        "natural",
+        "earthy",
+        "organic"
+      ],
+      "why": "farms and produce: olive green with harvest gold",
+      "roles": {
+        "ink": "#22281E",
+        "paper": "#F6F5EC",
+        "primary": "#4F6D3A",
+        "secondary": "#E1E6CF",
+        "accent": "#9A6418"
+      }
+    },
+    {
+      "name": "Civic",
+      "tags": [
+        "government",
+        "legal",
+        "formal",
+        "trustworthy",
+        "admin"
+      ],
+      "why": "forms and public services: navy with a muted gold",
+      "roles": {
+        "ink": "#1B2430",
+        "paper": "#F7F7F5",
+        "primary": "#23395B",
+        "secondary": "#E2E6EC",
+        "accent": "#8A6B22"
+      }
+    },
+    {
+      "name": "Night market",
+      "tags": [
+        "fintech",
+        "crypto",
+        "gaming",
+        "dark",
+        "modern"
+      ],
+      "why": "dark-first dashboards: emerald and amber on near-black",
+      "roles": {
+        "ink": "#0F1115",
+        "paper": "#ECEEF2",
+        "primary": "#00795F",
+        "secondary": "#D3EDE6",
+        "accent": "#A86E00"
+      }
+    },
+    {
+      "name": "Café crema",
+      "tags": [
+        "coffee",
+        "cafe",
+        "cozy",
+        "warm",
+        "food"
+      ],
+      "why": "cafés and loyalty: espresso brown with a sage accent",
+      "roles": {
+        "ink": "#2B201A",
+        "paper": "#FAF6F0",
+        "primary": "#6F4E37",
+        "secondary": "#EBDDCC",
+        "accent": "#3C7A6E"
+      }
+    },
+    {
+      "name": "Workshop",
+      "tags": [
+        "automotive",
+        "repair",
+        "maintenance",
+        "industrial",
+        "sturdy"
+      ],
+      "why": "repairs and jobs: steel blue with safety amber",
+      "roles": {
+        "ink": "#1C1F22",
+        "paper": "#F4F4F2",
+        "primary": "#2E4A62",
+        "secondary": "#DDE3E8",
+        "accent": "#9A5B00"
+      }
+    },
+    {
+      "name": "Rosewater",
+      "tags": [
+        "salon",
+        "beauty",
+        "wellness",
+        "soft",
+        "gentle"
+      ],
+      "why": "bookings and self-care: rose with sage",
+      "roles": {
+        "ink": "#33262B",
+        "paper": "#FFF8F6",
+        "primary": "#A23D63",
+        "secondary": "#F7DDE3",
+        "accent": "#4F7359"
+      }
+    },
+    {
+      "name": "Hope",
+      "tags": [
+        "nonprofit",
+        "community",
+        "charity",
+        "hopeful",
+        "warm"
+      ],
+      "why": "donations and volunteers: green with a warm coral",
+      "roles": {
+        "ink": "#263238",
+        "paper": "#FFFAF3",
+        "primary": "#2A7F62",
+        "secondary": "#FCE5C8",
+        "accent": "#B34A2E"
+      }
+    },
+    {
+      "name": "Tatreez",
+      "tags": [
+        "heritage",
+        "culture",
+        "arabic",
+        "crafts",
+        "traditional"
+      ],
+      "why": "heritage and crafts: deep green with tatreez red as the accent",
+      "roles": {
+        "ink": "#231F20",
+        "paper": "#F8F3EA",
+        "primary": "#1E5A4E",
+        "secondary": "#EADFC8",
+        "accent": "#A8322A"
+      }
+    },
+    {
+      "name": "Calm study",
+      "tags": [
+        "learning",
+        "reading",
+        "study",
+        "calm",
+        "quiet"
+      ],
+      "why": "study and revision: dusk blue with a lamp-light accent",
+      "roles": {
+        "ink": "#262A33",
+        "paper": "#F5F2EC",
+        "primary": "#4C6A92",
+        "secondary": "#E4E8F0",
+        "accent": "#9A6A12"
+      }
+    },
+    {
+      "name": "Pitch",
+      "tags": [
+        "sports",
+        "football",
+        "team",
+        "bold",
+        "energetic"
+      ],
+      "why": "matches and teams: pitch green with a gold trophy",
+      "roles": {
+        "ink": "#101814",
+        "paper": "#F3F6F2",
+        "primary": "#1B7A3E",
+        "secondary": "#D8EBDD",
+        "accent": "#8F6A00"
+      }
+    },
+    {
+      "name": "Clear sky",
+      "tags": [
+        "weather",
+        "utility",
+        "fresh",
+        "airy"
+      ],
+      "why": "forecasts and utilities: sky blue with a sun orange",
+      "roles": {
+        "ink": "#0E2233",
+        "paper": "#F4F9FD",
+        "primary": "#0A6AA8",
+        "secondary": "#DCEEFA",
+        "accent": "#B85A12"
+      }
+    }
+  ]
+}

@@ -43,7 +43,7 @@ One signature, in one to three places (the home hero, the record card, the empty
 
 ## 3. Decide five things from the brief
 
-**Color.** Seed from the brand or the subject (ink blue-black, check-paper green, pitch green, saffron), never the template's placeholder. Name the palette, four to six colors with a job each: ink, paper, accent, and the status tones. The neutrals carry more of the mood than the accent: tint the surfaces toward the seed (`tonalSpot` does it lightly; `SurfaceStyle.eyeComfort` gives warm paper; `schemeOverride` sets exact surfaces). One accent does the pointing; a second color appears only if the content has two real categories. Decide which mode is home: an app used at night in a vehicle is dark-first. Then the contrast and soft-container tests.
+**Color.** Seed from the brand or the subject (ink blue-black, check-paper green, pitch green, saffron), never the template's placeholder. With no brand color, the subject and the feeling words are the search terms for real palettes (Color Hunt, Coolors, Figma, Realtime Colors, Adobe Color); `color.md` says how to find, check, show and apply them. Name the palette, four to six colors with a job each: ink, paper, accent, and the status tones. The neutrals carry more of the mood than the accent: tint the surfaces toward the seed (`tonalSpot` does it lightly; `SurfaceStyle.eyeComfort` gives warm paper; `schemeOverride` sets exact surfaces). One accent does the pointing; a second color appears only if the content has two real categories. Decide which mode is home: an app used at night in a vehicle is dark-first. Then the contrast and soft-container tests.
 
 **Type.** The typeface is most of the personality, and the cheapest change. Choose for the script first, then the feeling:
 

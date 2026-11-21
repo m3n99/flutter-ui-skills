@@ -67,6 +67,8 @@ Add: "Every level keeps motion short (150–450 ms), switches it off when the sy
 
 Options: "yes", corrections, "match these screenshots" (`flutter-design-system` › study-reference-apps), or a brand color and font to keep. What the user fixes always wins.
 
+**No brand color** (none given, none in the project's icon, splash or platform files): don't guess one. Search real palettes that fit the brief's feeling words, check them with `scripts/palette.py`, and ask with three palettes on its preview sheet, one recommended (`color.md` › Show three). This can follow the brief in the same round, or come right after it once the brief is settled.
+
 ## Defaults when nobody answers
 
 State the defaults in one line at the top of the work and carry on:
@@ -79,6 +81,7 @@ State the defaults in one line at the top of the work and carry on:
 | Emoji | None |
 | Motion | Soft, on cards and lists on load, list changes, numbers, buttons and loading; recorded in DESIGN.md as a default to confirm. When the user is only away for a moment, ask as well and carry on meanwhile; in an unattended run there is nobody to ask, so the line in the report is the question. A spec that says "basic" points to none or soft: say which you took |
 | Brief and direction | Write the brief yourself from the project and state it in one line at the top of the work; the direction from the domain (`directions.md` › Choosing quickly). Never the template's placeholder seed and font unchanged |
+| Color | The app's own if it has one; otherwise the top palette from a search of real sources that `palette.py` ranks first and that fits the brief (`color.md`), named with its source URL at the top of the report and recorded in DESIGN.md as a default to confirm |
 
 ## Acting on the answers
 

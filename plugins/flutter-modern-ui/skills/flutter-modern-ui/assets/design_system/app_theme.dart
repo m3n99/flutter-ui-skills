@@ -38,6 +38,9 @@ class AppThemeConfig {
     // app's subject (references/identity.md).
     this.seed = const Color(0xFF0F766E),
     this.variant = DynamicSchemeVariant.tonalSpot,
+    this.secondarySeed,
+    this.tertiarySeed,
+    this.neutralSeed,
     this.fontFamily,
     this.fontFamilyFallback,
     this.script = AppScript.latin,
@@ -53,6 +56,21 @@ class AppThemeConfig {
   /// the containers stay soft either way (see [AppTheme.build]).
   final Color seed;
   final DynamicSchemeVariant variant;
+
+  /// The rest of a chosen palette (references/color.md; scripts/palette.py
+  /// writes these). Each role gets its own tonal palette, so dark mode and
+  /// the on-colors are derived, not hand-picked:
+  /// - [secondarySeed]: quiet buttons, chips, info cards (`secondary*`);
+  /// - [tertiarySeed]: the accent: highlights, a badge, a chart series
+  ///   (`tertiary*`);
+  /// - [neutralSeed]: the background color; surfaces, text and outlines are
+  ///   tinted toward its hue instead of the seed's. Ignored with
+  ///   [SurfaceStyle.eyeComfort], which sets its own neutrals.
+  /// The strong role keeps the color's hue (fidelity); its container stays
+  /// a soft tint. null: derived from [seed], as Material does.
+  final Color? secondarySeed;
+  final Color? tertiarySeed;
+  final Color? neutralSeed;
 
   /// Bundled font family declared in pubspec.yaml. null = platform default.
   final String? fontFamily;
@@ -78,6 +96,9 @@ class AppThemeConfig {
   AppThemeConfig copyWith({
     Color? seed,
     DynamicSchemeVariant? variant,
+    Color? secondarySeed,
+    Color? tertiarySeed,
+    Color? neutralSeed,
     String? fontFamily,
     List<String>? fontFamilyFallback,
     AppScript? script,
@@ -91,6 +112,9 @@ class AppThemeConfig {
     return AppThemeConfig(
       seed: seed ?? this.seed,
       variant: variant ?? this.variant,
+      secondarySeed: secondarySeed ?? this.secondarySeed,
+      tertiarySeed: tertiarySeed ?? this.tertiarySeed,
+      neutralSeed: neutralSeed ?? this.neutralSeed,
       fontFamily: fontFamily ?? this.fontFamily,
       fontFamilyFallback: fontFamilyFallback ?? this.fontFamilyFallback,
       script: script ?? this.script,
@@ -149,6 +173,10 @@ abstract final class AppTheme {
     if (config.variant == DynamicSchemeVariant.fidelity || config.variant == DynamicSchemeVariant.content) {
       scheme = _softContainers(scheme, config.seed);
     }
+    // The rest of a chosen palette (references/color.md).
+    if (config.secondarySeed case final seed?) scheme = _withSecondary(scheme, seed);
+    if (config.tertiarySeed case final seed?) scheme = _withTertiary(scheme, seed);
+    if (config.neutralSeed case final seed?) scheme = _withNeutrals(scheme, seed);
     if (config.surfaces == SurfaceStyle.eyeComfort) scheme = _eyeComfort(scheme);
     scheme = config.schemeOverride?.call(scheme) ?? scheme;
 
@@ -431,6 +459,63 @@ abstract final class AppTheme {
       onPrimaryContainer: primary.onPrimaryContainer,
       tertiaryContainer: tertiary.primaryContainer,
       onTertiaryContainer: tertiary.onPrimaryContainer,
+    );
+  }
+
+  /// A strong color that keeps [seed]'s hue, and a soft container, for one
+  /// role: `(strong, soft)` schemes whose primary roles are taken.
+  static (ColorScheme, ColorScheme) _role(Color seed, Brightness brightness) => (
+        ColorScheme.fromSeed(seedColor: seed, brightness: brightness, dynamicSchemeVariant: DynamicSchemeVariant.fidelity),
+        ColorScheme.fromSeed(seedColor: seed, brightness: brightness),
+      );
+
+  static ColorScheme _withSecondary(ColorScheme scheme, Color seed) {
+    final (strong, soft) = _role(seed, scheme.brightness);
+    return scheme.copyWith(
+      secondary: strong.primary,
+      onSecondary: strong.onPrimary,
+      secondaryContainer: soft.primaryContainer,
+      onSecondaryContainer: soft.onPrimaryContainer,
+      secondaryFixed: soft.primaryFixed,
+      secondaryFixedDim: soft.primaryFixedDim,
+      onSecondaryFixed: soft.onPrimaryFixed,
+      onSecondaryFixedVariant: soft.onPrimaryFixedVariant,
+    );
+  }
+
+  static ColorScheme _withTertiary(ColorScheme scheme, Color seed) {
+    final (strong, soft) = _role(seed, scheme.brightness);
+    return scheme.copyWith(
+      tertiary: strong.primary,
+      onTertiary: strong.onPrimary,
+      tertiaryContainer: soft.primaryContainer,
+      onTertiaryContainer: soft.onPrimaryContainer,
+      tertiaryFixed: soft.primaryFixed,
+      tertiaryFixedDim: soft.primaryFixedDim,
+      onTertiaryFixed: soft.onPrimaryFixed,
+      onTertiaryFixedVariant: soft.onPrimaryFixedVariant,
+    );
+  }
+
+  /// Surfaces, text and outlines tinted toward [seed]'s hue (Material's
+  /// neutral palettes, so every level keeps its contrast).
+  static ColorScheme _withNeutrals(ColorScheme scheme, Color seed) {
+    final n = ColorScheme.fromSeed(seedColor: seed, brightness: scheme.brightness);
+    return scheme.copyWith(
+      surface: n.surface,
+      surfaceDim: n.surfaceDim,
+      surfaceBright: n.surfaceBright,
+      surfaceContainerLowest: n.surfaceContainerLowest,
+      surfaceContainerLow: n.surfaceContainerLow,
+      surfaceContainer: n.surfaceContainer,
+      surfaceContainerHigh: n.surfaceContainerHigh,
+      surfaceContainerHighest: n.surfaceContainerHighest,
+      onSurface: n.onSurface,
+      onSurfaceVariant: n.onSurfaceVariant,
+      outline: n.outline,
+      outlineVariant: n.outlineVariant,
+      inverseSurface: n.inverseSurface,
+      onInverseSurface: n.onInverseSurface,
     );
   }
 
