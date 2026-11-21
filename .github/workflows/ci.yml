@@ -64,6 +64,12 @@ jobs:
       - name: The lint finds what it says it finds (ci/lint_selftest.py)
         run: python ci/lint_selftest.py
 
+      - name: palette.py reads every source and checks what it says it checks (ci/palette_selftest.py)
+        run: python ci/palette_selftest.py
+
+      - name: Every curated palette passes as it is (palette.py --check-curated)
+        run: python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/palette.py --check-curated
+
       - name: Examples and widgets follow the rules a grep can see (lint_ui.py)
         run: python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/lint_ui.py plugins/flutter-modern-ui/skills/flutter-modern-ui/assets
 

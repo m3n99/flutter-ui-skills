@@ -31,17 +31,19 @@ One plugin, five skills and a reviewer agent:
 ```
 plugins/flutter-modern-ui/
 ├── agents/flutter-ui-reviewer.md
-├── evals/                   17 eval cases for `claude plugin eval` (what the skills must make Claude do, and when they must stay out)
+├── evals/                   18 eval cases for `claude plugin eval` (what the skills must make Claude do, and when they must stay out)
 └── skills/
     ├── flutter-modern-ui/
     │   ├── SKILL.md
-    │   ├── references/      discovery · intake · identity · directions · ux · screens · writing ·
+    │   ├── references/      discovery · intake · identity · color · directions · ux · screens · writing ·
     │   │                    tokens · theming · layout · adaptive · components · forms · sheets-dialogs ·
     │   │                    data-display · states · messages · rtl-arabic · accessibility ·
     │   │                    anti-patterns (86) · review-checklist
-    │   ├── scripts/         copy_design_system.py (core / extras kits, --status / --diff / --update) · lint_ui.py
+    │   ├── scripts/         copy_design_system.py (core / extras kits, --status / --diff / --update) · lint_ui.py ·
+    │   │                    palette.py (read, check, rank, preview and apply palettes)
     │   └── assets/
     │       ├── design_system/   drop-in Dart: tokens, density, palette, typography, theme, widgets, motion
+    │       ├── palettes/        curated.json: 22 checked fallback palettes, tagged by subject and feeling
     │       └── examples/        one app built from its own brief: home (English and Arabic) · records list-detail ·
     │                            create / edit form · sign-in · settings · app shell · its signature as one
     │                            shared widget · printed invoice (PDF)
@@ -61,6 +63,34 @@ Tokens make an app consistent; they don't make it *this* app. Before any token i
 > **Subject:** the notebook where a shopkeeper tracks who owes him and which checks fall due. **Audience:** one owner, at the counter, quick looks. **Job:** see who to call today. **Feeling:** plain-spoken, trustworthy, unhurried. **Signature:** amounts set like a ledger column.
 
 The seed color, the typeface, the shapes and what the home screen shows come from that, and a **sameness check** throws out every line of the plan that would fit any other app (the default purple seed, Inter, a greeting over a grid of numbers). Then each screen gets a task sentence and a tap count (`ux.md`), the anatomy of its type (`screens.md`: home, detail, sign-in, onboarding, settings, search, paywall…), and its words written with the layout, not after it (`writing.md`, with Arabic conventions). The bundled examples are one such app: its home screen opens on "To collect" with the reminder action, drawn as ledger lines.
+
+### Color from real palettes, not from memory (`references/color.md`, `scripts/palette.py`)
+
+When you give no color, the skill doesn't pick one. It looks for the app's own first: the launcher icon, the splash, `colors.xml`, `manifest.json`. With none, it turns the brief's subject and feeling words into a search of real palette sources:
+
+- [Color Hunt](https://colorhunt.co), by tag;
+- [Coolors](https://coolors.co), trending;
+- [Figma's palette pages](https://www.figma.com/color-palettes/);
+- [Realtime Colors](https://www.realtimecolors.com);
+- [Adobe Color](https://color.adobe.com), Huemint and Happy Hues.
+
+It gathers six to ten candidates from at least two sources. Then `palette.py` does the rest:
+
+- **Reads them from their URLs.** Coolors, Color Hunt and Realtime Colors links carry the colors, so no network is needed.
+- **Gives each color a UI role:** ink, paper, primary, secondary, accent.
+- **Checks contrast as the app will use it:** body text, a text button, a label on a filled button, an accent icon.
+- **Fixes or warns.** It darkens a pastel that can't carry text (same hue, and says from what to what). It warns about the default purple, a red primary that reads as an error, neon, and poster palettes with five loud colors.
+- **Ranks them**, putting palettes from real sources ahead of the fallback library.
+
+You get three palettes on a preview sheet, each with a light and an approximate dark mock-up and a Realtime Colors link, plus a recommendation. The one you pick becomes `AppThemeConfig` seeds (`seed`, `secondarySeed`, `tertiarySeed`, `neutralSeed`), so Material derives dark mode, the on-colors and soft containers. Its source URL is recorded in `DESIGN.md`.
+
+```bash
+python3 <flutter-modern-ui>/scripts/palette.py https://coolors.co/264653-2a9d8f-e9c46a-f4a261-e76f51 \
+    https://colorhunt.co/palette/f9f7f7dbe2ef3f72af112d4e --curated warm food --preview palettes.png
+python3 <flutter-modern-ui>/scripts/palette.py <the one you picked> --dart --design-md
+```
+
+With no web access, a curated library of 22 palettes covers common subjects; every one passes as it is, and CI builds each into a Flutter theme and checks it in light and dark.
 
 ### Drop-in design system (`assets/design_system/`)
 
@@ -137,7 +167,7 @@ test/pdf/out/invoice_ar_longest.pdf (1 page)
 ## Requirements
 
 - Flutter **3.41 or newer** for the Dart templates (`SnackBar.persist`, `AppBarThemeData`, `InputDecorationThemeData`, `TickerMode.valuesOf`, `SizeTransition.alignment`). CI checks them on a pinned release (3.50.0 now; `FLUTTER_VERSION` in `.github/workflows/ci.yml`), both with the `material_ui` package that `flutter create` adds from 3.50 and with `package:flutter/material.dart`. The skills tell Claude how to adapt to older SDKs.
-- The scripts need Python 3.9+ (`check_glyphs.py` also needs `pip install fonttools`).
+- The scripts need Python 3.9+ (`check_glyphs.py` also needs `pip install fonttools`; `palette.py --preview` draws a PNG with `pip install pillow`, an SVG without it). Searching palette sites uses Claude's web search and fetch, or a browser for the sites that draw their palettes with script; with neither, the curated library still works.
 - The printed-document example and its harness need the [`pdf`](https://pub.dev/packages/pdf) package; rasterizing needs Python with PyMuPDF (`pip install pymupdf`) or poppler's `pdftoppm`.
 - The skills themselves work with any Flutter project: in an app with its own design system, Claude maps these patterns onto your names instead of copying the templates.
 

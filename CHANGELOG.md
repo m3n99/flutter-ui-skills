@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.6.0
+
+Color when the user gives none. The skills took a seed from the subject or from a direction's table, which in practice meant a color picked from memory. Now they find the app's own color, or search real palettes and let the user choose.
+
+### Finding a palette (`references/color.md`)
+- **The app's own color first**: the launcher icon and splash config, `colors.xml`, `manifest.json`, `Assets.xcassets`, existing constants, the business's website. A brand color found there is the primary; the search is then only for its companions, with it locked.
+- **Otherwise, search real sources** with the brief's subject and feeling words: Color Hunt (by tag), Coolors (trending), Figma's palette pages, Realtime Colors, Adobe Color, Huemint, Happy Hues, and real products in the same field (structure only, never a competitor's color). Six to ten candidates from at least two sources, each with its URL. The reference says which sites can be fetched and which need a browser.
+- **Show three**, on a preview sheet with light and dark mock-ups, one recommended, as the intake's color question. An unattended run takes the recommendation and records it as a default to confirm.
+- Hooked into the hub, intake (a new *Color* default), identity, directions (its seeds are now hue families, not answers), theming, the design-system skill and the DESIGN.md template (*Palette source*).
+
+### `scripts/palette.py`
+- Reads Coolors, Color Hunt and Realtime Colors palettes from their URLs (no network), hex codes from any page text (Figma's palette pages), or `--file`.
+- Gives each color a UI role (ink, paper, primary, secondary, accent), or takes them from a Realtime Colors link or `--roles`; makes a missing ink or paper from the primary's hue.
+- Checks contrast the way the UI uses each role. A primary or accent too light for its job is darkened in the same hue, and the report says from what to what.
+- Warns about the generated-app purple and indigo, a red primary, neon, poster palettes and an accent that won't stand out.
+- Ranks palettes from real sources before the fallback library.
+- `--preview` draws the top three as light and approximate dark mock-ups (PNG with Pillow, SVG without). `--dart` writes the `AppThemeConfig` seeds; `--design-md` writes the DESIGN.md block with the source URL; every candidate gets a Realtime Colors link.
+- **A curated fallback library** (`assets/palettes/curated.json`): 22 palettes written for this plugin, tagged by subject and feeling, for when the sites can't be reached. `--curated <tags>`, `--tags`.
+
+### Theme
+- `AppThemeConfig` takes `secondarySeed`, `tertiarySeed` (the accent) and `neutralSeed` (the background: surfaces, text and outlines tinted toward its hue). Each role gets its own tonal palette: dark mode and the on-colors are derived, the strong color keeps its hue and the container stays soft.
+
+### Tests and evals
+- `ci/palette_selftest.py`: every URL format, the contrast math, role choice, fixes and warnings.
+- `palette.py --check-curated` in CI: every curated palette passes with no adjustment.
+- `ci/palettes_test.dart`: every curated palette, applied with the seeds `--dart` writes, builds a Flutter theme that passes the harness's contrast and soft-container checks in light and dark and keeps its hues.
+- New eval case `palette-without-brand-color` (18 in all): a bakery with no brand colors must get three checked palettes from named sources, not a seed from memory. Not run yet.
+
 ## 1.5.0
 
 From an outside assessment of 1.4.0 (2026-11-15). It rated the harness and the Flutter knowledge highly and named three weaknesses: a process with no small size, a design layer its own example didn't live up to, and checks that claimed more than they covered. This release takes its eight recommendations in order.

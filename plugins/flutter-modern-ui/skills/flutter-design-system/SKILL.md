@@ -32,10 +32,10 @@ A design system is what makes the tenth screen look like the first. This skill p
 ### B. Create a new system
 
 1. Intake (`../flutter-modern-ui/references/intake.md`): platforms, RTL, the look (cards, rows or rich), brand color, emoji, how much motion (none, soft, expressive) and where.
-2. **Write the brief** (`../flutter-modern-ui/references/identity.md`): subject, audience and setting, the job, three feeling words, a signature element from the subject's world. Propose it; the user corrects it. From it: the named palette (seed first), the typeface, the shape language, what the home screen shows. Run the sameness check on the plan and redo any line that would fit another app.
+2. **Write the brief** (`../flutter-modern-ui/references/identity.md`): subject, audience and setting, the job, three feeling words, a signature element from the subject's world. Propose it; the user corrects it. From it: the named palette (seed first; with no brand color, found on real palette sites and checked with `palette.py`, `../flutter-modern-ui/references/color.md`), the typeface, the shape language, what the home screen shows. Run the sameness check on the plan and redo any line that would fit another app.
 3. Choose a direction (`../flutter-modern-ui/references/directions.md`) for the chassis (density, depth, roundness); state it in one line.
 4. Copy the templates with `python3 ../flutter-modern-ui/scripts/copy_design_system.py --to <folder>` (default `lib/core/design_system/`): the **core kit** first; `--kit extras` adds motion, the adaptive shell and KPI tiles when the app needs them. It writes the barrel and, in `material_ui` projects, the right imports. Then:
-   - set `AppTheme.config` from the brief (seed, variant, font, script, surfaces, input style, motion level): the shipped seed is a placeholder;
+   - set `AppTheme.config` from the brief (seed and the palette's other seeds, variant, font, script, surfaces, input style, motion level): the shipped seed is a placeholder; `python3 ../flutter-modern-ui/scripts/palette.py <palette> --dart` writes the color part;
    - build the signature element once as a shared widget, from tokens;
    - retune every `DIRECTION` line in `tokens.dart` and `app_density.dart`;
    - add domain tones to `AppPalette` (e.g. `overdue`, `paid`) and one status → label/icon/tone mapping per domain enum;
