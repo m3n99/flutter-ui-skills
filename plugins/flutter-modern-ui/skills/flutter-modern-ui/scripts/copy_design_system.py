@@ -294,7 +294,19 @@ def write_barrel(target):
     return present
 
 
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description="Copy design-system templates into a Flutter project.")
     parser.add_argument("--kit", choices=sorted(KITS), default="core")
     parser.add_argument("--to", default="lib/core/design_system", help="target folder (default lib/core/design_system)")

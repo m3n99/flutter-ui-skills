@@ -6,4 +6,4 @@ timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-I'm starting a Flutter app for my uncle's shop: it tracks what customers owe him and the checks they gave him. Android only, in Arabic. His spec says "keep the UI basic". There's no code yet. Build the home screen.
+I'm starting a Flutter app for a neighbourhood bakery: the baker takes pre-orders by phone and needs to see what to bake each night and who picks up when. Android only, in Arabic. The owner's spec says "keep the UI basic". There's no code yet. Build the home screen.

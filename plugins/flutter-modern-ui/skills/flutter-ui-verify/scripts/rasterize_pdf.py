@@ -84,7 +84,7 @@ def render_pymupdf(module, pdf, pages, dpi, want_text):
 
 
 def render_poppler(pdf, pages, dpi, want_text):
-    info = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=True).stdout
+    info = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, encoding="utf-8", errors="replace", check=True).stdout
     match = re.search(r"^Pages:\s+(\d+)", info, re.MULTILINE)
     count = int(match.group(1)) if match else 1
     pngs, texts = [], {}
@@ -98,12 +98,24 @@ def render_poppler(pdf, pages, dpi, want_text):
         pngs.append(png)
         if want_text:
             texts[number] = subprocess.run(
-                ["pdftotext", "-layout", *first_last, str(pdf), "-"], capture_output=True, text=True, check=True
+                ["pdftotext", "-layout", *first_last, str(pdf), "-"], capture_output=True, encoding="utf-8", errors="replace", check=True
             ).stdout
     return pngs, texts
 
 
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description="Rasterize PDF pages to PNG for review.")
     parser.add_argument("paths", nargs="+", help="PDF files or folders of PDFs")
     parser.add_argument("--dpi", type=int, default=150, help="resolution (default 150)")

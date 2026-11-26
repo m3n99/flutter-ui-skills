@@ -6,4 +6,4 @@ timeout_seconds: 900
 allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
 ---
 
-Add the customers list screen to this Flutter project, in `lib/features/customers/customers_screen.dart`. It takes a `CustomersRepository`, loads the customers and shows each one with their name, phone and what they owe; tapping one calls an `onOpen(Customer)` callback. Write the file; I'll wire the route myself. Flutter isn't installed in this environment, so don't try to run anything.
+Add the members list screen to this Flutter project, in `lib/features/members/members_screen.dart`. It takes a `MembersRepository`, loads the members and shows each one with their name, phone and how many books they have out; tapping one calls an `onOpen(Member)` callback. Write the file; I'll wire the route myself. Flutter isn't installed in this environment, so don't try to run anything.

@@ -46,6 +46,11 @@ Map the project's own status enums and state classes (per-field `BaseStatus`, `A
 
 `EmptyState`: tinted icon (or a small illustration / emoji if chosen in intake), title, one sentence, and an action when the user can fix it.
 
+**Two sizes.**
+- **The full state** (`EmptyState`, `EmptyState.error`) fills a pane, a tab or a screen. It centers itself and has its own scroll view for short windows and big fonts, so it needs a bounded height.
+- **The inline state** (`EmptyState.inline`, `EmptyState.inlineError`) is for a list that is one section of a page that already scrolls: a log under a form, "Recent" under a summary card. It has a plain icon, an optional title, one sentence and an optional outlined action, with `AppSpace.md` around it.
+- The full state there would assert (a nested scroll view gets unbounded height), and its 88 px circle would dwarf the section. Loading in such a section is three `SkeletonBox` rows in a `Shimmer`.
+
 - **First use**: encouraging, with the primary action ("Add your first invoice").
 - **No results** (search/filter): name what was searched, offer "Clear filters".
 - **Nothing to do** (all paid, no alerts): positive and calm ("Nothing due this week").

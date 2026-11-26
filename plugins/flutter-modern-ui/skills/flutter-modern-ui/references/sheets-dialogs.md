@@ -22,7 +22,7 @@ Prefer sheets over dialogs for anything with input or more than two actions.
 4. **Footer**: sticky, never scrolls. Hairline top border, inside `SafeArea(top: false)`, padding 24 × 12, so its buttons never touch the navigation bar. Pick-one sheets have none: the tap on an option is the action.
 5. **Errors**: when the primary action fails, the message shows inside the sheet, right above the footer (`SheetScaffold(error: "Couldn't save: …")`), and the sheet stays open with what the user typed. A SnackBar would open on the page underneath, hidden by the sheet.
 
-Several entries in one sheet (three checks for one payment): an "Add another" button under the last entry copies it with the next likely values (number + 1, one month later, same amount and bank), and one save writes them all; editing a group opens the same sheet with every entry and a "set all to" row for the common field.
+Several entries in one sheet (three monthly payments set up at once): an "Add another" button under the last entry copies it with the next likely values (number + 1, one month later, same amount), and one save writes them all; editing a group opens the same sheet with every entry and a "set all to" row for the common field.
 
 ## Footer buttons: the same order in every sheet
 

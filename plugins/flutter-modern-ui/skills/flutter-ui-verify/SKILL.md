@@ -67,6 +67,11 @@ A fixed `pw.Page` drops what doesn't fit without an error (the test stays green)
 3. **Render and check**: `flutter test test/pdf` writes `test/pdf/out/<case>.pdf` and fails when a marked block is missing, outside the margins or overlapping.
 4. **Rasterize**: `python3 scripts/rasterize_pdf.py test/pdf/out --text` (this skill's folder; PyMuPDF or poppler's `pdftoppm`, since `Printing.raster` needs pdfium, which `flutter test` doesn't load). `--text` flags `null` and similar leftovers.
 5. **Look**: open every PNG, bottom of the page first (signatures, footer), then overlays, the longest case, empty fields and RTL runs. Fix, re-render, compare.
+6. **Pre-printed forms** (cheque, bank slip, government form): follow `references/preprinted-forms.md`.
+   - Positions are constants in cm, and values sit by their baseline from the font's metrics (`scripts/check_glyphs.py --metrics`).
+   - The PDF test writes a `*.measure.json` per sample.
+   - `python3 scripts/measure_pdf.py test/pdf/out` checks each value's baseline, start and end on a 600 dpi raster.
+   - Then on paper: a 10 cm ruler proves the scale, and every printer model is checked.
 
 ## Other ways to see the app
 

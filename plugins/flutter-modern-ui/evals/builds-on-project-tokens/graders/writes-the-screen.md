@@ -1,4 +1,4 @@
 ---
 type: file_exists
-path: 'lib/features/customers/customers_screen.dart'
+path: 'lib/features/members/members_screen.dart'
 ---

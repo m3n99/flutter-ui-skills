@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.7.0
+
+From design feedback (21 entries) on an Arabic, RTL app that prints onto pre-printed forms. Entries 1–3 had already been fixed (1.2–1.5: the printed-documents loop, `AppChoiceChips(label:)` and wrapping, the list-detail close and deselect). This release takes the other 18.
+
+### Values on pre-printed forms (entries 6, 7, 9, 10, 11, 14, 15, 19, 21)
+- **`flutter-ui-verify/references/preprinted-forms.md`**, covering:
+  - positions as cm constants from the paper's corner, with page = paper and zero margins;
+  - text with its baseline on the printed line and tails under it, not the deepest glyph above it, which left words floating 0.17–0.20 cm high;
+  - shrink-to-fit that keeps the baseline still (`Alignment(±1, 2·d/(a+d) − 1)`; the pdf package's y points up);
+  - start room inside a `FittedBox`, because the pdf package measures some Arabic narrower than it draws it and a leading «ا» was clipped («ثنا عشر»);
+  - at least 0.2 cm from printed text, and amounts anchored away from a printed currency label;
+  - one function returning the document and its paper format, since a `directPrintPdf` without `format:` printed A4 with every test green;
+  - feed direction with `rotateBox(unconstrained: true)`;
+  - system fonts such as Calibri: loaded at run time, never in assets; checked for Arabic (5.x has none); its seat measured (Calibri's Arabic rests 0.078 em high); tashkeel checked, since GPOS marks aren't applied;
+  - on paper: a 10 cm ruler proves the scale first (a queue set to Letter scales A4 to 92%), each field measured against its nearest printed line, hand-cut paper is ±1 mm, a test print, and a per-printer offset for the values only.
+- **`examples/cheque_pdf.dart`**, which puts all of that in one place:
+  - `ChequeLayout`, the positions in cm;
+  - `FormFont.fromBytes`, metrics from the font's `hhea` table;
+  - `ChequePrint(document, format)`;
+  - `forPrinter`, `lift` and `ChequeLayout.printerLift`;
+  - the grey-guides preview and `buildChequeTestSheet` with its ruler.
+- **`scripts/measure_pdf.py`**: rasterizes at 600 dpi and measures each value's ink in cm: its baseline (the bottom of the densest band, not the ink box), its start and its end. It checks them against `*.measure.json` files the PDF test writes from the same layout constants (`writePdfWithMeasures`, `MeasuredField` in the PDF harness), or measures ad hoc with `--window`.
+- **`check_glyphs.py --metrics`**: per font, it prints:
+  - ascent and descent as the pdf package reads them;
+  - the deepest glyph of any text, contextual forms included («ي» 0.44 em in IBM Plex Sans Arabic);
+  - where Arabic rests;
+  - whether the font has the Arabic forms and relies on GPOS marks;
+  - with `--size`, the values in cm.
+- CI renders the cheque samples (typical, longest, leading «ا», lifted, turned, test sheet) and measures them, and asserts the print job's format and the per-printer lift.
+
+### Forms, RTL, states, sheets (entries 4, 5, 12, 18)
+- **`forms.md`**: an error that stops a live preview or calculation shows as soon as it's true, not after submit. *Mode switches in forms*: the switch sits next to what it reveals, turning it on prefills the field from the current result, and the derived outcome is the helper text.
+- **`rtl-arabic.md`**: isolates fix the order, not where a line breaks. **`keepTogether()`** (in `ltr.dart`) puts no-break spaces and word joiners in values like «4–6 × 1,200 ₪». A list of such values goes in a `Wrap` of LTR `Text`s.
+- **`EmptyState.inline` / `.inlineError`** for a list that is a section of a page that already scrolls: no nested scroll view, a plain icon, one sentence. `states.md` says which size goes where.
+- **Checklist**: a sheet's failed action shows where it's always in view (above the footer or at the top of the body), never only at the end of a scrolling body.
+
+### Harness (entries 8, 17)
+- **`harness.md`**: widgets that call a plugin while building get one injectable function, swapped before the first pump, because an `IndexedStack` shell builds every tab and one plugin call breaks every screenshot. Widgets that read files get an injectable loader, or a future completed in `tester.runAsync` and passed in.
+
+### Scripts on Windows (entries 13, 16, 20)
+- **Every script prints UTF-8** whatever the console, and reads `git` and poppler output as UTF-8. `lint_ui.py --diff` crashed on any Arabic in a change (`stdout` came back `None`), and `rasterize_pdf.py --text` stopped at the first Arabic page with `UnicodeEncodeError`.
+- **`raw-duration`** only applies to presentation code: files that import Flutter's widgets, outside `test/`, `data/`, `domain/`, `repos/`, `use_cases/`, `services/` and similar. A sync interval or a debounce is timing, not motion.
+- **CI runs the scripts on Windows**, with Arabic in a git diff, in printed text and in font metrics (`ci/scripts_unicode_test.py`).
+
 ## 1.6.0
 
 Color when the user gives none. The skills took a seed from the subject or from a direction's table, which in practice meant a color picked from memory. Now they find the app's own color, or search real palettes and let the user choose.
@@ -108,7 +152,7 @@ A review of the whole plugin against Anthropic's own design and skill-authoring 
 
 ## 1.3.0
 
-Two rules from the maintainer, and the design contract of an Arabic, Android-only app built with 1.2.
+Two rules from the maintainer, and design feedback on 1.2.
 
 ### Nothing touches the system bars
 - **The rule** (hub non-negotiable 12, layout.md › System bars and safe areas): whatever sits near the top or bottom edge (a header, a search bar, a bottom bar, a button, the last list row) is inside `SafeArea` plus at least 8 px, clear of the status bar, the camera cutout or Dynamic Island, the navigation bar and the home indicator. App bars and navigation bars pad themselves.
@@ -134,7 +178,7 @@ Two rules from the maintainer, and the design contract of an Arabic, Android-onl
 
 ## 1.2.0
 
-From the feedback log of 1.1.0 on an Arabic, Android-only app built on Flutter 3.50 (problems 1–11).
+From design feedback on 1.1.0 (problems 1–11).
 
 ### Intake asks about the look (1)
 - **intake.md**: a new question, *the look*: cards, plain rows or rich, with sketches for question tools that show previews. It's asked even when the spec says "basic" or "simple" (those usually mean uncluttered, not unstyled). With nobody to answer, the first list screen is built with cards and its screenshot shown before the rest. DESIGN.md records it (*Look*), and the reviewer checks screens against it.
@@ -184,7 +228,7 @@ From the feedback log of 1.1.0 on an Arabic, Android-only app built on Flutter 3
 
 ## 1.1.0
 
-From the feedback log of 1.0.0 on the same Arabic, Windows-first + Android app (entries 1–3).
+From design feedback on 1.0.0 (entries 1–3).
 
 ### Printed documents (entry 1)
 - **flutter-ui-verify › Printed documents**: sample PDFs (typical, every optional field empty, the longest content the forms allow) → block checks → rasterize → open every page. New `references/printed-documents.md`.
@@ -211,7 +255,7 @@ From the feedback log of 1.0.0 on the same Arabic, Windows-first + Android app (
 
 ## 1.0.0
 
-A rebuild driven by feedback from using 0.1.0 on a real Arabic, Windows-first + Android app, and by one goal: a skill set that understands design systems, studies the existing app, keeps screens consistent and verifies its own work visually.
+A rebuild driven by design feedback from using 0.1.0 on an Arabic RTL app, and by one goal: a skill set that understands design systems, studies the existing app, keeps screens consistent and verifies its own work visually.
 
 ### New skills and agent
 - **flutter-design-system**: create, extend, repair or document a design system; study existing code (`scripts/ui_inventory.sh`) or reference screenshots; `DESIGN.md` contract and `UI_PASS.md` progress templates.

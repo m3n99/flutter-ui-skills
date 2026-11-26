@@ -5,7 +5,7 @@ import '../tokens.dart';
 import 'ltr.dart';
 
 /// One detail of a card row: a small icon and muted text ("INV-1041",
-/// "Due Nov 22", "3 checks"). The icon grows with big fonts (up to 1.4×)
+/// "Due Nov 22", "3 tasks"). The icon grows with big fonts (up to 1.4×)
 /// and never carries the meaning alone.
 ///
 /// Put several in a `Wrap(spacing: AppSpace.sm, runSpacing: AppSpace.xxs)`

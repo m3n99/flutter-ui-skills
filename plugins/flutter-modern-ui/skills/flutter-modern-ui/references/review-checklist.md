@@ -58,6 +58,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Validation after first submit; warnings don't block.
 - [ ] Every form renders in create and edit mode; edit mode fills its controllers outside `build`.
 - [ ] Pick-one sheets close on the tap that chooses (no Apply).
+- [ ] A failed primary action shows its message inside the sheet where it's always in view: above the footer (`SheetScaffold(error:)`) or at the top of the body. Never only at the end of a scrolling body (with a long list at text scale 1.3 it's scrolled out of sight, and the button seems to do nothing), never only as a toast behind the sheet. The sheet stays open and the action is enabled again for a retry.
 - [ ] Optional fields say "(optional)" in the label; totals in several currencies show one line per currency.
 
 ## Platforms

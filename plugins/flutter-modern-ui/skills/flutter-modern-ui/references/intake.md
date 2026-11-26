@@ -61,7 +61,7 @@ Add: "Every level keeps motion short (150–450 ms), switches it off when the sy
 
 **6. The brief and the direction** (only when there is no design system yet) — don't ask "what style do you want?"; propose and let the user correct. Write the five-line brief (`identity.md` › The brief) from what the project shows (its name, data model, strings, store listing), with the direction you'd pick and why:
 
-> **Subject:** the notebook where a shopkeeper tracks who owes him and which checks fall due. **Audience:** one owner, at the counter, quick looks. **Job:** see who to call today. **Feeling:** plain-spoken, trustworthy, unhurried. **Signature:** amounts set like a ledger column. **Direction:** Soft Minimal on warm paper, ink-blue accent.
+> **Subject:** the order book where a neighbourhood bakery keeps tomorrow's pre-orders. **Audience:** the baker, before dawn, flour on the hands, quick looks between trays. **Job:** see what to bake tonight and for whom. **Feeling:** warm, plain, unhurried. **Signature:** each order set like a handwritten order slip. **Direction:** Soft Minimal on cream paper, crust-brown accent.
 >
 > "Is this right? Any brand color, logo or apps whose look you like?"
 

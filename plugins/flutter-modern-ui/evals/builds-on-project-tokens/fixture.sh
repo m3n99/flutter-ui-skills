@@ -4,11 +4,11 @@
 # grade the file Claude writes. Runs only with `claude plugin eval --scaffold`.
 set -euo pipefail
 
-mkdir -p lib/core/ui lib/features/orders lib/features/customers
+mkdir -p lib/core/ui lib/features/loans lib/features/members
 
 cat > pubspec.yaml <<'YAML'
-name: shopbook
-description: A shopkeeper's customers, orders and what they owe.
+name: shelfbook
+description: A community library's members and the books they have out.
 environment:
   sdk: ^3.5.0
 dependencies:
@@ -19,10 +19,10 @@ flutter:
 YAML
 
 cat > DESIGN.md <<'MD'
-# Shopbook design contract
+# Shelfbook design contract
 
 ## Brief
-Subject: a shopkeeper's notebook of customers and what they owe. Audience: the owner, at the counter. Job: find a customer and see their balance. Feeling: plain, trustworthy, quick. Signature: balances set in a ledger column.
+Subject: a neighbourhood library's members and the books they have out. Audience: the volunteer at the desk. Job: find a member and see what they have out. Feeling: plain, friendly, quick. Signature: loan counts set like a date stamp.
 
 ## Decisions
 - Platforms: Android only. Languages: English only.
@@ -140,43 +140,43 @@ void showBrandMessage(BuildContext context, String text) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 DART
 
-cat > lib/features/customers/customer.dart <<'DART'
-class Customer {
-  const Customer({required this.id, required this.name, required this.phone, required this.balanceCents});
+cat > lib/features/members/member.dart <<'DART'
+class Member {
+  const Member({required this.id, required this.name, required this.phone, required this.booksOut});
   final int id;
   final String name;
   final String phone;
 
-  /// What the customer owes, in cents. Zero when settled.
-  final int balanceCents;
+  /// How many books the member has out. Zero when none.
+  final int booksOut;
 }
 
-abstract class CustomersRepository {
-  Future<List<Customer>> load();
+abstract class MembersRepository {
+  Future<List<Member>> load();
 }
 DART
 
-cat > lib/features/orders/orders_screen.dart <<'DART'
+cat > lib/features/loans/loans_screen.dart <<'DART'
 import 'package:flutter/material.dart';
 
 import '../../core/ui/brand.dart';
 import '../../core/ui/gaps.dart';
 import '../../core/ui/widgets.dart';
 
-class OrdersScreen extends StatelessWidget {
-  const OrdersScreen({super.key});
+class LoansScreen extends StatelessWidget {
+  const LoansScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Orders')),
+      appBar: AppBar(title: const Text('Loans')),
       body: ListView(
         padding: EdgeInsets.fromLTRB(Gaps.s16, Gaps.s16, Gaps.s16, MediaQuery.paddingOf(context).bottom + Gaps.s24),
         children: [
           BrandCard(
             child: Row(
               children: [
-                Expanded(child: Text('Order 1042', style: context.type.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Expanded(child: Text('Loan 1042', style: context.type.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
                 const SizedBox(width: Gaps.s8),
                 Text('Nov 10', style: context.type.caption?.copyWith(color: context.brand.textMuted)),
               ],

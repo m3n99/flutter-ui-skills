@@ -19,6 +19,7 @@ Reference: `assets/examples/record_form_screen.dart`.
 ## Validation
 
 - Validate on submit, then live after the first submit (`AutovalidateMode.onUserInteraction` once `_submitted`). Never flag a field red while the user types its first character.
+- **Except an error that stops a live result**: when a value makes a live preview or calculation stop updating (a fixed amount per installment larger than the total), show that error as soon as it's true, not after submit. Otherwise the preview goes quietly stale and nothing says why. Plain errors ("enter an amount") stay submit-gated.
 - Error text says how to fix it: "Enter an amount above zero.", not "Invalid".
 - On a failed submit: scroll to / focus the first invalid field, and shake the submit button (`ShakeOnChange(trigger: failedSubmits)`), with the error text carrying the meaning.
 - **Warnings are not errors.** For unusual-but-valid input (a large amount, a date far in the past), show helper text in the palette's warning color with words that say it's a check ("Larger than usual. Double-check before sending."). The user can still save.
@@ -93,3 +94,12 @@ Reference: `assets/examples/record_form_screen.dart`.
 - Destructive actions last, in their own section, `error` color.
 - "Delete everything" uses typed confirmation (the user types a word shown in the dialog), with no Undo.
 - Show the app version and data location (desktop) at the bottom in bodySmall.
+
+## Mode switches in forms
+
+A switch inside a form that changes how other values are calculated and reveals a field of its own («مبلغ ثابت لكل قسط», "split into equal payments"):
+
+- **It sits next to what it reveals**: a `SwitchListTile` (a title, and a subtitle saying what happens to the rest: "the last installment takes the remainder") beside the field, in the same row of a two-column grid on wide windows, directly above it on phones.
+- **Turning it on prefills the revealed field from the current result** (the per-installment amount now), so the preview doesn't jump.
+- **The derived outcome is the field's helper text** ("Installment 10 of 10: 3,000.50 ₪"), and an error that stops the preview shows live (Validation above).
+- A switch in **settings** is different: it applies at once, with no Save (Settings pages, above).

@@ -19,6 +19,7 @@
 // pdf_cases.dart. Then rasterize test/pdf/out and look at every page
 // (flutter-ui-verify › references/printed-documents.md).
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -222,3 +223,78 @@ String? _outside(PdfHit hit, pw.EdgeInsets? margin) {
 
 /// A font from the app's assets, for the print theme in tests.
 Future<pw.Font> pdfFontAsset(String path) async => pw.Font.ttf(await rootBundle.load(path));
+
+/// A value on a pre-printed form, for measure_pdf.py: where its ink must be
+/// on the page, in cm from the paper's top-left corner
+/// (references/preprinted-forms.md). Build it from the same layout
+/// constants the document uses, so the check can't drift from the code.
+class MeasuredField {
+  const MeasuredField(
+    this.name, {
+    required this.window,
+    required this.baseline,
+    required this.start,
+    this.endLimit,
+    this.anchorRight = false,
+    this.baselineTolerance = 0.05,
+    this.startPast = 0.08,
+    this.startShort = 0.08,
+    this.reportOnly = false,
+  });
+
+  final String name;
+
+  /// x0, y0, x1, y1: the area measured. Include room for tails under the
+  /// line and for the start overhang; keep other values out.
+  final List<double> window;
+
+  /// The printed line the baseline must sit on.
+  final double baseline;
+
+  /// Where the value starts: its right edge when [anchorRight] (Arabic, or
+  /// an amount anchored away from a label), else its left edge.
+  final double start;
+
+  /// No ink past this (the far end of the line, a printed label).
+  final double? endLimit;
+  final bool anchorRight;
+  final double baselineTolerance;
+
+  /// How far the first letter may reach past [start] (the pdf package draws
+  /// some Arabic beyond the width it measured), and how far short of it.
+  final double startPast;
+  final double startShort;
+
+  /// Measure and print, don't judge.
+  final bool reportOnly;
+
+  Map<String, Object?> toJson() => {
+        'name': name,
+        'window': window,
+        'baseline': baseline,
+        'start': start,
+        if (endLimit != null) 'end_limit': endLimit,
+        'anchor': anchorRight ? 'right' : 'left',
+        'tolerance': {'baseline': baselineTolerance, 'start_past': startPast, 'start_short': startShort},
+        if (reportOnly) 'expect': 'report',
+      };
+}
+
+/// Writes the PDF to `<outDir>/<name>.pdf` and, with [fields], the
+/// `<name>.measure.json` that measure_pdf.py checks after rasterizing.
+Future<File> writePdfWithMeasures(
+  pw.Document document,
+  String name, {
+  List<MeasuredField> fields = const [],
+  int page = 1,
+  String outDir = 'test/pdf/out',
+}) async {
+  final pdf = File('$outDir/$name.pdf');
+  await pdf.parent.create(recursive: true);
+  await pdf.writeAsBytes(await document.save());
+  if (fields.isNotEmpty) {
+    final spec = {'pdf': '$name.pdf', 'page': page, 'fields': [for (final field in fields) field.toJson()]};
+    await File('$outDir/$name.measure.json').writeAsString(const JsonEncoder.withIndent('  ').convert(spec));
+  }
+  return pdf;
+}

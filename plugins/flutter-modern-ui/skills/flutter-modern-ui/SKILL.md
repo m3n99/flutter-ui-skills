@@ -92,9 +92,10 @@ Read only the references the screen needs. **When the app has a right-to-left la
 | Messages, errors, delete with Undo | `references/messages.md` |
 | Arabic / Hebrew / Persian, numbers | `references/rtl-arabic.md` |
 | Printed documents (PDF): fonts, LTR runs, line budgets, stamps | `references/rtl-arabic.md` › Printing, `assets/examples/invoice_pdf.dart` |
+| Values on a pre-printed form (cheque, bank slip, government form): cm positions, baseline on the line, print format, feed direction, system fonts, measuring, per-printer offset | `../flutter-ui-verify/references/preprinted-forms.md`, `assets/examples/cheque_pdf.dart` |
 | Contrast, semantics, text scale, focus | `references/accessibility.md` |
 
-Reference compositions to imitate for structure and craft: `assets/examples/` (a home that answers the daily question, in English and in real Arabic; records list-detail with filter sheet, row menu and undo; long form; sign-in with its failed state; settings; app shell; the signature as one shared widget, `ledger.dart`; printed invoice). They are one app with its own brief (`assets/examples/example_app.dart`): take the patterns, not its ink color, its ledger lines or its words.
+Reference compositions to imitate for structure and craft: `assets/examples/` (a home that answers the daily question, in English and in real Arabic; records list-detail with filter sheet, row menu and undo; long form; sign-in with its failed state; settings; app shell; the signature as one shared widget, `ledger.dart`; printed invoice; a cheque printed onto its pre-printed form, `cheque_pdf.dart`). They are one app with its own brief (`assets/examples/example_app.dart`): take the patterns, not its ink color, its ledger lines or its words.
 
 ## Step 5 — Motion
 

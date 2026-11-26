@@ -39,7 +39,7 @@ Words are part of the design: they are how the user finds the way. Generic words
 
 ## Voice
 
-Pick it from the brief's feeling words and keep it in every string: a ledger for a shopkeeper is plain and exact; a children's quiz can cheer; a medical log never jokes. Errors and empty states use the same voice as the rest, at a lower volume.
+Pick it from the brief's feeling words and keep it in every string: a bakery's order book is warm and plain; a children's quiz can cheer; a medical log never jokes. Errors and empty states use the same voice as the rest, at a lower volume.
 
 ## Arabic interfaces
 
