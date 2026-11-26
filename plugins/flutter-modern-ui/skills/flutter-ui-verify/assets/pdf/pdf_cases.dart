@@ -70,7 +70,7 @@ PrintableInvoice _longest({required bool arabic}) => PrintableInvoice(
           PrintedPayment(
             date: DateTime(2025, 12 + i, 5),
             amountCents: 41666600 + i,
-            method: arabic ? 'حوالة بنكية - البنك العربي - فرع عبدون' : 'Bank transfer - Arab Bank, Abdoun branch',
+            method: arabic ? 'حوالة بنكية - رقم المرجع 2026-11-0042' : 'Bank transfer - reference 2026-11-0042',
           ),
       ],
       notes: _atMax(

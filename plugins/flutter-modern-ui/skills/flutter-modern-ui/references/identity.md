@@ -8,10 +8,10 @@ A direction (`directions.md`) is the chassis: density, depth, how round, how liv
 
 | Line | Write | Not |
 |---|---|---|
-| **Subject** | what the app is, in its own world's words: "the notebook where a shopkeeper tracks who owes him and which checks fall due" | "a finance app" |
-| **Audience and setting** | who, where, for how long, in what light, with which hand: "one shop owner, at the counter, glancing between customers" | "users" |
+| **Subject** | what the app is, in its own world's words: "the order book where a neighbourhood bakery keeps tomorrow's pre-orders" | "a food app" |
+| **Audience and setting** | who, where, for how long, in what light, with which hand: "the baker, before dawn, flour on the hands, glancing between trays" | "users" |
 | **The job** | the one thing the app must make easy; it becomes the primary thing on the home screen | a feature list |
-| **Feeling** | three words that rule something out: "plain-spoken, trustworthy, unhurried" | "modern, clean, user-friendly" |
+| **Feeling** | three words that rule something out: "warm, plain, unhurried" | "modern, clean, user-friendly" |
 | **Signature** | one element from the subject's world that the app is remembered by (§ 2) | "nice cards" |
 
 When the user hasn't said these, propose them yourself from what the project shows (name, data model, strings, store listing) and confirm in the intake round (`intake.md` › Direction): one short message, five lines, "is this right?". What the user fixes always wins: a brand color, a font, "make it look like app X".
@@ -32,8 +32,8 @@ Signatures that are cheap to build in Flutter and carry meaning:
 
 | App | Signature | Built with |
 |---|---|---|
-| Debt ledger | amounts set as a ruled column in tabular figures with a hairline above each total, like a ledger page; a rotated "paid" stamp on settled rows | `Divider`, `FontFeature.tabularFigures`, `Transform.rotate` on a bordered pill |
-| Football trivia | a scoreboard band (big tabular numerals on a dark strip) and answer buttons shaped like shirt-number badges | one `ShapeBorder`, `displayMedium` |
+| Bakery pre-orders | each order as a slip: the quantity big at the start, the name and pickup time under it, a dashed tear line between slips | `displaySmall` with `FontFeature.tabularFigures`, a dashed line from one `CustomPainter` |
+| Word puzzle game | letter tiles (square, thick bottom edge, big glyph) for answers and the score, and a crossword grid on the empty state | one `ShapeBorder`, `displayMedium` |
 | News reader | serif headlines at display size with the section's color as a 4 px rule on the start edge | `BorderDirectional(start:)`, a serif family |
 | Ambulance trip log | each trip as a route line (dot, line, dot) from pickup to drop-off, with the time in large numerals | a 20-line `CustomPainter` |
 | Habit tracker | the week as seven rings that fill | `CircularProgressIndicator` with tokens |
@@ -43,7 +43,7 @@ One signature, in one to three places (the home hero, the record card, the empty
 
 ## 3. Decide five things from the brief
 
-**Color.** Seed from the brand or the subject (ink blue-black, check-paper green, pitch green, saffron), never the template's placeholder. With no brand color, the subject and the feeling words are the search terms for real palettes (Color Hunt, Coolors, Figma, Realtime Colors, Adobe Color); `color.md` says how to find, check, show and apply them. Name the palette, four to six colors with a job each: ink, paper, accent, and the status tones. The neutrals carry more of the mood than the accent: tint the surfaces toward the seed (`tonalSpot` does it lightly; `SurfaceStyle.eyeComfort` gives warm paper; `schemeOverride` sets exact surfaces). One accent does the pointing; a second color appears only if the content has two real categories. Decide which mode is home: an app used at night in a vehicle is dark-first. Then the contrast and soft-container tests.
+**Color.** Seed from the brand or the subject (crust brown, pitch green, saffron, harbour blue), never the template's placeholder. With no brand color, the subject and the feeling words are the search terms for real palettes (Color Hunt, Coolors, Figma, Realtime Colors, Adobe Color); `color.md` says how to find, check, show and apply them. Name the palette, four to six colors with a job each: ink, paper, accent, and the status tones. The neutrals carry more of the mood than the accent: tint the surfaces toward the seed (`tonalSpot` does it lightly; `SurfaceStyle.eyeComfort` gives warm paper; `schemeOverride` sets exact surfaces). One accent does the pointing; a second color appears only if the content has two real categories. Decide which mode is home: an app used at night in a vehicle is dark-first. Then the contrast and soft-container tests.
 
 **Type.** The typeface is most of the personality, and the cheapest change. Choose for the script first, then the feeling:
 
@@ -90,11 +90,11 @@ DESIGN.md › *Brief* holds the five lines, the named palette, the typeface, and
 
 ## Worked example
 
-> **Subject:** a shopkeeper's notebook of who owes what and which checks fall due. **Audience:** one owner, Arabic, phone at the counter, quick looks between customers. **Job:** see who to call today. **Feeling:** plain-spoken, trustworthy, unhurried. **Signature:** the ledger column.
+> **Subject:** the order book where a neighbourhood bakery keeps tomorrow's pre-orders. **Audience:** the baker, Arabic, a phone propped by the oven, quick looks between trays. **Job:** see what to bake tonight and for whom. **Feeling:** warm, plain, unhurried. **Signature:** the order slip.
 
-- **Color:** ink blue-black `#1F2A44` as the seed (`fidelity`), warm paper surfaces (`eyeComfort`), check-green for settled, stamp-red for returned and overdue, pencil grey for details. No second accent.
-- **Type:** IBM Plex Sans Arabic for its figures; amounts in tabular figures; the one big number on the home screen is "due this week" in `displaySmall`.
-- **Shape:** card radius 12, controls 8 (`AppRadius.md` / `sm`, one step under the template's 16 / 12), paper-like rather than bubbly. One card per customer; inside it, checks are ruled rows, not cards.
-- **Home:** today's due and overdue list with a call button on each row, not a KPI grid.
-- **Signature:** every total sits under a hairline at the end edge, like a ledger; settled rows carry a small rotated "paid" stamp. Used on the customer card and the month summary only.
-- **Sameness check:** the first draft had an indigo seed, a KPI grid and a greeting header. All three would fit any app, so the seed became ink, the grid became "who to call today", and the greeting went.
+- **Color:** crust brown `#8A4B24` as the seed (`fidelity`), cream surfaces (`eyeComfort`), sage green for collected, berry red for unpaid, flour grey for details. No second accent.
+- **Type:** IBM Plex Sans Arabic for its figures; quantities in tabular figures; the one big number on the home screen is tonight's total of loaves in `displaySmall`.
+- **Shape:** card radius 12, controls 8 (`AppRadius.md` / `sm`, one step under the template's 16 / 12), paper-like rather than bubbly. One card per pickup time; inside it, orders are slips, not cards.
+- **Home:** tonight's bake list (what, how many, for which pickup) with "Mark baked" on each row, not a KPI grid.
+- **Signature:** every order is a slip: the quantity big at the start, the name and pickup time under it, a dashed tear line between slips. Used on the bake list and the order card only.
+- **Sameness check:** the first draft had an indigo seed, a KPI grid and a greeting header. All three would fit any app, so the seed became crust brown, the grid became tonight's bake list, and the greeting went.

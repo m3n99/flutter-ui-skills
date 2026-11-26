@@ -17,6 +17,19 @@ notes (they render, in another style).
 glyph). --fallback: the families in fontFamilyFallback, in order.
 Emoji are skipped: the system emoji font draws them.
 
+Metrics for printing (--metrics): where text sits on a printed line.
+
+    python3 check_glyphs.py --font calibri.ttf --metrics "تحريراً في" "12/11/2026" --size 11 13
+
+prints, per font: ascent and descent as the pdf package reads them (hhea,
+in em), the deepest glyph of each text including its contextual forms
+(the tail of «ي» goes deeper than the font's own descent in some fonts),
+where Arabic letters rest (the bottom of the tatweel «ـ»: 0 in most fonts,
+above the baseline in Calibri), and whether the font has the Arabic forms
+(alef, lam-alef) and relies on GPOS mark positioning, which the pdf package
+doesn't apply (tashkeel then prints misplaced). With --size, each value is
+also given in cm. See references/preprinted-forms.md.
+
 Needs fontTools: pip install fonttools.
 Exit codes: 0 every character covered, 1 error, 2 missing glyphs.
 """
@@ -121,13 +134,112 @@ def load_cmaps(paths):
     return cmaps
 
 
+def _depths(font, text):
+    """(deepest yMin among the glyphs that can draw [text], the char) in font
+    units. A character's contextual forms (`.fina`, `.medi`, `.init`) are
+    included by glyph name, since a final «ي» is a different glyph."""
+    cmap = font.getBestCmap() or {}
+    glyf = font["glyf"] if "glyf" in font else None
+    glyph_set = font.getGlyphSet()
+    names = font.getGlyphOrder()
+    deepest, which = 0, None
+    for char in text:
+        base = cmap.get(ord(char))
+        if base is None:
+            continue
+        variants = [base] + [n for n in names if n.startswith(base + ".")]
+        for name in variants:
+            if glyf is not None:
+                g = glyf[name]
+                g.recalcBounds(glyf)
+                y_min = getattr(g, "yMin", 0) if g.numberOfContours else 0
+            else:
+                from fontTools.pens.boundsPen import BoundsPen
+
+                pen = BoundsPen(glyph_set)
+                glyph_set[name].draw(pen)
+                y_min = pen.bounds[1] if pen.bounds else 0
+            if y_min < deepest:
+                deepest, which = y_min, char
+    return deepest, which
+
+
+def print_metrics(paths, texts, sizes):
+    from fontTools.ttLib import TTFont
+
+    def cm(em, size):
+        return em * size * 2.54 / 72
+
+    for path in paths:
+        font = TTFont(path, fontNumber=0)
+        upem = font["head"].unitsPerEm
+        hhea = font["hhea"]
+        ascent, descent = hhea.ascent / upem, -hhea.descent / upem
+        cmap = font.getBestCmap() or {}
+        print(f"{Path(path).name}  (unitsPerEm {upem})")
+        print(f"  ascent {ascent:.3f} em, descent {descent:.3f} em (hhea: what the pdf package uses; line box {ascent + descent:.3f} em)")
+        if "OS/2" in font:
+            os2 = font["OS/2"]
+            print(f"  OS/2 typo {os2.sTypoAscender / upem:.3f} / {-os2.sTypoDescender / upem:.3f} em, win {os2.usWinAscent / upem:.3f} / {os2.usWinDescent / upem:.3f} em, fsType {os2.fsType}")
+        has_arabic = 0x0627 in cmap
+        if has_arabic:
+            tatweel = cmap.get(0x0640)
+            if tatweel:
+                seat, _ = 0, None
+                g = font["glyf"][tatweel] if "glyf" in font else None
+                if g is not None and g.numberOfContours:
+                    g.recalcBounds(font["glyf"])
+                    seat = g.yMin / upem
+                note = "" if abs(seat) < 0.01 else "  <- Arabic rests above the baseline: lower Arabic text by this much to sit on a printed line"
+                print(f"  Arabic rests at {seat:+.3f} em (bottom of «ـ»){note}")
+            gsub = font["GSUB"].table if "GSUB" in font else None
+            features = {r.FeatureTag for r in gsub.FeatureList.FeatureRecord} if gsub and gsub.FeatureList else set()
+            lam_alef = 0xFEFB in cmap or bool(features & {"rlig", "liga"})
+            forms = features & {"init", "medi", "fina", "isol"}
+            print(f"  Arabic: alef yes, contextual forms {'yes' if forms else 'NO'}, lam-alef {'yes' if lam_alef else 'NO'}")
+            gpos = font["GPOS"].table if "GPOS" in font else None
+            gpos_features = {r.FeatureTag for r in gpos.FeatureList.FeatureRecord} if gpos and gpos.FeatureList else set()
+            if "mark" in gpos_features:
+                print("  tashkeel placed by GPOS 'mark': the pdf package doesn't apply it, so «تحريراً» may print with its marks misplaced. Rasterize and look; strip the marks for print if they land wrong")
+        else:
+            print("  no Arabic letters in this font (Calibri 5.x, for one, has none; 6.x on Windows 10/11 does)")
+        for text in texts:
+            depth, char = _depths(font, text)
+            em = -depth / upem
+            sized = "".join(f", {cm(em, size):.3f} cm at {size:g} pt" for size in sizes)
+            missing = [c for c in text if c.strip() and ord(c) not in cmap]
+            lack = f"  (no glyph for: {''.join(missing)})" if missing else ""
+            print(f"  «{text}»: deepest {em:.3f} em below the baseline" + (f" («{char}»)" if char else "") + sized + lack)
+        for size in sizes:
+            print(f"  at {size:g} pt: ascent {cm(ascent, size):.3f} cm, descent {cm(descent, size):.3f} cm")
+        print()
+
+
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description="Check the fonts cover every character the UI shows.")
     parser.add_argument("paths", nargs="*", help="folders or files to scan (default: lib)")
     parser.add_argument("--font", action="append", required=True, help="the app's font file, one per weight")
+    parser.add_argument("--metrics", nargs="*", metavar="TEXT", help="print the fonts' printing metrics (and the deepest glyph of each TEXT) instead of checking coverage")
+    parser.add_argument("--size", nargs="*", type=float, default=[], metavar="PT", help="with --metrics: also give the values in cm at these point sizes")
     parser.add_argument("--fallback", action="append", default=[], help="a fontFamilyFallback font file")
     parser.add_argument("--chars", default="", help="characters the app builds at run time, e.g. currency symbols")
     args = parser.parse_args()
+
+    if args.metrics is not None:
+        print_metrics(args.font, args.metrics, args.size)
+        return 0
 
     used = {}  # char -> first "file:line"
     files = 0

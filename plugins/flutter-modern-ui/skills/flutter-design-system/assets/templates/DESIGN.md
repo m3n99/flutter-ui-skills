@@ -13,7 +13,7 @@ Who this app is, in five lines. Every later choice answers to them (`flutter-mod
 - **The job:** {the one thing it must make easy; the home screen shows it first}
 - **Feeling:** {three words that rule something out}
 - **Signature:** {the one element from the subject's world} — appears on {home card, record card, empty state} only
-- **Palette:** {ink `#1F2A44` (seed, fidelity) · warm paper surfaces · check-green settled · stamp-red overdue · pencil-grey details}
+- **Palette:** {crust brown `#8A4B24` (seed, fidelity) · cream paper surfaces · sage-green collected · berry-red unpaid · flour-grey details}
 - **Palette source:** {the brand / found for the brief: name and URL (Color Hunt, Coolors, Figma, Realtime Colors…), the feeling words it was chosen for, any color darkened by palette.py; or "a default to confirm"}. Paste `palette.py --design-md` here.
 - **Typeface:** {family, why; numerals tabular} · icons: {`Icons.*_rounded`}
 - **Voice:** {plain and exact; buttons say what happens; one name per thing}

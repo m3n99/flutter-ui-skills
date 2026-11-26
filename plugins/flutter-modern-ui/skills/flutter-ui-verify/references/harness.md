@@ -115,6 +115,31 @@ TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodC
 );
 ```
 
+**Widgets that call a plugin while they build** (a live PDF preview through `Printing.raster`, a camera preview, a file picker's thumbnail) throw `MissingPluginException` in the middle of the frame. **An `IndexedStack` shell builds every tab up front**, so one such widget on one tab breaks every screenshot and every matrix cell, not just its own. Give the widget **one injectable function** with the plugin call as its default, and swap it before the first pump:
+
+```dart
+class ChequePreview extends StatelessWidget {
+  @visibleForTesting
+  static Future<Uint8List> Function(Uint8List pdf, double dpi) rasterize =
+      (pdf, dpi) async => (await Printing.raster(pdf, dpi: dpi).first).toPng();
+  …
+}
+
+// ui_cases.dart › uiConfig.setUp (runs before the first pump of every file):
+ChequePreview.rasterize = (_, __) async => transparentPng; // or a PNG rendered once from the sample PDF
+```
+
+**Widgets that read files or a database themselves** (a `FutureBuilder` over `File.readAsBytes`, an image loaded from disk): real I/O never completes inside `testWidgets`' fake-async zone, so the screenshot only ever shows the spinner, even with `tester.runAsync` delays after the pump. Either:
+- give the widget an **injectable loader**, as above, that returns the sample bytes; or
+- **start the future inside `tester.runAsync` and pass it in**, so it's already complete when the widget builds:
+
+```dart
+final bytes = await tester.runAsync(() => File('test/fixtures/cheque.jpg').readAsBytes());
+await pumpUi(tester, uiConfig, variant, (_) => ChequeImageDialog(load: () => SynchronousFuture(bytes!)));
+```
+
+Check the file handling itself with plain `test`s and real I/O.
+
 ### Forms: a create case and an edit case
 
 Some bugs only exist when the fields start filled (a controller set in `build` calls `setState` during the build). Render every form both ways:

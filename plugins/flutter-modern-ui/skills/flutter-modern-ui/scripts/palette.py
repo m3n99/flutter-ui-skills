@@ -612,7 +612,20 @@ def preview(candidates, path):
 
 # ---------------------------------------------------------------- main
 
+
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("candidates", nargs="*", help="palette URLs or hex codes, one argument per palette")
     parser.add_argument("--file", help="a file with one candidate per line (# comments allowed after the colors)")

@@ -26,6 +26,11 @@ What it does not see (the review and the screenshots do):
 A clean run means none of the patterns below matched, not that the screen
 follows the design system.
 
+`raw-duration` only applies to presentation code: files that import
+Flutter's widgets (material, widgets, cupertino, material_ui) outside
+test/, data/, domain/, repos/, use_cases/, services/ and similar folders.
+A sync interval or a debounce there is timing, not motion.
+
 Skipped: the files that define the tokens and the theme, by exact name
 (`tokens.dart`, `app_theme.dart`, `color_palette.dart`: the name ends with
 tokens, theme, palette, typography or density), generated files, and
@@ -66,6 +71,19 @@ RULES = [
     ("left-right", r"\bPositioned\([^)]*\b(?:left|right):", "left/right position: PositionedDirectional (start/end)"),
 ]
 COMPILED = [(rule, re.compile(pattern), message) for rule, pattern, message in RULES]
+
+# Rules about how the interface looks and moves. In code with no interface
+# (a sync interval, a debounce, a file-lock wait, test delays) a Duration is
+# timing, not motion, and there is no BuildContext to scale it with.
+UI_ONLY = {"raw-duration"}
+NON_UI_FOLDERS = re.compile(r"(?:^|/)(?:test|integration_test|data|domain|repos|repositories|use_?cases|services|infrastructure|sync|jobs|workers|api)/", re.I)
+UI_IMPORT = re.compile(r"""import\s+['"]package:(?:flutter/(?:material|widgets|cupertino)|material_ui/|cupertino_ui/)""")
+
+
+def is_ui_file(path, text):
+    """True for presentation code: not in a non-UI folder (data, domain,
+    use_cases, test...) and imports Flutter's widgets."""
+    return not NON_UI_FOLDERS.search(path.as_posix()) and bool(UI_IMPORT.search(text))
 
 # Token classes by name: the templates' App* classes, and names that say what
 # they hold (Gaps, Insets, Corners, Dimens). --tokens adds the rest.
@@ -146,7 +164,10 @@ def lint_text(path, text, rules, only_lines=None):
         return low + 1
 
     seen, findings = set(), []
+    ui_file = is_ui_file(path, text)
     for rule, pattern, message in rules:
+        if rule in UI_ONLY and not ui_file:
+            continue
         for match in pattern.finditer(code):
             number = line_of(max(match.start(), match.end() - 1))
             if number > len(lines) or (number, rule) in seen:
@@ -182,7 +203,7 @@ def dart_files(targets):
 
 
 def git(*args):
-    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
+    return subprocess.run(["git", *args], capture_output=True, encoding="utf-8", errors="replace", check=True).stdout
 
 
 def lint_diff(base, rules, skip=()):
@@ -212,7 +233,19 @@ def lint_diff(base, rules, skip=()):
     return findings + lint_files(untracked, rules, skip)
 
 
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description="Grep-level check of the UI non-negotiables.")
     parser.add_argument("paths", nargs="*", help="files or folders (default: lib)")
     parser.add_argument("--diff", nargs="?", const="HEAD", metavar="BASE", help="only lines changed since BASE (default HEAD)")

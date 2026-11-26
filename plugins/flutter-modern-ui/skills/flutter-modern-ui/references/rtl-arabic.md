@@ -21,6 +21,7 @@ They stay left-to-right inside RTL text.
 - In text fields that hold numbers (amount, phone, IBAN): `textDirection: TextDirection.ltr`. That field's `start` is then the left, even on an RTL screen: an amount sits at the far end from a currency prefix, or glued to a suffix (`₪2500`). Align it to the reading start: `textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.end : TextAlign.start` (`forms.md` › Money).
 - Without this, `0599-123456` can render as `123456-0599` and ranges like `5-10` reorder.
 - Inside `Ltr`, "start" means left again: wrap the value, not the whole row.
+- **Isolates fix the order, not where a line breaks.** An isolated `4–6` still wraps inside itself («4–» / «6») at 360 px, and an amount can leave its «₪» on the next line. `keepTogether('4–6 × 1,200 ₪')` puts no-break spaces (U+00A0) in place of spaces and word joiners (U+2060) around the dash, «/» and «×». For a list of such values in Arabic text («1–3 × 500 ₪، 4–6 × 1,200 ₪، والباقي…»), use one LTR `Text` per value inside a `Wrap(spacing: AppSpace.sm)`: the `Wrap` gives the reading order, and lines break only between values. In `pdf`, U+2060 is a box: one `pw.Text` per value in a `pw.Wrap`.
 
 ## Arabic typography
 
@@ -57,6 +58,15 @@ They stay left-to-right inside RTL text.
 - `maxLines` in `pdf` truncates without an ellipsis: cap the input to what the printed box holds.
 - Empty optional fields leave out the whole row: no bare label, no `null`.
 - Check and look at every document: `../flutter-ui-verify/references/printed-documents.md` (sample PDFs, block checks, rasterize, review). Reference document: `assets/examples/invoice_pdf.dart`.
+- **Values on a pre-printed form** (cheque, bank slip, government form) follow `../flutter-ui-verify/references/preprinted-forms.md`. In short:
+  - positions are constants in cm from the paper's corner, and the page is the paper with zero margins;
+  - the baseline sits on the printed line with tails under it, using the font's real metrics;
+  - shrink-to-fit keeps the baseline still and leaves start room, or `FittedBox` clips a leading «ا»;
+  - every print call passes `format`;
+  - a form fed narrow side first is turned with `rotateBox(unconstrained: true)`;
+  - a system font such as Calibri is loaded at run time and checked for Arabic, its seat and its tashkeel;
+  - positions are measured with `measure_pdf.py`, then checked on paper on every printer model, after a 10 cm ruler proves the scale.
+  Reference: `assets/examples/cheque_pdf.dart`.
 
 ## Testing
 

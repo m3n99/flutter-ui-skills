@@ -6,4 +6,4 @@ timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-I'm building a Flutter app for a shopkeeper to track which customers owe him money and which checks are due. What should the home screen show, from top to bottom? Keep it short.
+I'm building a Flutter app for a home-cleaning business owner to track today's bookings and which clients haven't paid yet. What should the home screen show, from top to bottom? Keep it short.

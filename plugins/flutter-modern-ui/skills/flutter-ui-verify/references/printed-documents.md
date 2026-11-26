@@ -8,6 +8,8 @@ Screens get a layout matrix. Printed documents need their own loop, because the 
 
 So: **render with sample data → check the marked blocks → rasterize → open every page.**
 
+A **pre-printed form** (a cheque, a bank slip, a government form: values printed onto paper that already has its lines) needs more than this: positions in cm, values placed by baseline, measured ink, the print call's paper size, feed direction, and a check on paper on every printer. See `preprinted-forms.md`.
+
 ## 1. Make the document testable
 
 Build each document in plain Dart, without plugin calls, so `flutter test` can run it:

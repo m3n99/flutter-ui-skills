@@ -50,9 +50,9 @@ plugins/flutter-modern-ui/
     ├── flutter-design-system/   SKILL.md · study-existing-app · study-reference-apps ·
     │                            scripts/ui_inventory.sh · templates/DESIGN.md · templates/UI_PASS.md
     ├── flutter-motion/          SKILL.md · principles · recipes (17 surfaces) · testing · packages
-    ├── flutter-ui-verify/       SKILL.md · harness · visual-review · golden-pitfalls · printed-documents ·
+    ├── flutter-ui-verify/       SKILL.md · harness · visual-review · golden-pitfalls · printed-documents · preprinted-forms ·
     │                            assets/harness/*.dart · assets/pdf/*.dart ·
-    │                            scripts/copy_harness.py · check_glyphs.py · rasterize_pdf.py
+    │                            scripts/copy_harness.py · check_glyphs.py (--metrics) · rasterize_pdf.py · measure_pdf.py
     └── flutter-ui-audit/        SKILL.md
 ```
 
@@ -60,7 +60,7 @@ plugins/flutter-modern-ui/
 
 Tokens make an app consistent; they don't make it *this* app. Before any token is set, the skill writes a five-line brief and asks you to correct it:
 
-> **Subject:** the notebook where a shopkeeper tracks who owes him and which checks fall due. **Audience:** one owner, at the counter, quick looks. **Job:** see who to call today. **Feeling:** plain-spoken, trustworthy, unhurried. **Signature:** amounts set like a ledger column.
+> **Subject:** the order book where a neighbourhood bakery keeps tomorrow's pre-orders. **Audience:** the baker, before dawn, flour on the hands, quick looks between trays. **Job:** see what to bake tonight and for whom. **Feeling:** warm, plain, unhurried. **Signature:** each order set like a handwritten order slip.
 
 The seed color, the typeface, the shapes and what the home screen shows come from that, and a **sameness check** throws out every line of the plan that would fit any other app (the default purple seed, Inter, a greeting over a grid of numbers). Then each screen gets a task sentence and a tap count (`ux.md`), the anatomy of its type (`screens.md`: home, detail, sign-in, onboarding, settings, search, paywall…), and its words written with the layout, not after it (`writing.md`, with Arabic conventions). The bundled examples are one such app: its home screen opens on "To collect" with the reminder action, drawn as ledger lines.
 
@@ -162,6 +162,21 @@ python3 <flutter-ui-verify>/scripts/rasterize_pdf.py test/pdf/out --text   # PNG
 ```
 test/pdf/out/invoice_ar_longest.pdf (1 page)
   • "signatures" was not painted: the content before it ran past the page, and a fixed pw.Page drops the rest without an error. …
+```
+
+**Values on a pre-printed form** (a cheque, a bank slip, a government form) can't be eyeballed: a PNG can't tell 7.6 cm from 7.9 cm. `preprinted-forms.md` and `examples/cheque_pdf.dart` cover:
+- positions in cm from the paper's corner;
+- the baseline on the printed line, from the font's real metrics;
+- shrinking that keeps the baseline still, and start room so a leading «ا» isn't clipped;
+- a print call that always carries its paper size, and feed direction;
+- system fonts such as Calibri;
+- a test sheet with a 10 cm ruler, and a per-printer offset.
+
+The PDF test writes what each value's ink must look like, and `measure_pdf.py` checks it on a 600 dpi raster:
+
+```bash
+python3 <flutter-ui-verify>/scripts/measure_pdf.py test/pdf/out                     # baseline, start and end of every value, in cm
+python3 <flutter-ui-verify>/scripts/check_glyphs.py --font calibri.ttf --metrics "تحريراً في" --size 11   # ascent, descent, deepest glyph, Arabic seat
 ```
 
 ## Requirements

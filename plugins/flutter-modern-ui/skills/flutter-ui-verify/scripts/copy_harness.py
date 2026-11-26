@@ -107,7 +107,19 @@ def adapt_imports(files, deps):
     return changed
 
 
+def utf8_console():
+    """Arabic in the output must not stop the script: a Windows console or
+    pipe defaults to the ANSI code page (cp1252), where print() of Arabic
+    raises UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    utf8_console()
     parser = argparse.ArgumentParser(description="Copy the flutter-ui-verify harness into a Flutter project.")
     parser.add_argument("--to", default="test/ui", help="UI harness folder (default test/ui)")
     parser.add_argument("--pdf", nargs="?", const="test/pdf", help="also copy the PDF harness (default folder test/pdf)")

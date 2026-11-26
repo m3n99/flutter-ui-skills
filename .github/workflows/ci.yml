@@ -67,6 +67,12 @@ jobs:
       - name: palette.py reads every source and checks what it says it checks (ci/palette_selftest.py)
         run: python ci/palette_selftest.py
 
+      - name: The scripts print Arabic, measure and read font metrics (ci/scripts_unicode_test.py)
+        run: |
+          python -m pip install --quiet pymupdf fonttools
+          bash scripts/fetch_fonts.sh build/fonts Regular
+          python ci/scripts_unicode_test.py build/fonts/IBMPlexSansArabic-Regular.ttf
+
       - name: Every curated palette passes as it is (palette.py --check-curated)
         run: python plugins/flutter-modern-ui/skills/flutter-modern-ui/scripts/palette.py --check-curated
 
@@ -119,6 +125,29 @@ jobs:
           grep -q "class Ltr" lib/core/design_system/widgets/ltr.dart
           grep -q "the project's own token" lib/core/design_system/tokens.dart
           python "../../$copy" --diff tokens.dart | grep -q "the project's own token"
+
+  scripts-windows:
+    # The scripts on a Windows console: no UTF-8 mode, the ANSI code page.
+    # Arabic in a git diff, in printed text or in font metrics must not stop
+    # them (lint_ui.py --diff and rasterize_pdf.py --text both crashed here).
+    name: Scripts on Windows (Arabic on a cp1252 console)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the scripts' optional dependencies
+        run: python -m pip install --quiet pymupdf fonttools pillow
+      - name: Fetch the Arabic font
+        shell: bash
+        run: bash scripts/fetch_fonts.sh build/fonts Regular
+      - name: The lint, including --diff on a change with Arabic in it
+        run: python ci/lint_selftest.py
+      - name: palette.py
+        run: python ci/palette_selftest.py
+      - name: rasterize --text, measure, glyph metrics and palettes print Arabic
+        run: python ci/scripts_unicode_test.py build/fonts/IBMPlexSansArabic-Regular.ttf
 
   templates:
     # material_ui: what `flutter create` makes from Flutter 3.50 (the copy
@@ -177,6 +206,14 @@ jobs:
         run: |
           python -m pip install --quiet pymupdf
           python plugins/flutter-modern-ui/skills/flutter-ui-verify/scripts/rasterize_pdf.py build/sandbox/test/pdf/out --text
+
+      - name: Values on the pre-printed form are where they were measured (measure_pdf.py)
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        run: python plugins/flutter-modern-ui/skills/flutter-ui-verify/scripts/measure_pdf.py build/sandbox/test/pdf/out
+
+      - name: The start room keeps a leading alef (ci/cheque_room_check.py)
+        if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}
+        run: python ci/cheque_room_check.py build/sandbox/test/pdf/out
 
       - name: Screenshots
         if: ${{ !cancelled() && steps.sandbox.outcome == 'success' }}

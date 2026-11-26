@@ -94,6 +94,48 @@ void main() {
     expect(find.textContaining('item 2'), findsNothing);
   });
 
+  testWidgets('EmptyState.inline works inside a page that already scrolls', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: ListView(
+            children: [
+              const SizedBox(height: AppSize.touchTarget, child: Text('The form above the log')),
+              const EmptyState.inline(icon: Icons.receipt_long_outlined, message: 'No cheques printed yet.'),
+              EmptyState.inlineError(message: "Couldn't load the log.", onRetry: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull, reason: 'a nested scroll view in a scrolling page asserts; the inline state has none');
+    expect(find.text('No cheques printed yet.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    // Sized for a section, not a screen: far shorter than the full state.
+    expect(tester.getSize(find.byType(EmptyState).first).height, lessThan(200));
+  });
+
+  testWidgets('keepTogether: a wrapped line breaks between values, never inside one', (tester) async {
+    final pieces = [keepTogether('1–3 × 500 ₪'), keepTogether('4–6 × 1,200 ₪'), keepTogether('7–9 × 2,500 ₪')];
+    final text = pieces.join('، ');
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: const TextStyle(fontSize: 16, fontFamily: 'IBM Plex Sans Arabic')),
+      textDirection: TextDirection.rtl,
+    )..layout(maxWidth: 150);
+    expect(painter.computeLineMetrics().length, greaterThan(1), reason: 'narrow enough to wrap');
+    var offset = 0;
+    final broken = <String>[];
+    while (offset < text.length) {
+      final line = painter.getLineBoundary(TextPosition(offset: offset));
+      final content = text.substring(line.start, line.end).replaceAll('،', '').trim();
+      if (content.isNotEmpty && !pieces.contains(content)) broken.add(content);
+      offset = line.end > offset ? line.end : offset + 1;
+    }
+    expect(broken, isEmpty, reason: 'a line holds part of a value: ${broken.join(' | ')}');
+    painter.dispose();
+  });
+
   testWidgets('deleteWithUndo: Undo keeps the item, a timeout commits it', (tester) async {
     final pending = PendingDeletes<int>();
     final committed = <int>[];
