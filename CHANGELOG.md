@@ -34,6 +34,10 @@ Advanced rules adapted from a review of [ui-ux-pro-max-skill](https://github.com
 - `components.md`: chips that don't fit end with an operable `+n` chip; long unbroken values (IDs, emails, URLs) ellipsize with a copy action or break after separators.
 - `review-checklist.md`: lines for all of the above.
 
+### Docs
+- README redesigned: a banner that follows GitHub's light or dark theme, what the plugin is in five lines, a two-command install, examples of use, the workflow as a diagram, and the long details (the design system, palettes, harness, printed documents, layout, what's proven) folded into sections you can open.
+- `docs/feedback-template.md`: feedback sent upstream carries the design lesson only, with no app names, data, people or places.
+
 ### Evals
 - Two cases (18 → 20): `chart-fits-question` (9 categories get sorted, labelled bars, not a pie) and `submit-stays-enabled`.
 
