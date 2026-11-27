@@ -8,6 +8,13 @@ Reference: `assets/examples/record_form_screen.dart`.
 - **Optional fields say so in the label**: "Email (optional)", «البريد (اختياري)»; required fields carry no mark. One helper (`optional(label)`) keeps the wording the same everywhere.
 - Field gap 16, section gap 16–24 (sections as `AppCard`s with a titleMedium heading, or `SheetSection`s inside sheets).
 - Always set `keyboardType`, `textInputAction` (next / done / search), `autofillHints`, `textCapitalization` for names and sentences, and `obscureText` + a visibility toggle for passwords.
+- **Forgiving input.** Accept what people type and clean it before validating; never reject a value over formatting:
+  - trim spaces at both ends of every text value; compare emails without case;
+  - phone numbers, card-like codes and IDs: ignore spaces, hyphens, dots and brackets (`+1 (555) 010-2345` is valid), keep the user's grouping on screen;
+  - Arabic-Indic and Persian digits become `0-9` in every numeric field, not only amounts (codes, phones, quantities);
+  - names accept any script, apostrophes, hyphens, diacritics and a single word; no "first + last" requirement unless the domain needs it.
+- **Never block paste**, in any field: passwords, confirmations and one-time codes included. A code split into boxes takes the whole pasted code in the first box and fills the rest (`autofillHints: [AutofillHints.oneTimeCode]`).
+- **Password managers**: sign-in and sign-up fields in an `AutofillGroup` with `AutofillHints.username` / `password` / `newPassword`; call `TextInput.finishAutofillContext()` after a successful submit so the manager offers to save.
 - Width: forms cap at 640 px (`ContentWidth.horizontalPadding(width, maxWidth: AppSize.formMaxWidth)`); on wide screens two-column field grids (12 px gaps) for short fields only.
 
 ## Input styles
@@ -22,6 +29,9 @@ Reference: `assets/examples/record_form_screen.dart`.
 - **Except an error that stops a live result**: when a value makes a live preview or calculation stop updating (a fixed amount per installment larger than the total), show that error as soon as it's true, not after submit. Otherwise the preview goes quietly stale and nothing says why. Plain errors ("enter an amount") stay submit-gated.
 - Error text says how to fix it: "Enter an amount above zero.", not "Invalid".
 - On a failed submit: scroll to / focus the first invalid field, and shake the submit button (`ShakeOnChange(trigger: failedSubmits)`), with the error text carrying the meaning.
+- **Many errors in a long form** (three or more, or errors above the fold the user can't see): add an error summary at the top of the form after the failed submit, "2 fields need attention", with one tappable line per field that scrolls to it and focuses it. Keep the inline errors too; the summary is a map, not a replacement. It updates as fields are fixed and goes when the last one is.
+- **An error goes as soon as its field is valid**, not on the next submit: `onUserInteraction` after the first submit does this. An error never lives only in a toast; it stays on the field until fixed.
+- **A failed submit keeps everything**: every value the user entered, valid or not, stays in the form. Only a field that must be re-entered for security (a one-time code) is cleared, and its error says so.
 - **Warnings are not errors.** For unusual-but-valid input (a large amount, a date far in the past), show helper text in the palette's warning color with words that say it's a check ("Larger than usual. Double-check before sending."). The user can still save.
 
 ## Money
@@ -54,8 +64,10 @@ Reference: `assets/examples/record_form_screen.dart`.
 4. Save bar: surface color, hairline top border, `SafeArea(top: false)`, 12 px vertical padding, full-width `SubmitButton`.
 5. Sections as cards with a heading; a live summary card (totals, counts) where it helps.
 6. `keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`.
-7. Unsaved changes: `PopScope(canPop: !dirty, onPopInvokedWithResult: …)` → "Discard changes?" dialog.
-8. Desktop: Ctrl/⌘+S saves, Esc asks to discard, Tab order follows the visual order.
+7. Unsaved changes: `PopScope(canPop: !dirty, onPopInvokedWithResult: …)` → "Discard changes?" dialog. `dirty` compares the values with the ones the form opened with: typing and deleting a letter is not a change, and an untouched form closes without asking.
+8. **The focused field stays visible** above the keyboard and the save bar: give fields `scrollPadding: EdgeInsets.fromLTRB(20, 20, 20, 20 + saveBarHeight)` so the scroll that reveals a field also clears the bar (WCAG 2.4.11, `accessibility.md`).
+9. **Don't ask twice**: values the user gave earlier in the flow are carried forward or prefilled (the same address, the last-used category), and a "Same as …" switch replaces a repeated block.
+10. Desktop: Ctrl/⌘+S saves, Esc asks to discard, Tab order follows the visual order. A custom Enter shortcut (send on Enter in a chat or a note field) does nothing while the input method is composing (`controller.value.composing.isValid`): the Enter that confirms a Japanese, Chinese or Korean word must not send the message. `onSubmitted` already behaves this way; key handlers don't.
 
 ## Create and edit
 
@@ -67,6 +79,8 @@ Reference: `assets/examples/record_form_screen.dart`.
 ## Submit
 
 - `SubmitButton(onPressed: _save)`: spinner while the Future runs, keeps its width, ignores a second press. Or `busy: state.status == Status.saving` when the state layer drives it.
+- **Don't disable submit until the form is valid.** A greyed button says nothing about what is missing; keep it enabled and let the press show the errors. Disable it only while the request is in flight.
+- **One tap, one record.** A create that goes over the network carries a client-generated id (or an idempotency key) made when the form opens, so a retry after a timeout or a double tap on a slow device updates the same record instead of creating two. Local databases: insert by that id, or guard the save with the in-flight flag.
 - On success: close the form (or show the check with `successFeedback: true` when the screen stays), and show a message that names the thing ("Created INV-1043 for Blue Harbor Café").
 - On failure: keep the input, show what failed and what to do (`messages.md`).
 

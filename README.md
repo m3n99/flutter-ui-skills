@@ -24,14 +24,14 @@ One plugin, five skills and a reviewer agent:
 | `flutter-modern-ui` | The hub. Step 0 reads the project's design system and DESIGN.md, writes a five-line design brief, asks once about platforms / RTL / the look / emoji / how much motion and where, plans each screen's task and words, then builds on the existing system with 21 focused references (identity, UX, screen types and interface wording among them), keeps everything clear of the system bars, and lints its own diff | any Flutter UI or UX work, however small |
 | `flutter-design-system` | Creates, extends, repairs or documents the design system: the brief, tokens, theme, density, shared components, `DESIGN.md`. Studies existing code (inventory script) or reference screenshots | new apps, inconsistent apps, apps that look like every other app, "make it look like these" |
 | `flutter-motion` | Purposeful animation at the level the user picks (none, soft or expressive, asked with examples before building) through a few shared pieces: entrances, `AnimatedItems`, state switches, counters, progress, charts, buttons, transitions, micro-interactions | "add animations", "make it feel alive", janky motion |
-| `flutter-ui-verify` | A `flutter_test` harness: layout matrix up to text scale 1.6, phones rendered under their system bars with a check that nothing touches them, sheet / keyboard / tap-target checks, contrast and soft-container test, screenshots and contact sheets Claude opens and reviews, a glyph check for the app's fonts; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
+| `flutter-ui-verify` | A `flutter_test` harness: layout matrix up to text scale 1.6, phones rendered under their system bars with a check that nothing touches them, sheet / keyboard / tap-target checks, contrast and soft-container test, rendered-screen accessibility (text contrast measured on the pixels, tap targets, labels), screenshots and contact sheets Claude opens and reviews, a glyph check for the app's fonts; sample PDFs with block checks, rasterized for review | after any UI or print-layout change, before saying "done" |
 | `flutter-ui-audit` | Reviews existing screens for identity, flow, wording and visual craft, reports findings with evidence, fixes them presentation-only, proves it with before/after screenshots | "review / polish / modernize this screen", "is anything wrong with this?" |
 | `flutter-ui-reviewer` (agent) | Independent design QA on the screenshots against the brief and DESIGN.md: whose app is this, does each screen do its job, do the words work, then the details | larger passes, so the work isn't grading itself |
 
 ```
 plugins/flutter-modern-ui/
 ├── agents/flutter-ui-reviewer.md
-├── evals/                   18 eval cases for `claude plugin eval` (what the skills must make Claude do, and when they must stay out)
+├── evals/                   20 eval cases for `claude plugin eval` (what the skills must make Claude do, and when they must stay out)
 └── skills/
     ├── flutter-modern-ui/
     │   ├── SKILL.md
@@ -121,7 +121,7 @@ The **core** kit is what every app needs (tokens, theme, motion level, palette, 
 Copy with `python3 <flutter-ui-verify>/scripts/copy_harness.py` (→ `test/ui/`; it never overwrites your cases), edit only `ui_cases.dart`: every screen in each state, every form in create and edit mode, the app shell with a tab switch and a push, every sheet (`SheetCase.picker` for pick-one sheets), fakes in `setUp`. Then:
 
 ```bash
-flutter test test/ui                                                              # layout matrix, sheets, contrast
+flutter test test/ui                                                              # layout matrix, sheets, contrast, a11y
 flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true  # screenshots → test/ui/screenshots/
 ```
 
@@ -135,7 +135,7 @@ Content under a bar is a defect anywhere; content inside the safe area but close
 
 While iterating, render less: `--plain-name "layout: <case>"` for one screen, or `--dart-define=QUICK=true` for every screen in five variants instead of the whole matrix. Run the whole matrix before calling a pass done.
 
-**What a green run doesn't tell you.** The system-bar check sees text and tap targets, not images or painted charts; the contrast test checks theme color pairs, not pixels; the lint matches patterns and can't follow a value through a variable. `flutter-ui-verify/references/harness.md` › *What the checks do not see* and the docstring of `lint_ui.py` list the gaps. That is why the last step is always opening the screenshots.
+**What a green run doesn't tell you.** The system-bar check sees text and tap targets, not images or painted charts; the contrast test checks theme color pairs, and the accessibility test measures text pixels but not icons or text merged into a row; the lint matches patterns and can't follow a value through a variable. `flutter-ui-verify/references/harness.md` › *What the checks do not see* and the docstring of `lint_ui.py` list the gaps. That is why the last step is always opening the screenshots.
 
 Each case also gets a contact sheet (`screenshots/contact_sheets/<case>.png`, every variant side by side), so a pass is reviewed a screen at a time. Two scripts cover what tests can't see:
 

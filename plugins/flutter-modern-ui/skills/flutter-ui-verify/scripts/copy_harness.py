@@ -29,7 +29,7 @@ from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
-UI_FILES = ["ui_harness.dart", "layout_smoke_test.dart", "sheets_test.dart", "contrast_test.dart", "visual_test.dart"]
+UI_FILES = ["ui_harness.dart", "layout_smoke_test.dart", "sheets_test.dart", "contrast_test.dart", "a11y_test.dart", "visual_test.dart"]
 UI_EDITED = "ui_cases.dart"
 DESIGN_SYSTEM_TEST = "design_system_test.dart"
 PDF_FILES = ["pdf_harness.dart", "pdf_test.dart"]

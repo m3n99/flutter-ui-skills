@@ -43,6 +43,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Loading uses skeletons shaped like the content (all data screens).
 - [ ] Empty (first use / no results / nothing to do) and error (what failed + Retry) states exist.
 - [ ] Refresh keeps content visible; live data has no pull to refresh.
+- [ ] Charts: the type fits the question (`data-display.md` › Choosing the chart); ≤ 4 series are labelled directly; series differ by more than hue; a table view exists where numbers matter.
 
 ## Messages
 - [ ] One message component; messages name the thing; errors say what failed and what to do.
@@ -55,7 +56,10 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Sheets use the shared anatomy: header + ✕, scrolling body, sticky footer; secondary start (label width), primary end.
 - [ ] Filter sheets: "Clear all" in place, "Apply (n)".
 - [ ] Form save bar stays above the keyboard; labels above fields; keyboard types, input actions, autofill set.
-- [ ] Validation after first submit; warnings don't block.
+- [ ] Validation after first submit; warnings don't block; an error goes as soon as its field is valid; a failed submit keeps every value; three or more errors get a summary at the top.
+- [ ] Submit stays enabled until pressed (disabled only in flight); a create carries its own id, so a retry or a double tap makes one record.
+- [ ] Input is forgiving (trimmed, spaces and hyphens ignored in phones and codes, Arabic-Indic digits accepted); paste works in every field; sign-in fields are in an `AutofillGroup`.
+- [ ] The focused field is never hidden under the keyboard or the save bar (`scrollPadding`).
 - [ ] Every form renders in create and edit mode; edit mode fills its controllers outside `build`.
 - [ ] Pick-one sheets close on the tap that chooses (no Apply).
 - [ ] A failed primary action shows its message inside the sheet where it's always in view: above the footer (`SheetScaffold(error:)`) or at the top of the body. Never only at the end of a scrolling body (with a long list at text scale 1.3 it's scrolled out of sight, and the button seems to do nothing), never only as a toast behind the sheet. The sheet stays open and the action is enabled again for a retry.
@@ -74,6 +78,7 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] Numbers, dates, phones and amounts stay LTR.
 - [ ] Arabic text has zero letter-spacing and readable line height.
 - [ ] Charts mirrored with the value axis on the reading start.
+- [ ] Elements that carry a direction (steppers, timelines, carousels with a peek, tickers) start at the reading start.
 - [ ] Amount fields: digits at the reading start, not glued to the currency; chevrons not swapped by hand.
 - [ ] `check_glyphs.py` finds nothing missing: currency signs, `٫` `٬`, `✓` all in the font or its fallback.
 
@@ -84,14 +89,17 @@ Run before reporting UI work as done, against the code **and the screenshots** (
 - [ ] LTR runs (numbers, dates, phones, amounts) are separate `pw.Text`s; Arabic joins correctly.
 
 ## Accessibility
-- [ ] Light and dark pass `contrast_test.dart`.
+- [ ] Light and dark pass `contrast_test.dart`, and every screen passes `a11y_test.dart` (rendered contrast, tap targets, labels).
 - [ ] Text scale 1.3 and 1.6 don't overflow or clip (layout test); when narrow, paired rows stack (amount under the name) and KPI tiles go one per row.
-- [ ] Icon-only buttons have tooltips; rows merge semantics; decorative emoji/icons excluded.
+- [ ] Icon-only buttons have tooltips; rows merge semantics; decorative emoji/icons excluded; toggles expose their state (`isSelected`, `toggled`, `expanded`).
+- [ ] Every drag has a tap alternative (row menu: move, delete); anything moving by itself pauses and stops under reduced motion.
+- [ ] Changing counts and results are announced as full phrases, once.
 
 ## Motion
 - [ ] The motion level (none / soft / expressive) and the places were asked before building, with examples; `AppThemeConfig.motion` matches DESIGN.md.
 - [ ] Only the places chosen in intake animate; durations from tokens; reduced motion respected.
 - [ ] Lists keep item state on insert/remove; charts and numbers animate from previous values.
+- [ ] Animations retarget when interrupted (double tap, tap mid-way) and no state change waits for an animation to complete; input is never blocked during a transition.
 - [ ] No infinite animations besides loading indicators; controllers disposed.
 
 ## Verification

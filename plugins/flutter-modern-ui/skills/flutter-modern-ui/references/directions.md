@@ -23,6 +23,7 @@ Each table lists every value the templates need, so the theme never contradicts 
 | Surfaces | `SurfaceStyle.tonal` |
 | Motion | 200–300 ms, press scale, staggered entrance |
 | Emoji fit | KPI tiles only, if at all |
+| RTL fit | full: mirrors as is |
 
 Typical moves: large bold title at the top of the scroll (`SliverAppBar.large`), muted secondary text, one accent used sparingly, the answer to the user's daily question first. The app's own signature comes from its brief.
 
@@ -42,6 +43,7 @@ Typical moves: large bold title at the top of the scroll (`SliverAppBar.large`),
 | Inputs | filled |
 | Motion | snappy 150–220 ms, staggered entrances, counters that tween, `PopOnChange` on toggles |
 | Emoji fit | headers and empty states work |
+| RTL fit | full; Arabic display type needs taller lines and no tight tracking, so big titles take more height |
 
 Typical moves: oversized numerals (displayMedium + tabular), full-bleed hero card, pill buttons, icons in filled tinted circles.
 
@@ -62,6 +64,7 @@ Typical moves: oversized numerals (displayMedium + tabular), full-bleed hero car
 | Reading | body 17 / 1.6, max line ~65 characters (`AppSize.readingMaxWidth` 720) |
 | Motion | minimal: fades only |
 | Emoji fit | none |
+| RTL fit | check: italics, drop caps and small caps don't exist in Arabic; use weight and size for emphasis and an Arabic face with real stroke contrast (a Naskh) |
 
 Typical moves: big images at 3:2 or 4:5, serif titles, small-caps overlines (labelSmall + letterSpacing 1.2 + uppercase; never on Arabic), generous whitespace.
 
@@ -79,8 +82,9 @@ Typical moves: big images at 3:2 or 4:5, serif titles, small-caps overlines (lab
 | Background | gradient or blurred artwork behind content |
 | Cards | `ClipRRect` + `BackdropFilter(ImageFilter.blur(sigmaX: 20, sigmaY: 20))`, fill `surface` at 0.55 alpha, 1 px border `onSurface` at 0.08 |
 | Motion | parallax on scroll, Hero on artwork, slow 350–450 ms |
+| RTL fit | full; light comes from the top, so shadows and highlights don't mirror; parallax and drifting backgrounds move on the vertical axis or follow the reading direction |
 
-Rules: blur is expensive: at most 2–3 blurred elements on screen, never inside long lists. Text over busy backgrounds must keep 4.5:1; check the worst spot.
+Rules: blur is expensive: at most 2–3 blurred elements on screen, never inside long lists. Text over busy backgrounds must keep 4.5:1; check the worst spot (`a11y_test.dart` measures it per screen).
 
 ---
 
@@ -96,6 +100,7 @@ Rules: blur is expensive: at most 2–3 blurred elements on screen, never inside
 | Color | each category gets its own container color (primary / secondary / tertiary containers + palette tones) |
 | Motion | springy pops (`AppCurves.pop`) for celebrations only, confetti on success, progress rings |
 | Emoji fit | everywhere it carries meaning, always with a label |
+| RTL fit | check: arrows, tilted stickers and illustrations with a direction (a runner, a rocket) mirror or get an RTL variant |
 
 Typical moves: illustrations in empty states, chunky buttons, progress rings, big friendly icons.
 
@@ -118,6 +123,7 @@ Typical moves: illustrations in empty states, chunky buttons, progress rings, bi
 | Data | tabular figures, end-aligned numbers, status pills with icons, sticky table headers |
 | Motion | functional 150–250 ms: list insert/remove, state cross-fades, chart value changes |
 | Emoji fit | KPI tiles and section headers, if the user wants them |
+| RTL fit | check: columns mirror but numbers stay LTR inside their cells; charts mirror their time axis (`data-display.md` › RTL) |
 
 Typical moves: KPI row at the top, filter chips under the app bar, table + detail pane on wide windows, clear status tones from `AppPalette`.
 
@@ -131,6 +137,19 @@ For apps used for hours (ledgers, admin, reading, field tools): `AppThemeConfig(
 - Scaffold = `surface` (warm paper), cards = `surfaceContainerLowest` (lighter, never pure white).
 - The template's values keep onSurface ≥ 10:1, onSurfaceVariant ≥ 5.5:1, outline ≥ 3.2:1 on every surface level in both modes. Re-run `contrast_test.dart` after any tweak.
 - Pair with outlined inputs: filled fields lose their edges on low-contrast warm surfaces.
+
+---
+
+## RTL fit
+
+Every direction works right to left, but not equally for free. **full**: the tokens mirror as they are. **check**: the direction mirrors, with the parts named in its row to verify in the RTL screenshots. Some elements carry the reading direction in themselves, whatever the direction; with RTL in scope, say so before choosing them and offer the mirrored form:
+
+- kinetic or scrolling text, marquees and tickers (they must run toward the reading start);
+- horizontal timelines, steppers and progress that flow from one side (they start at the reading start);
+- a carousel with a peeking next card (the peek is at the reading end);
+- story-style horizontal paging and swipe-to-continue onboarding;
+- charts and anything with a time axis (`data-display.md` › RTL);
+- icons that point (back, forward, send, reply, undo): Flutter mirrors `Icons.arrow_back` and friends with `matchTextDirection`; custom SVGs need it too. Icons that show real-world things (a clock, a play button, a checkmark) never mirror (`rtl-arabic.md`).
 
 ---
 

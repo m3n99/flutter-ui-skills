@@ -9,6 +9,25 @@
 - Pending timers fail tests ("A Timer is still pending"): cancel timers in `dispose`, and pump an empty widget at the end of tests that leave delayed work.
 - `design_system_test.dart` (flutter-ui-verify) covers `AnimatedItems` (state kept across insert/remove, reorder), reduced-motion removal, Undo deletes and `SubmitButton`.
 
+## Interruption
+
+Every animated control gets one test that interrupts it (`principles.md` › Interruption):
+
+```dart
+// Two taps in the same frame, then one halfway through: the end state is
+// what the last tap asked for, and nothing waits for an animation to finish.
+await tester.tap(find.byTooltip('Pin'));
+await tester.tap(find.byTooltip('Unpin'));
+await tester.pump(AppDurations.medium ~/ 2);
+await tester.tap(find.byTooltip('Pin'));
+await tester.pump(AppDurations.medium * 2);
+expect(pinned, isTrue);
+expect(find.byTooltip('Unpin'), findsOneWidget);
+```
+
+- Run it once with reduced motion too: durations of zero change the order in which completion callbacks fire, which is where state hidden in `whenComplete` breaks.
+- For a dismissible (sheet, swipe action), drag past half and back: it returns open, with no half-faded remains.
+
 ## Reduced motion
 
 ```dart

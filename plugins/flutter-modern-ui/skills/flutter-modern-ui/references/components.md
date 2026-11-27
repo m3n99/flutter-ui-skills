@@ -77,6 +77,8 @@ AppCard(
 - **Filters**: `AppChoiceChips(multiple: true)` in a wrapping block (8 / 8 spacing). Only a long filter list (5 or more) under a header may be one scrolling row (`scrollable: true`, screen padding), and the row must show part of the next chip so it reads as scrollable.
 - **Selected = check + `primaryContainer` fill** (theme). Never selection by color alone.
 - All chips in a group share one height: same label style and theme padding; no per-chip padding.
+- **When chips don't fit** (tags on a card, the applied filters above a list): wrap first; where the space is one line by design, show what fits and end with a `+3` chip that opens the rest (an expanded wrap or a sheet). It is a button with a full label for screen readers ("3 more tags"), never a dead count. Shorten a chip's own label only as a last resort, with the full text in its tooltip.
+- **Long unbroken values** (order IDs, emails, URLs, IBAN-like codes) don't wrap at spaces because they have none: in a row they get `Flexible` + `maxLines` + ellipsis and a copy action, in a detail view they may break anywhere (insert `\u200B` after separators such as `/`, `-`, `_`, `.` and `@` when building the string).
 - Reference: payment terms in `assets/examples/record_form_screen.dart`; the filter sheet and the status filter row in `assets/examples/records_screen.dart`.
 
 ## Status
