@@ -7,6 +7,7 @@ Keep this file in your project while you work with the skills; add an entry when
 ## How to send it upstream
 
 1. Pick the entries with status **open**.
+   The repo is public, so send the design lesson only. Before pasting, take out app and company names, real data and test values, people, places, devices and measurements. Describe the situation in general terms ("an Arabic app that prints onto pre-printed forms"), not the app.
 2. Open an issue (or a PR with the fix) on [`m3n99/flutter-ui-skills`](https://github.com/m3n99/flutter-ui-skills), pasting those entries and their summary rows.
 3. Mark them **sent → #issue/PR** here. When a release fixes one, mark it **fixed in x.y.z**; the [changelog](../CHANGELOG.md) lists what each release took in.
 

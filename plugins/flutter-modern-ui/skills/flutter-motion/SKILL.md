@@ -31,7 +31,7 @@ Shared pieces live in the design system (`../flutter-modern-ui/assets/design_sys
 
 4. **Tokens only**: durations from `AppDurations`, curves from `AppCurves`, every duration through `context.motion(d)`, which scales it by the level and turns it off under reduced motion and at `MotionLevel.none`. Distances, stagger, press, pop and shake come from the level (`context.appMotion`), not from per-screen numbers. `references/principles.md` › Motion levels.
 5. **Check performance**: animate transforms and opacity, not layout, where possible; `RepaintBoundary` around continuously animating regions; at most 2–3 blurs on screen; dispose every controller.
-6. **Test it** (`references/testing.md`): behaviour tests with `pump(duration)`, a reduced-motion test, and filmstrip screenshots for anything non-trivial; look at the frames.
+6. **Test it** (`references/testing.md`): behaviour tests with `pump(duration)`, an interruption test (tap twice, tap mid-way: the end state is right), a reduced-motion test, and filmstrip screenshots for anything non-trivial; look at the frames.
 7. **Record** the motion table (what animates, duration, curve) in DESIGN.md.
 
 ## Rules
@@ -51,7 +51,7 @@ The level and the places are the user's choice, made before building: nothing mo
 
 ## References
 
-- `references/principles.md`: purpose, easing and duration tables, choreography, accessibility, performance.
+- `references/principles.md`: purpose, easing and duration tables, choreography, interruption (retarget, never wait for completion, input stays live), accessibility, performance.
 - `references/recipes.md`: code for every surface above, plus hero, container transform, shared axis, tabs, sheets, scroll effects, drag physics, celebrations.
-- `references/testing.md`: testing animations, filmstrip screenshots, reduced motion, profiling.
+- `references/testing.md`: testing animations, interruption, filmstrip screenshots, reduced motion, profiling.
 - `references/packages.md`: when to reach for `animations`, `flutter_animate`, Lottie, Rive, confetti, and how to keep them on tokens.

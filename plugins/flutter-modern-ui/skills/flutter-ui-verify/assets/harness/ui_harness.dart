@@ -1,8 +1,8 @@
 // UI test harness: renders screens and sheets across sizes, text scales,
 // themes, platforms and reading directions, under the system bars a phone
 // draws (status bar, Dynamic Island, navigation bar); collects layout errors
-// with the source line; checks tap targets, the keyboard and what touches the
-// system bars; saves screenshots.
+// with the source line; checks tap targets, labels, rendered text contrast,
+// the keyboard and what touches the system bars; saves screenshots.
 //
 // Project-independent. Configure it in ui_cases.dart.
 
@@ -252,6 +252,28 @@ class UiConfig {
     yield* _fullMatrix.where((variant) => keep == null || keep(variant));
   }
 
+  /// The variants the rendered-screen accessibility check runs in
+  /// (a11y_test.dart): one per platform, brightness and direction, at the
+  /// smallest size that passes [only] and text scale 1.0. Tap targets,
+  /// labels and contrast don't depend on the rest of the matrix.
+  Iterable<UiVariant> get a11yMatrix sync* {
+    final keep = only;
+    final bySize = [...sizes]..sort((a, b) => a.width.compareTo(b.width));
+    for (final platform in platforms) {
+      for (final brightness in brightnesses) {
+        for (final direction in directions) {
+          for (final size in bySize) {
+            final variant = UiVariant(size: size, brightness: brightness, platform: platform, direction: direction);
+            if (keep == null || keep(variant)) {
+              yield variant;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
   Iterable<UiVariant> get _fullMatrix sync* {
     for (final size in sizes) {
       for (final platform in platforms) {
@@ -420,6 +442,68 @@ String? _sourceLocation(String text) {
     if (project != null) return '${path.substring(project.start + 1)}:${match.group(2)}';
   }
   return null;
+}
+
+/// What flutter_test's accessibility guidelines find on the screen in the
+/// current frame, one line each:
+/// - touch platforms: tap targets ≥ 48 × 48 px (Android) or 44 × 44 (iOS);
+/// - every tappable has a semantic label;
+/// - text contrast measured on the rendered pixels behind it: ≥ 4.5:1, or
+///   3:1 from 18 px (14 px bold). Disabled controls are exempt.
+///
+/// contrast_test.dart checks the theme's color pairs; this checks what a
+/// screen actually paints: text on an image, a gradient, a tinted card or a
+/// custom color. Text inside a MergeSemantics row is read as the row and
+/// isn't measured on its own.
+Future<List<String>> screenA11yProblems(WidgetTester tester, UiVariant variant) async {
+  final guidelines = <AccessibilityGuideline>[
+    if (variant.platform == TargetPlatform.iOS) iOSTapTargetGuideline else if (variant.isTouch) androidTapTargetGuideline,
+    labeledTapTargetGuideline,
+    textContrastGuideline,
+  ];
+  final problems = <String>[];
+  final handle = tester.ensureSemantics();
+  try {
+    await tester.pump();
+    for (final guideline in guidelines) {
+      final result = await guideline.evaluate(tester);
+      if (!result.passed) problems.addAll(guidelineLines(result.reason ?? guideline.description));
+    }
+  } finally {
+    handle.dispose();
+  }
+  return problems;
+}
+
+/// One short line per failure in a guideline's [reason], instead of the
+/// semantics node dumps it is made of.
+List<String> guidelineLines(String reason) {
+  String label(String node) {
+    final match = RegExp(r'label: "((?:[^"\\]|\\.)*)"').firstMatch(node);
+    final text = match?.group(1)?.replaceAll(r'\n', ' ').trim() ?? '';
+    return text.isEmpty ? 'an unlabeled node' : '"${text.length > 60 ? '${text.substring(0, 60)}…' : text}"';
+  }
+
+  final lines = <String>[];
+  for (final m in RegExp(
+    r'SemanticsNode#\d+\(([^\n]*)\):\nExpected contrast ratio of at least (\S+) but found (\S+) for a font size of ([^\n]*?)\.\n',
+  ).allMatches(reason)) {
+    lines.add('text contrast: ${label(m.group(1)!)} is ${m.group(3)}:1, needs ${m.group(2)}:1 (font size ${m.group(4)})');
+  }
+  for (final m in RegExp(
+    r'SemanticsNode#\d+\(([^\n]*)\): expected tap target size of at least (Size\([^)]*\)), but found (Size\([^)]*\))',
+  ).allMatches(reason)) {
+    lines.add('tap target: ${label(m.group(1)!)} is ${m.group(3)}, needs at least ${m.group(2)}');
+  }
+  for (final m in RegExp(r'SemanticsNode#\d+\(([^\n]*)\): expected tappable node to have semantic label').allMatches(reason)) {
+    final rect = RegExp(r'Rect\.fromLTRB\([^)]*\)').firstMatch(m.group(1)!)?.group(0) ?? '';
+    lines.add('tappable without a label $rect');
+  }
+  if (lines.isEmpty) {
+    final text = reason.trim().replaceAll('\n', ' ');
+    lines.add(text.length > 300 ? '${text.substring(0, 300)}…' : text);
+  }
+  return lines;
 }
 
 /// Opens [sheet] from a blank host screen and waits for the route animation.

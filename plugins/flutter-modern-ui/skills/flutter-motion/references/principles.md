@@ -73,6 +73,17 @@ Linear only for continuous loops (shimmer, spinners).
 - Hidden content doesn't animate: hold values while `TickerMode` is off, play the change when shown.
 - Don't replay entrances on rebuilds, refreshes or scroll.
 
+## Interruption
+
+The user is faster than the animation: they tap again, change their mind, scroll away. Motion has to survive that.
+
+- **Retarget, don't restart.** A new target starts from where the animation is now: implicit animations (`AnimatedContainer`, `TweenAnimationBuilder`) do this; with a controller use `animateTo(target)` from the current value, never `forward(from: 0)` on a toggle. Ten fast taps on a favourite end in the right state, not ten replays.
+- **Correctness never waits for an animation.** Set the new state first and let the animation show it. Don't commit, navigate, delete or save in an `AnimationStatus.completed` listener or a `whenComplete`: an interrupted or disposed animation never completes, and with reduced motion (duration zero) the order of events changes.
+- **Input stays live.** No `IgnorePointer` / `AbsorbPointer` over a screen while it animates; a tap during a transition acts on what the user sees. The one exception is a control that would act twice (the in-flight submit), and that is a state, not an animation.
+- **Dismissed means gone.** A dismissal that is interrupted halfway (the sheet dragged back up) returns to the open state; one that is let go past its threshold finishes. Never leave something half faded: below about 20 % opacity an element either finishes leaving or comes back.
+- **Gestures track the finger.** While dragging (a sheet, a swipe action, a carousel), the element follows the pointer 1:1 with no easing; the release continues with the gesture's velocity (a spring or `animateWith` a simulation), not a fixed duration from zero.
+- Test it: tap twice within one frame and once mid-animation, then check the final state (`testing.md` › Interruption).
+
 ## Accessibility
 
 - Reduced motion (`MediaQuery.disableAnimationsOf(context)`; iOS "Reduce Motion", Android "Remove animations", Windows "Show animations" off): durations zero, no shimmer, no parallax, no entrance. `context.motion(d)` does this for every token.

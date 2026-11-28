@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.8.0
+
+Advanced rules adapted from a review of [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (MIT), a web-first UI/UX rule set. Only what this plugin lacked was taken, rewritten for Flutter and tied to its tokens, widgets and tests; its style catalog, palettes and search tool were left out (`color.md` and the brief already cover that ground for Flutter).
+
+### Verify: accessibility measured on the rendered screens
+- **`a11y_test.dart`** (new, copied with the harness): every case, rendered once per platform, theme and direction at the smallest size, against flutter_test's guidelines: tap targets ≥ 48 px (44 on iOS), a label on every tappable, and **text contrast measured on the pixels behind the text**. `contrast_test.dart` checks the theme's pairs; this one catches text on a photo or a gradient, a one-off color, a faded caption. It uses flutter_test's square glyphs so the measured color is the text's own, and ignores layout errors (the matrix's job).
+- `screenA11yProblems()` and `UiConfig.a11yMatrix` in `ui_harness.dart`; failures read as one line each (`text contrast: "Due soon" is 3.12:1, needs 4.5:1 (font size 12.0)`), grouped by variant.
+- `harness.md`: the new check's limits (merged rows, icons, desktop pointer targets) and three rows in the fix table.
+- CI: the check catches low-contrast text, a small and an unlabeled target, and passes a clean screen.
+
+### Accessibility (`accessibility.md`)
+- The WCAG 2.2 criteria apps miss, each with its Flutter form and a check: focus not obscured, dragging alternatives, 24 px pointer targets, consistent help, redundant entry, accessible sign-in, pause for moving content, status messages.
+- An icon's semantics follow its use (decoration, meaning or control); toggles expose their state (`isSelected`, `toggled`, `expanded`); announcements are whole phrases, once.
+
+### Forms (`forms.md`)
+- Forgiving input: trim, ignore spaces and hyphens in phones and codes, Arabic-Indic digits in every numeric field, names in any script.
+- Paste works in every field; one-time codes take the whole pasted code; sign-in in an `AutofillGroup` with `finishAutofillContext()`.
+- An error summary for three or more errors; errors clear as soon as the field is valid; a failed submit keeps every value.
+- Submit stays enabled until pressed; a create carries its own id so a retry or a double tap makes one record.
+- `dirty` compares with the opening values; the focused field clears the save bar (`scrollPadding`); values given earlier are carried forward; a custom Enter shortcut waits for the input method to finish composing.
+
+### Motion (`flutter-motion`)
+- `principles.md` › Interruption: retarget from the current value, never put state changes in completion callbacks, input stays live, no half-faded remains, gestures track the finger and release with velocity.
+- `testing.md` › Interruption: a double-tap and mid-animation test, also under reduced motion.
+
+### Charts (`data-display.md`)
+- Choosing the chart by the question it answers, with what to use instead and the text form for screen readers.
+- What to avoid by default (9-slice pies, dual axes, 3D, gauges), direct labels for small sets, the time grain, aggregation, a table view; data marks ≥ 3:1 and series that differ by more than hue; sequential and diverging ramps; touch and keyboard selection.
+
+### Directions and components
+- `directions.md`: an RTL fit row for every direction and the elements that carry a reading direction whatever the direction (tickers, steppers, peeking carousels, time axes, pointing icons).
+- `components.md`: chips that don't fit end with an operable `+n` chip; long unbroken values (IDs, emails, URLs) ellipsize with a copy action or break after separators.
+- `review-checklist.md`: lines for all of the above.
+
+### Docs
+- README redesigned: a banner that follows GitHub's light or dark theme, what the plugin is in five lines, a two-command install, examples of use, the workflow as a diagram, and the long details (the design system, palettes, harness, printed documents, layout, what's proven) folded into sections you can open.
+- `docs/feedback-template.md`: feedback sent upstream carries the design lesson only, with no app names, data, people or places.
+
+### Evals
+- Two cases (18 → 20): `chart-fits-question` (9 categories get sorted, labelled bars, not a pie) and `submit-stays-enabled`.
+
 ## 1.7.0
 
 From design feedback (21 entries) on an Arabic, RTL app that prints onto pre-printed forms. Entries 1–3 had already been fixed (1.2–1.5: the printed-documents loop, `AppChoiceChips(label:)` and wrapping, the list-detail close and deselect). This release takes the other 18.

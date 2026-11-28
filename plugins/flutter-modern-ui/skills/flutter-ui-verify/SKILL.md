@@ -16,6 +16,7 @@ The harness lives in `assets/harness/` and runs on plain `flutter_test`: no devi
 | `layout_smoke_test.dart` | `test/ui/` | every case × matrix: no overflow / layout / build errors, with the source line; on phones and tablets nothing under or touching the system bars, also with each list scrolled to its end |
 | `sheets_test.dart` | `test/ui/` | every sheet: ≥ 48 px labeled tap targets on touch; clear of the system bars; the primary action on screen and above a 300 px keyboard; pick-one sheets: options on screen, a tap closes the sheet. With `VISUAL`, the sheets' screenshots |
 | `contrast_test.dart` | `test/ui/` | text, icons, borders and status tones ≥ WCAG AA in light and dark; containers soft enough to read as tints |
+| `a11y_test.dart` | `test/ui/` | every case, rendered, per platform, theme and direction: tap targets ≥ 48 px (44 on iOS), a label on every tappable, and text contrast measured on the pixels behind the text (an image, a gradient, a tinted card) |
 | `visual_test.dart` | `test/ui/` | screenshots and one contact sheet per case to `test/ui/screenshots/` (only with `VISUAL`) |
 | `design_system_test.dart` | `test/ui/` | behaviour of the shared widgets and tones (only if the project uses them) |
 
@@ -47,7 +48,7 @@ The checks are narrower than "the UI works": `references/harness.md` › What th
 2. **Static check**: `flutter analyze`. Changed files clean.
 3. **Layout matrix**: `flutter test test/ui/layout_smoke_test.dart` (text scale 1.0, 1.3 and 1.6; phones and tablets under their system bars). Each failure reads `[360_dark_android_rtl_x1.3] A RenderFlex overflowed by 13 pixels on the right. ← lib/features/bills/bill_tile.dart:42`, or for the system bars `[360_light_android_ltr_x1.0 and 23 more] "Save changes" (tap target) is 0 px from the navigation bar (48 px): … ← lib/…`. Fix by cause (`references/harness.md` › Fix table), then re-run.
 4. **Sheets**: `flutter test test/ui/sheets_test.dart`.
-5. **Contrast**: `flutter test test/ui/contrast_test.dart`. Passing contrast isn't the same as looking right: the soft-container check flags containers as strong as their seed.
+5. **Contrast and accessibility**: `flutter test test/ui/contrast_test.dart test/ui/a11y_test.dart`. The first checks the theme's pairs, the second what each screen paints: a failure reads `[360_dark_android_rtl_x1.0 and 1 more] text contrast: "Due soon" is 3.12:1, needs 4.5:1 (font size 12.0)`. Passing contrast isn't the same as looking right: the soft-container check flags containers as strong as their seed.
 6. **Screenshots**: `flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true`.
 7. **Look.** Open the contact sheets first (`test/ui/screenshots/contact_sheets/<case>.png`: every shot variant of a case side by side), then single shots for detail, with the Read tool, and review them with `references/visual-review.md`. Write findings as *screenshot · where · issue · fix*. Never report visual verification without having opened the images.
 8. **Fix and re-shoot.** Compare before and after for each finding; make sure nothing else moved.

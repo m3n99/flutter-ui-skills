@@ -195,12 +195,19 @@ A green run means these checks found nothing. It doesn't mean the screen is righ
 
 **The contrast test** checks the theme's color pairs, not pixels. Text over an image or a gradient, a one-off color in a widget, or a status tone used on a surface it wasn't paired with is not seen. Dark variants set both the theme and the device brightness (`MediaQuery.platformBrightness`).
 
+**The accessibility test** (`a11y_test.dart`) measures pixels, so it sees what the contrast test can't, within these limits:
+- One variant per platform, theme and direction, at the smallest size and text scale 1.0. A label that only clips into a low-contrast spot at 1.6 isn't measured.
+- Text inside a `MergeSemantics` row is read as the row's label and isn't measured on its own; check those rows in the screenshots. Text the semantics tree hides (`ExcludeSemantics`) or marks disabled is skipped, as WCAG allows for disabled controls.
+- It measures text only. Icons that carry meaning still need 3:1: check them in the screenshots and through `contrast_test`'s pairs.
+- It uses flutter_test's square glyphs and ignores layout errors from them; layout is the matrix's job.
+- Tap targets are checked on touch platforms only; desktop pointer targets (WCAG 2.5.8, 24 × 24 px) are not.
+
 **The harness itself** reads widget creation locations from debug output and finds Roboto in the SDK's cache. Neither is a public contract: after a Flutter upgrade, a failure line without its `← lib/…` suffix or boxes instead of text in the bars means the harness needs an update, not the app.
 
 ## Running
 
 ```bash
-flutter test test/ui                                     # layout, sheets, contrast (+ design system)
+flutter test test/ui                                     # layout, sheets, contrast, a11y (+ design system)
 flutter test test/ui/layout_smoke_test.dart --plain-name "layout: records"   # one case
 flutter test test/ui/visual_test.dart test/ui/sheets_test.dart --update-goldens --dart-define=VISUAL=true
 ```
@@ -245,6 +252,9 @@ flutter test test/ui/layout_smoke_test.dart test/ui/sheets_test.dart --dart-defi
 | Primary action hidden by the keyboard | save bar in `bottomNavigationBar`; sheet not padded | last child of the body `Column`; pad sheets by `viewInsets` |
 | Tap target < 48 | dense controls on touch, custom tappables | theme density, `MaterialTapTargetSize.padded`, min sizes |
 | Unlabeled tap target | icon-only buttons | `tooltip:` |
+| text contrast: … on an image or gradient | text over a photo, hero or gradient header | a scrim under the text (`surface` or black at 0.5–0.8), or move the text off the image |
+| text contrast: … on a tinted card or pill | text in `onSurfaceVariant` or `primary` on a container | the container's own on-color (`onPrimaryContainer`, the tone's `on…`) |
+| text contrast: … a faded caption or hint | `withValues(alpha: …)` or `Opacity` on text that is still readable content | `onSurfaceVariant`; fade only what is disabled, and mark it disabled |
 | A Timer is still pending | delayed futures in fakes, `ShowAfter` without a final pump | zero-latency fakes, never-completing futures; the harness pumps an empty tree at the end |
 | pumpAndSettle timed out | shimmer / spinner | `pump(duration)` |
 | Text drawn as boxes in shots | fonts not bundled / loaded | bundle the font; `loadUiFonts()` in `setUpAll` |

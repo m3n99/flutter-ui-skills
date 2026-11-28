@@ -6,7 +6,10 @@
 // - the system-bar check tells an overlap from the house rule, exempts
 //   Cupertino bars, and skips an endless list instead of asserting;
 // - dark variants set the device brightness too;
-// - `only` trims the matrix.
+// - `only` trims the matrix;
+// - the rendered accessibility check catches low-contrast text, a small and
+//   an unlabeled tap target, passes a clean screen, and runs one variant per
+//   platform, theme and direction.
 
 import 'package:app/design_system/design_system.dart';
 import 'package:flutter/cupertino.dart' show CupertinoNavigationBar, CupertinoPageScaffold;
@@ -216,5 +219,75 @@ void main() {
     // Windows at 360 px is gone: 2 themes × 3 text scales.
     expect(trimmed.matrix.length, 30);
     expect(trimmed.matrix.where((v) => !v.isTouch && v.size.width < 600), isEmpty);
+  });
+
+  testWidgets('a11y: low-contrast text, a small and an unlabeled target fail; a clean screen passes', (tester) async {
+    const variant = UiVariant(size: UiSize.phone);
+    Future<List<String>> problemsOf(Widget body) async {
+      late List<String> problems;
+      await runVariant(tester, variant, () async {
+        await pumpUi(tester, uiConfig, variant, (_) => Scaffold(body: SafeArea(child: body)), settle: Duration.zero);
+        problems = await screenA11yProblems(tester, variant);
+      });
+      await tester.pumpWidget(const SizedBox.shrink());
+      return problems;
+    }
+
+    final clean = await problemsOf(
+      ColoredBox(
+        color: const Color(0xFFFFFFFF),
+        child: Center(
+          child: TextButton(
+            onPressed: () {},
+            child: const Text('Save changes', style: TextStyle(color: Color(0xFF000000), fontSize: 24, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+    );
+    expect(clean, isEmpty, reason: clean.join('\n'));
+
+    final faint = await problemsOf(
+      const ColoredBox(
+        color: Color(0xFFFFFFFF),
+        child: Center(child: Text('Due next week', style: TextStyle(color: Color(0xFFD0D0D0), fontSize: 14))),
+      ),
+    );
+    expect(faint.where((p) => p.startsWith('text contrast: "Due next week"')), hasLength(1), reason: faint.join('\n'));
+
+    final small = await problemsOf(
+      Center(
+        child: Semantics(
+          button: true,
+          label: 'Close',
+          child: GestureDetector(onTap: () {}, child: const SizedBox(width: 24, height: 24)),
+        ),
+      ),
+    );
+    expect(small.where((p) => p.startsWith('tap target: "Close"')), hasLength(1), reason: small.join('\n'));
+
+    final unlabeled = await problemsOf(
+      Center(
+        child: Semantics(
+          button: true,
+          child: GestureDetector(onTap: () {}, child: const SizedBox(width: 56, height: 56)),
+        ),
+      ),
+    );
+    expect(unlabeled.where((p) => p.startsWith('tappable without a label')), hasLength(1), reason: unlabeled.join('\n'));
+  });
+
+  test('a11yMatrix: one variant per platform, theme and direction, at the smallest size the app meets', () {
+    final config = UiConfig(
+      theme: uiConfig.theme,
+      platforms: const [TargetPlatform.android, TargetPlatform.windows],
+      directions: const [TextDirection.ltr, TextDirection.rtl],
+      only: (variant) => variant.isTouch || variant.size.width >= 600,
+    );
+    final variants = config.a11yMatrix.toList();
+    // 2 platforms × 2 themes × 2 directions.
+    expect(variants, hasLength(8));
+    expect(variants.where((v) => v.isTouch).map((v) => v.size.width).toSet(), {360});
+    expect(variants.where((v) => !v.isTouch).map((v) => v.size.width).toSet(), {1000});
+    expect(variants.map((v) => v.textScale).toSet(), {1.0});
   });
 }

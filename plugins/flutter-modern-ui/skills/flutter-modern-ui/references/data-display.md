@@ -34,11 +34,35 @@ Use cards on phones; switch to a table on large widths (≥ 1200, or ≥ 840 for
 
 `MiniBarChart` (no package) demonstrates the rules; apply the same with `fl_chart` or any chart package.
 
+### Choosing the chart
+
+Start from the question the chart answers, not from the chart types a package offers. In an app, most answers are a line, a bar or a single number.
+
+| The question | Chart | Instead, when | Without the chart (screen readers, tiny widths) |
+|---|---|---|---|
+| How did it change over time? | line (area for one series) | ≤ 6 points: bars; one period vs the last: a number with its change | the latest value, the change and the high/low in a sentence |
+| Which is biggest? How do they rank? | horizontal bars, sorted | categories with long names or more than ~7: still bars, never a pie | the sorted list with values |
+| What share of the whole? | a single stacked bar or a donut, ≤ 5 parts | more parts or close values: sorted bars with percentages | the parts with their percentages |
+| Are we on target? | a progress bar or bullet bar against a target mark | several targets: one row each | "72 % of the monthly target (3,600 of 5,000)" |
+| How is it spread? Any outliers? | histogram; box plot for expert users | few values: a dot strip | median, range and the outliers named |
+| Do two measures move together? | scatter | for a general audience: two lines on the same time axis, never a dual y-axis | the relationship in words |
+| When is it busy? (hour × day) | a heat-map grid with a sequential ramp | few slots: a sorted bar list | the busiest and quietest slots |
+| How does a total build up? | waterfall | two or three steps: a sentence with the numbers | the start, each step, the end |
+
+- **One message per chart.** If the caption needs "and", it's two charts (small multiples share their axes).
+- **Avoid by default:** pies with more than 5 slices, 3D anything, dual y-axes, radar charts for a general audience, gauges where a progress bar fits. Each reads as impressive and answers less.
+- **Label directly** when there are ≤ 4 series or ≤ 12 bars: the value at the bar's end or the series name at the line's end, instead of a legend the eye has to travel to. A legend, when needed, sits next to the chart and in series order.
+- **Show the time grain** ("by week", "by month") in the title or the axis, and keep it switchable where users compare periods.
+- **Many points** (more than ~ 1 per 2 px of width): aggregate (per day → per week) or sample, and let the user drill into a range; never draw 5,000 points into 300 px.
+- **A table view** for any chart that carries numbers the user may need: a "Show as table" toggle or the table below the chart on wide screens. It's the accessible form, the exportable form and the one people check numbers in.
+
 ### Colors
 
 - Series colors come from scheme and palette roles, chosen by meaning: due → `palette.info`/upcoming, collected → `palette.success`, expected → `primary`. Never hard-coded hex.
 - Gridlines: `outlineVariant`, 1 px. Axis labels: labelSmall / `onSurfaceVariant`, tabular figures.
 - No more than 4–5 series; beyond that, use small multiples or a table.
+- Data marks (lines, bars, points) ≥ 3:1 against the chart background, and data labels ≥ 4.5:1 (`accessibility.md`). Two series never differ by hue alone: add a dash pattern, a marker shape or a direct label, so the chart reads in grayscale and for color-blind users.
+- Sequential data (low → high) uses one hue from light to dark; diverging data (below / above a midpoint) uses two hues meeting at a neutral; never a rainbow.
 
 ### Axes and ticks
 
@@ -62,6 +86,8 @@ Use cards on phones; switch to a table on large widths (≥ 1200, or ≥ 840 for
 - Loading: a skeleton block the chart's size. Empty: a short sentence inside the chart card ("No payments in this period"), not empty axes. Error: inline with retry.
 - Every chart has a one-sentence semantic summary ("Collected per month, highest in November").
 - Tooltips on hover/tap show the exact value (tabular, formatted), aligned away from the pointer.
+- Touch: tapping anywhere in a bar's column, or near a point (within 24 px), selects it; a 4 px dot is not a 48 px target. Selected values stay shown until another is tapped, rather than vanishing with the finger.
+- Keyboard (desktop): the chart is focusable, and arrow keys move between points with the tooltip following.
 
 ## Amounts everywhere
 
